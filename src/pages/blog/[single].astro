@@ -1,10 +1,11 @@
 ---
-import Base from "../../layouts/Base.astro";
-// Jalur diperbaiki ke folder partials berdasarkan struktur folder Anda
-import PostSingle from "../../layouts/partials/PostSingle.astro";
+import Base from "@/layouts/Base.astro";
+import PostSingle from "@/layouts/partials/PostSingle.astro";
 
 export async function getStaticPaths() {
-  const WP_URL = "https://amina.or.id/graphql/";
+  // 1. Mengambil URL API dari Environment Variable Vercel
+  const WP_URL = import.meta.env.PUBLIC_WP_URL;
+  
   const query = {
     query: `
       query GetAllPosts {
@@ -46,26 +47,29 @@ export async function getStaticPaths() {
     const result = await response.json();
     const posts = result.data?.posts?.nodes || [];
 
-    return posts.map((post) => ({
+    // 2. Mapping data dengan pengaman nilai null/undefined
+    return posts.map((post: any) => ({
       params: { single: post.slug },
       props: { 
         post: {
           id: post.slug,
           slug: post.slug,
-          content: post.content,
+          // Fallback string kosong untuk mencegah error marked()
+          content: post.content || "", 
           data: {
-            title: post.title,
-            description: post.excerpt,
+            // Fallback judul agar atribut alt gambar tidak kosong
+            title: post.title || "Judul Artikel", 
+            description: post.excerpt || "",
             date: post.date,
             image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
-            categories: post.categories?.nodes.map((c) => c.name) || ["Islam"],
+            categories: post.categories?.nodes.map((c: any) => c.name) || ["Lainnya"],
             authors: [post.author?.node?.name || "Admin"],
           }
         } 
       },
     }));
   } catch (error) {
-    console.error("Gagal mengambil data WordPress:", error);
+    console.error("Gagal mengambil data dari studio.amina.or.id:", error);
     return [];
   }
 }
@@ -78,5 +82,6 @@ const { post } = Astro.props;
   description={post.data.description} 
   image={post.data.image}
 >
+  {/* Komponen PostSingle yang sudah diperbaiki rasio gambarnya */}
   <PostSingle post={post} />
 </Base>

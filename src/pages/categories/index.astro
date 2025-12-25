@@ -3,8 +3,10 @@ import Base from "@/layouts/Base.astro";
 import { humanize } from "@/lib/utils/textConverter";
 import { BiCategoryAlt } from "react-icons/bi";
 
-// 1. Hubungkan ke WordPress amina.or.id untuk mengambil daftar kategori
-const WP_URL = "https://studio.amina.or.id/graphql/";
+// 1. Menggunakan Environment Variable untuk keamanan dan fleksibilitas
+const WP_URL = import.meta.env.PUBLIC_WP_URL;
+
+// 2. Query untuk mengambil daftar kategori dari WordPress studio.amina.or.id
 const query = {
   query: `
     query GetCategories {
@@ -29,10 +31,13 @@ try {
   });
   const result = await response.json();
   
+  // Ambil data dengan pengaman jika result.data null
+  const allCategories = result.data?.categories?.nodes || [];
+  
   // Filter: Hanya tampilkan kategori yang memiliki artikel (count > 0)
-  categories = result.data?.categories?.nodes.filter(cat => cat.count > 0) || [];
+  categories = allCategories.filter((cat: any) => (cat.count || 0) > 0);
 } catch (e) {
-  console.error("Gagal mengambil kategori dari WordPress:", e);
+  console.error("Gagal mengambil kategori dari WordPress studio.amina.or.id:", e);
 }
 
 const title = "Kategori Artikel";
@@ -52,15 +57,20 @@ const title = "Kategori Artikel";
                   class="rounded-lg bg-light px-5 py-3 text-dark transition hover:bg-primary hover:text-white flex items-center group shadow-sm"
                 >
                   <BiCategoryAlt className="mr-2 text-primary group-hover:text-white transition h-6 w-6" />
-                  <span class="font-bold">{category.name}</span>
+                  <span class="font-bold">{category.name || "Kategori"}</span>
                   <span class="ml-2 text-xs bg-white bg-opacity-50 px-2 py-0.5 rounded-full text-dark group-hover:bg-dark group-hover:text-white transition">
-                    {category.count}
+                    {category.count || 0}
                   </span>
                 </a>
               </li>
             ))
           ) : (
-            <p class="text-text">Belum ada kategori yang tersedia di amina.or.id.</p>
+            <div class="py-20">
+              <p class="text-text">Belum ada kategori yang tersedia saat ini.</p>
+              <p class="text-sm text-gray-400 mt-2">
+                Periksa koneksi API ke studio.amina.or.id
+              </p>
+            </div>
           )
         }
       </ul>

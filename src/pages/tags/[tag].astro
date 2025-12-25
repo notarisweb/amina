@@ -1,37 +1,108 @@
 ---
 import Posts from "@/components/Posts.astro";
 import Base from "@/layouts/Base.astro";
-import { getSinglePage } from "@/lib/contentParser.astro";
-import { getTaxonomy } from "@/lib/taxonomyParser.astro";
-import { sortByDate } from "@/lib/utils/sortFunctions";
-import taxonomyFilter from "@/lib/utils/taxonomyFilter";
 import { humanize } from "@/lib/utils/textConverter";
 
 export async function getStaticPaths() {
-  const tags = await getTaxonomy("posts", "tags");
+  // 1. Mengambil URL API dari Environment Variable
+  const WP_URL = import.meta.env.PUBLIC_WP_URL;
+  
+  // 2. Query untuk mengambil semua daftar Tag yang ada di WordPress
+  const tagQuery = {
+    query: `query { tags(first: 100) { nodes { name slug } } }`,
+  };
 
-  return tags.map((tag) => {
-    return {
-      params: { tag },
-    };
+  const tagRes = await fetch(WP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(tagQuery),
   });
+  const tagData = await tagRes.json();
+  const allTags = tagData.data?.tags?.nodes || [];
+
+  // 3. Untuk setiap Tag, ambil daftar artikel terkait
+  const allPaths = await Promise.all(
+    allTags.map(async (tag: any) => {
+      const postQuery = {
+        query: `
+          query GetPostsByTag($tagName: String!) {
+            posts(where: {tag: $tagName}, first: 100) {
+              nodes {
+                title
+                slug
+                excerpt
+                date
+                author { node { name } }
+                categories { nodes { name } }
+                featuredImage { node { sourceUrl } }
+              }
+            }
+          }
+        `,
+        variables: { tagName: tag.name },
+      };
+
+      const postRes = await fetch(WP_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(postQuery),
+      });
+      const postData = await postRes.json();
+      const wpPosts = postData.data?.posts?.nodes || [];
+
+      // 4. Mapping data WordPress dengan pengaman (fallback)
+      const formattedPosts = wpPosts.map((post: any) => ({
+        id: post.slug,
+        slug: post.slug,
+        body: post.excerpt || "", // Mencegah error marked()
+        data: {
+          title: post.title || "Judul Tidak Tersedia", // Mencegah error ImageMissingAlt
+          description: post.excerpt || "",
+          date: post.date,
+          image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
+          categories: post.categories?.nodes.map((c: any) => c.name) || [],
+          authors: [post.author?.node?.name || "Admin"], // Pastikan berupa array
+          tags: [tag.name],
+        },
+      }));
+
+      return {
+        params: { tag: tag.slug },
+        props: { 
+          tagName: tag.name,
+          posts: formattedPosts 
+        },
+      };
+    })
+  );
+
+  return allPaths;
 }
 
 const { tag } = Astro.params;
-
-const posts = await getSinglePage("posts");
-const filterByTags = taxonomyFilter(posts, "tags", tag);
-const sortedPosts = sortByDate(filterByTags);
-
-const title = humanize(tag || "");
+const { tagName, posts } = Astro.props;
+const title = humanize(tagName || "");
 ---
 
 <Base title={title || "Tag"}>
   <div class="section">
     <div class="container">
-      <p class="text-center text-2xl mb-4">Showing Posts From</p>
-      <h1 class="h2 mb-16 text-center text-primary">{title}</h1>
-      <Posts posts={sortedPosts} fluid={false} />
+      <div class="text-center mb-16">
+        <p class="text-text text-xl mb-2 text-dark">Menampilkan Artikel dengan Tag:</p>
+        <h1 class="h2 text-primary font-bold">#{title}</h1>
+      </div>
+
+      {posts.length > 0 ? (
+        /* Menggunakan komponen Posts dengan tampilan persegi panjang */
+        <Posts posts={posts} fluid={false} />
+      ) : (
+        <div class="text-center py-20">
+          <p class="text-lg">Belum ada artikel untuk tag ini.</p>
+          <p class="text-sm text-gray-400 mt-2">
+            Periksa kembali postingan di studio.amina.or.id
+          </p>
+        </div>
+      )}
     </div>
   </div>
 </Base>

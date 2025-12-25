@@ -4,9 +4,10 @@ import config from "@/config/config.json";
 import Base from "@/layouts/Base.astro";
 import Pagination from "@/layouts/components/Pagination.astro";
 
-const WP_URL = "https://studio.amina.or.id/graphql/";
+// 1. Menggunakan Environment Variable dari dashboard Vercel
+const WP_URL = import.meta.env.PUBLIC_WP_URL;
 
-// 1. Query diperbarui untuk mengambil data penulis (author)
+// 2. Query diperbarui untuk mengambil data penulis, kategori, dan gambar utama
 const query = {
   query: `
     query GetPosts {
@@ -50,25 +51,24 @@ try {
   const result = await response.json();
   const wpPosts = result.data?.posts?.nodes || [];
 
-  // 2. Pemetaan Data (Mapping) diperketat agar sesuai dengan Posts.astro
-  currentPosts = wpPosts.map((post) => ({
-    id: post.slug, // Dibutuhkan oleh template untuk link href
+  // 3. Pemetaan Data diperketat dengan fallback string kosong || "" untuk keamanan
+  currentPosts = wpPosts.map((post: any) => ({
+    id: post.slug, 
     slug: post.slug,
-    body: post.excerpt, // Dibutuhkan oleh fungsi plainify di template
+    body: post.excerpt || "", // Mencegah error marked() jika kutipan kosong
     data: {
-      title: post.title,
-      description: post.excerpt,
+      title: post.title || "Judul Tidak Tersedia", // Mencegah error ImageMissingAlt
+      description: post.excerpt || "", 
       date: post.date,
       image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
-      categories: post.categories?.nodes.map(c => c.name) || ["Islam"],
-      // PERBAIKAN: Menambahkan array authors agar fungsi .map() di Posts.astro tidak error
-      authors: [post.author?.node?.name || "Admin"],
+      categories: post.categories?.nodes.map((c: any) => c.name) || ["Islam"],
+      authors: [post.author?.node?.name || "Admin"], // Fallback nama penulis agar tidak undefined
     }
   }));
 
   totalPages = Math.ceil(currentPosts.length / config.settings.pagination);
 } catch (e) {
-  console.error("Gagal mengambil data dari WordPress:", e);
+  console.error("Gagal mengambil data dari WordPress studio.amina.or.id:", e);
 }
 ---
 
@@ -76,13 +76,24 @@ try {
   <section class="section">
     <div class="container">
       {currentPosts.length > 0 ? (
-        <Posts posts={currentPosts} className="mb-16" />
+        <>
+          {/* Komponen Posts dengan data yang sudah di-mapping aman */}
+          <Posts posts={currentPosts} className="mb-16" />
+          
+          {/* Navigasi Pagination angka jika artikel lebih dari batas halaman */}
+          {totalPages > 1 && (
+            <div class="mt-16 flex justify-center">
+              <Pagination currentPage={1} totalPages={totalPages} />
+            </div>
+          )}
+        </>
       ) : (
-        <p class="text-center">Tidak ada artikel ditemukan. Pastikan koneksi ke amina.or.id lancar.</p>
-      )}
-      
-      {totalPages > 1 && (
-        <Pagination currentPage={1} totalPages={totalPages} />
+        <div class="text-center py-20">
+          <p class="text-xl">Tidak ada artikel ditemukan.</p>
+          <p class="text-sm text-gray-500 mt-2">
+            Pastikan WordPress di studio.amina.or.id dapat diakses.
+          </p>
+        </div>
       )}
     </div>
   </section>

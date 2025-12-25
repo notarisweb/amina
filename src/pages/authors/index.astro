@@ -3,22 +3,88 @@ import Authors from "@/components/Authors.astro";
 import config from "@/config/config.json";
 import Base from "@/layouts/Base.astro";
 import Pagination from "@/layouts/components/Pagination.astro";
-import { getSinglePage } from "@/lib/contentParser.astro";
-import { sortByDate } from "@/lib/utils/sortFunctions";
-import { markdownify } from "@/lib/utils/textConverter";
 
-const authors = await getSinglePage("authors");
-const sortedPosts = sortByDate(authors);
-const totalPages = Math.ceil(authors.length / config.settings.pagination);
-const currentPosts = sortedPosts.slice(0, config.settings.pagination);
+// 1. Menggunakan Environment Variable dari dashboard Vercel
+const WP_URL = import.meta.env.PUBLIC_WP_URL;
+
+// 2. Query untuk mengambil daftar Penulis (Users) dari WordPress
+const query = {
+  query: `
+    query GetAuthors {
+      users {
+        nodes {
+          name
+          slug
+          description
+          avatar {
+            url
+          }
+        }
+      }
+    }
+  `,
+};
+
+let authors = [];
+let totalPages = 1;
+
+try {
+  const response = await fetch(WP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(query),
+  });
+  
+  const result = await response.json();
+  const wpAuthors = result.data?.users?.nodes || [];
+
+  // 3. Pemetaan data WordPress agar sesuai dengan komponen Authors.astro
+  authors = wpAuthors.map((user: any) => ({
+    id: user.slug,
+    slug: user.slug,
+    // Fallback string kosong untuk mencegah error pada fungsi markdownify/marked
+    body: user.description || "", 
+    data: {
+      title: user.name || "Penulis",
+      image: user.avatar?.url || "/images/author-placeholder.png",
+      description: user.description || "Penulis di amina.or.id",
+      social: [], // Anda bisa menambahkan query social media jika tersedia di WP
+    }
+  }));
+
+  totalPages = Math.ceil(authors.length / config.settings.pagination);
+} catch (e) {
+  console.error("Gagal mengambil data penulis dari studio.amina.or.id:", e);
+}
+
+// Mengambil penulis untuk halaman pertama saja
+const currentAuthors = authors.slice(0, config.settings.pagination);
 ---
 
-<Base title={"Authors"}>
+<Base title={"Daftar Penulis"}>
   <section class="section">
     <div class="container text-center">
-      <h1 set:text={markdownify("Authors")} class="page-heading h2" />
-      <Authors authors={currentPosts} />
-      <Pagination section={"authors"} currentPage={1} totalPages={totalPages} />
+      <h1 class="page-heading h2 mb-16">Para Penulis</h1>
+      
+      {currentAuthors.length > 0 ? (
+        <>
+          <Authors authors={currentAuthors} />
+          
+          {/* Navigasi Pagination jika jumlah penulis melebihi batas per halaman */}
+          {totalPages > 1 && (
+            <div class="mt-16 flex justify-center">
+              <Pagination section={"authors"} currentPage={1} totalPages={totalPages} />
+            </div>
+          )}
+        </>
+      ) : (
+        <div class="py-20">
+          <p class="text-xl">Belum ada penulis yang ditemukan.</p>
+          <p class="text-sm text-gray-500 mt-2">
+            Pastikan akun penulis di studio.amina.or.id sudah memiliki postingan publik.
+          </p>
+        </div>
+      )}
     </div>
   </section>
 </Base>

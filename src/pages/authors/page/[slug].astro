@@ -3,15 +3,29 @@ import Authors from "@/components/Authors.astro";
 import config from "@/config/config.json";
 import Base from "@/layouts/Base.astro";
 import Pagination from "@/layouts/components/Pagination.astro";
-import { getSinglePage } from "@/lib/contentParser.astro";
-import { sortByDate } from "@/lib/utils/sortFunctions";
-import { markdownify } from "@/lib/utils/textConverter";
 
 export async function getStaticPaths() {
-  const authors = await getSinglePage("authors");
+  // 1. Menggunakan Environment Variable untuk fleksibilitas API
+  const WP_URL = import.meta.env.PUBLIC_WP_URL;
+  
+  // 2. Query untuk mengambil semua penulis dari WordPress
+  const query = {
+    query: `query { users { nodes { name slug description avatar { url } } } }`,
+  };
+
+  const response = await fetch(WP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(query),
+  });
+  
+  const result = await response.json();
+  const authors = result.data?.users?.nodes || [];
+  
   const totalPages = Math.ceil(authors.length / config.settings.pagination);
   const paths = [];
 
+  // Menghasilkan path untuk halaman 2 dan seterusnya
   for (let i = 1; i < totalPages; i++) {
     paths.push({
       params: {
@@ -23,25 +37,61 @@ export async function getStaticPaths() {
 }
 
 const { slug } = Astro.params;
-const authors = await getSinglePage("authors");
-const sortedPosts = sortByDate(authors);
-const totalPages = Math.ceil(authors.length / config.settings.pagination);
+const WP_URL = import.meta.env.PUBLIC_WP_URL;
+
+// 3. Ambil data penulis kembali untuk perankingan/pembagian halaman
+const query = {
+  query: `query { users { nodes { name slug description avatar { url } } } }`,
+};
+
+const response = await fetch(WP_URL, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(query),
+});
+
+const result = await response.json();
+const wpAuthors = result.data?.users?.nodes || [];
+
+// 4. Mapping data dengan pengaman (fallback) untuk mencegah error build
+const allAuthors = wpAuthors.map((user: any) => ({
+  id: user.slug,
+  slug: user.slug,
+  body: user.description || "", // Mencegah error marked() jika deskripsi kosong
+  data: {
+    title: user.name || "Penulis",
+    image: user.avatar?.url || "/images/author-placeholder.png",
+    description: user.description || "",
+    social: [],
+  }
+}));
+
+const totalPages = Math.ceil(allAuthors.length / config.settings.pagination);
 const currentPage = slug && !isNaN(Number(slug)) ? Number(slug) : 1;
 const indexOfLastPost = currentPage * config.settings.pagination;
 const indexOfFirstPost = indexOfLastPost - config.settings.pagination;
-const currentPosts = sortedPosts.slice(indexOfFirstPost, indexOfLastPost);
+const currentAuthors = allAuthors.slice(indexOfFirstPost, indexOfLastPost);
 ---
 
-<Base title={"Authors"}>
+<Base title={`Penulis - Halaman ${currentPage}`}>
   <section class="section">
     <div class="container text-center">
-      <h1 set:text={markdownify("Authors")} class="page-heading h2" />
-      <Authors authors={currentPosts} />
-      <Pagination
-        section={"authors"}
-        currentPage={currentPage}
-        totalPages={totalPages}
-      />
+      <h1 class="page-heading h2 mb-16">Para Penulis</h1>
+      
+      {currentAuthors.length > 0 ? (
+        <>
+          <Authors authors={currentAuthors} />
+          <div class="mt-16 flex justify-center">
+            <Pagination
+              section={"authors"}
+              currentPage={currentPage}
+              totalPages={totalPages}
+            />
+          </div>
+        </>
+      ) : (
+        <p class="py-20">Data penulis tidak ditemukan.</p>
+      )}
     </div>
   </section>
 </Base>

@@ -5,9 +5,10 @@ import Pagination from "@/layouts/components/Pagination.astro";
 import { humanize } from "@/lib/utils/textConverter";
 
 export async function getStaticPaths({ paginate }: any) {
-  const WP_URL = "https://studio.amina.or.id/graphql/";
+  // Menggunakan Environment Variable agar lebih aman dan fleksibel
+  const WP_URL = import.meta.env.PUBLIC_WP_URL;
   
-  // 1. Ambil semua daftar kategori dari WordPress
+  // 1. Ambil semua daftar kategori dari WordPress studio.amina.or.id
   const catQuery = {
     query: `query { categories(first: 100) { nodes { name slug } } }`,
   };
@@ -50,14 +51,14 @@ export async function getStaticPaths({ paginate }: any) {
       const postData = await postRes.json();
       const wpPosts = postData.data?.posts?.nodes || [];
 
-      // Mapping data WordPress agar sesuai dengan komponen Posts.astro
+      // Mapping data WordPress dengan pengaman string kosong || ""
       const formattedPosts = wpPosts.map((post: any) => ({
         id: post.slug,
         slug: post.slug,
-        body: post.excerpt,
+        body: post.excerpt || "",
         data: {
-          title: post.title,
-          description: post.excerpt,
+          title: post.title || "Judul Tidak Tersedia",
+          description: post.excerpt || "",
           date: post.date,
           image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
           categories: post.categories?.nodes.map((c: any) => c.name) || [cat.name],
@@ -89,15 +90,17 @@ const title = humanize(categoryName || "");
       <div class="text-center mb-16">
         <p class="text-text text-xl mb-2 text-dark">Kategori:</p>
         <h1 class="h2 text-primary font-bold">{title}</h1>
-        <p class="mt-2 text-sm text-gray-500">Menampilkan halaman {page.currentPage} dari {page.lastPage}</p>
+        <p class="mt-2 text-sm text-gray-500">
+          Menampilkan halaman {page.currentPage} dari {page.lastPage}
+        </p>
       </div>
       
       {page.data.length > 0 ? (
         <>
-          {/* Komponen Posts yang sudah kita buat persegi panjang sebelumnya */}
+          {/* Komponen Posts dengan tampilan persegi panjang */}
           <Posts posts={page.data} fluid={false} />
           
-          {/* Navigasi angka 1, 2, 3 di bawah */}
+          {/* Navigasi Pagination angka 1, 2, 3 */}
           <div class="mt-16 flex justify-center">
             <Pagination 
               section={`categories/${category}`} 
@@ -108,7 +111,7 @@ const title = humanize(categoryName || "");
         </>
       ) : (
         <div class="text-center py-20">
-          <p>Belum ada artikel.</p>
+          <p>Belum ada artikel dalam kategori ini.</p>
         </div>
       )}
     </div>

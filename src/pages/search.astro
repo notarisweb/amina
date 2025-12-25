@@ -1,22 +1,71 @@
 ---
 import SearchBar from "@/helpers/SearchBar";
 import Base from "@/layouts/Base.astro";
-import { getSinglePage } from "@/lib/contentParser.astro";
 
-// Retrieve all articles
-const posts = await getSinglePage("posts");
+// 1. Mengambil URL API dari Environment Variable untuk fleksibilitas
+const WP_URL = import.meta.env.PUBLIC_WP_URL;
 
-// List of items to search in
-const searchList = posts.map((item) => ({
-  slug: item.id,
-  data: item.data,
-  content: item.body,
-}));
+// 2. Query untuk mengambil data artikel agar bisa dicari
+const query = {
+  query: `
+    query GetSearchData {
+      posts(first: 100) {
+        nodes {
+          title
+          slug
+          excerpt
+          content
+          date
+          author { node { name } }
+          categories { nodes { name } }
+          featuredImage { node { sourceUrl } }
+        }
+      }
+    }
+  `,
+};
+
+let searchList = [];
+
+try {
+  const response = await fetch(WP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(query),
+  });
+  
+  const result = await response.json();
+  const wpPosts = result.data?.posts?.nodes || [];
+
+  // 3. Mapping data ke format yang dibutuhkan oleh SearchBar
+  searchList = wpPosts.map((post: any) => ({
+    slug: post.slug,
+    // Menggabungkan konten agar hasil pencarian lebih akurat
+    content: (post.content || post.excerpt || ""), 
+    data: {
+      // Fallback judul agar tidak terjadi error ImageMissingAlt
+      title: post.title || "Judul Tidak Tersedia", 
+      description: post.excerpt || "", 
+      date: post.date,
+      image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
+      categories: post.categories?.nodes.map((c: any) => c.name) || [],
+      authors: [post.author?.node?.name || "Admin"],
+    }
+  }));
+} catch (e) {
+  console.error("Gagal mengambil data pencarian dari studio.amina.or.id:", e);
+}
 ---
 
-<Base title={`Search`}>
+<Base title={`Pencarian Artikel`}>
   <section class="section">
     <div class="container">
+      <div class="text-center mb-12">
+        <h1 class="h2 mb-4">Cari Artikel</h1>
+        <p class="text-text">Cari informasi dan artikel islami di amina.or.id</p>
+      </div>
+      
+      {/* Mengirim searchList ke komponen React SearchBar */}
       <SearchBar client:load searchList={searchList} />
     </div>
   </section>

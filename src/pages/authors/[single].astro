@@ -1,38 +1,92 @@
 ---
 import Base from "@/layouts/Base.astro";
-import { getSinglePage } from "@/lib/contentParser.astro";
 import dateFormat from "@/lib/utils/dateFormat";
 import { Image } from "astro:assets";
-
-import { sortByDate } from "@/lib/utils/sortFunctions";
 import { humanize, slugify } from "@/lib/utils/textConverter";
-import type { CollectionEntry } from "astro:content";
 import { BiCalendarEdit, BiCategoryAlt } from "react-icons/bi";
-import AuthorSingle from "@/partials/AuthorSingle.astro";
+import AuthorSingle from "@/layouts/partials/AuthorSingle.astro";
 
 export async function getStaticPaths() {
-  const authors = await getSinglePage("authors");
+  // 1. Mengambil URL API dari Environment Variable
+  const WP_URL = import.meta.env.PUBLIC_WP_URL;
 
-  const paths = authors.map((author) => ({
-    params: {
-      single: author.id,
-    },
-    props: { author },
-  }));
+  // 2. Query untuk mengambil semua penulis dari WordPress
+  const authorQuery = {
+    query: `query { users { nodes { name slug description avatar { url } } } }`,
+  };
+
+  const authorRes = await fetch(WP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(authorQuery),
+  });
+  const authorData = await authorRes.json();
+  const allAuthors = authorData.data?.users?.nodes || [];
+
+  // 3. Ambil daftar artikel untuk setiap penulis tersebut
+  const paths = await Promise.all(
+    allAuthors.map(async (author: any) => {
+      const postQuery = {
+        query: `
+          query GetPostsByAuthor($authorName: String!) {
+            posts(where: {authorName: $authorName}, first: 10) {
+              nodes {
+                title
+                slug
+                date
+                categories { nodes { name } }
+                featuredImage { node { sourceUrl } }
+              }
+            }
+          }
+        `,
+        variables: { authorName: author.name },
+      };
+
+      const postRes = await fetch(WP_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(postQuery),
+      });
+      const postData = await postRes.json();
+      const wpPosts = postData.data?.posts?.nodes || [];
+
+      // Mapping data artikel penulis dengan pengaman (fallback)
+      const formattedPosts = wpPosts.map((post: any) => ({
+        id: post.slug,
+        slug: post.slug,
+        data: {
+          title: post.title || "Judul Artikel",
+          date: post.date,
+          image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
+          categories: post.categories?.nodes.map((c: any) => c.name) || [],
+        },
+      }));
+
+      return {
+        params: { single: author.slug },
+        props: { 
+          author: {
+            id: author.slug,
+            slug: author.slug,
+            body: author.description || "", // Mencegah error marked()
+            data: {
+              title: author.name || "Penulis",
+              description: author.description || "",
+              image: author.avatar?.url || "/images/author-placeholder.png",
+              meta_title: author.name,
+            }
+          },
+          posts: formattedPosts
+        },
+      };
+    })
+  );
   return paths;
 }
 
-const { author } = Astro.props;
+const { author, posts } = Astro.props;
 const { title, meta_title, description, image } = author.data;
-
-// Author Posts
-const posts = await getSinglePage("posts");
-const sortPostsByDate: CollectionEntry<"posts">[] = sortByDate(posts);
-const currentPosts = sortPostsByDate.filter((post) => {
-  return post.data.authors
-    .map((author) => slugify(author))
-    .includes(slugify(title));
-});
 ---
 
 <Base
@@ -44,24 +98,24 @@ const currentPosts = sortPostsByDate.filter((post) => {
   <AuthorSingle author={author} />
 
   {
-    currentPosts.length > 0 && (
+    posts.length > 0 && (
       <section class="section pt-0">
         <div class="container">
-          <h2 class="mb-8 text-center h3">Recent Posts</h2>
+          <h2 class="mb-8 text-center h3">Artikel Terbaru oleh {title}</h2>
           <div
-            class={`row gy-4 ${currentPosts.length < 3 ? "justify-center" : ""}`}
+            class={`row gy-4 ${posts.length < 3 ? "justify-center" : ""}`}
           >
-            {currentPosts.map((post) => (
+            {posts.map((post: any) => (
               <div class="col-12 sm:col-6 lg:col-4">
                 {post.data.image && (
                   <a
-                    href={`/${post.id}`}
-                    class="rounded-lg block hover:text-primary overflow-hidden group"
+                    href={`/blog/${post.id}`}
+                    class="rounded-lg block hover:text-primary overflow-hidden group shadow-sm aspect-video"
                   >
                     <Image
-                      class="group-hover:scale-[1.05] transition duration-300 w-full"
+                      class="group-hover:scale-[1.05] transition duration-300 w-full h-full object-cover"
                       src={post.data.image}
-                      alt={post.data.title}
+                      alt={post.data.title || "Gambar Artikel"} 
                       width={445}
                       height={230}
                     />
@@ -70,13 +124,12 @@ const currentPosts = sortPostsByDate.filter((post) => {
                 <ul class="mt-4 text-text flex flex-wrap items-center text-sm">
                   <li class="mb-2 mr-4 flex items-center flex-wrap font-medium">
                     <BiCalendarEdit className="mr-1 h-[16px] w-[16px] text-gray-600" />
-                    {dateFormat(post.data.date!)}
+                    {post.data.date ? dateFormat(post.data.date) : "N/A"}
                   </li>
                   <li class="mb-2 mr-4 flex items-center flex-wrap">
                     <BiCategoryAlt className="mr-1 h-[16px] w-[16px] text-gray-600" />
-
                     <ul>
-                      {post.data.categories.map((category, i: number) => (
+                      {post.data.categories.map((category: string, i: number) => (
                         <li class="inline-block">
                           <a
                             href={`/categories/${slugify(category)}`}
@@ -90,13 +143,12 @@ const currentPosts = sortPostsByDate.filter((post) => {
                     </ul>
                   </li>
                 </ul>
-                <h3 class="h5">
+                <h3 class="h5 mt-2">
                   <a
-                    href={`/${post.id}`}
-                    class="block hover:text-primary transition duration-300"
-                  >
-                    {post.data.title}
-                  </a>
+                    href={`/blog/${post.id}`}
+                    class="block hover:text-primary transition duration-300 leading-snug"
+                    set:html={post.data.title || "Judul Tidak Tersedia"}
+                  />
                 </h3>
               </div>
             ))}
@@ -106,3 +158,9 @@ const currentPosts = sortPostsByDate.filter((post) => {
     )
   }
 </Base>
+
+<style>
+  .aspect-video {
+    aspect-ratio: 16 / 9;
+  }
+</style>

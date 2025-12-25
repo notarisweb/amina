@@ -1,30 +1,77 @@
 ---
 import Base from "@/layouts/Base.astro";
-import { getTaxonomy } from "@/lib/taxonomyParser.astro";
-import { humanize } from "@/lib/utils/textConverter";
-
+import { humanize, slugify } from "@/lib/utils/textConverter";
 import { FaHashtag } from "react-icons/fa";
 
-const tags = await getTaxonomy("posts", "tags");
+// 1. Menggunakan Environment Variable untuk fleksibilitas URL API
+const WP_URL = import.meta.env.PUBLIC_WP_URL;
+
+// 2. Query untuk mengambil daftar Tag dari WordPress
+const query = {
+  query: `
+    query GetTags {
+      tags(first: 100) {
+        nodes {
+          name
+          slug
+          count
+        }
+      }
+    }
+  `,
+};
+
+let tags = [];
+
+try {
+  const response = await fetch(WP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(query),
+  });
+  const result = await response.json();
+  
+  // Ambil data dengan pengaman jika result.data null
+  const allTags = result.data?.tags?.nodes || [];
+  
+  // Filter: Hanya tampilkan tag yang memiliki artikel (count > 0)
+  tags = allTags.filter((tag: any) => (tag.count || 0) > 0);
+} catch (e) {
+  console.error("Gagal mengambil tags dari WordPress studio.amina.or.id:", e);
+}
+
+const title = "Tag Populer";
 ---
 
-<Base title={"Tags"}>
+<Base title={title}>
   <section class="section">
     <div class="container text-center">
-      <h1 class="h2 page-heading">Tags</h1>
-      <ul class="space-x-4">
+      <h1 class="h2 page-heading mb-16">{title}</h1>
+      <ul class="flex flex-wrap justify-center gap-4">
         {
-          tags.map((tag) => (
-            <li class="inline-block">
-              <a
-                href={`/tags/${tag}`}
-                class="rounded-lg bg-light px-4 py-2 text-dark transition hover:bg-primary hover:text-white flex items-center group"
-              >
-                <FaHashtag className="mr-1 text-primary group-hover:text-white transition" />
-                {humanize(tag || "")}
-              </a>
-            </li>
-          ))
+          tags.length > 0 ? (
+            tags.map((tag) => (
+              <li class="inline-block">
+                <a
+                  href={`/tags/${tag.slug}`}
+                  class="rounded-lg bg-light px-5 py-3 text-dark transition hover:bg-primary hover:text-white flex items-center group shadow-sm"
+                >
+                  <FaHashtag className="mr-2 text-primary group-hover:text-white transition h-5 w-5" />
+                  <span class="font-bold">{humanize(tag.name || "")}</span>
+                  <span class="ml-2 text-xs bg-white bg-opacity-50 px-2 py-0.5 rounded-full text-dark group-hover:bg-dark group-hover:text-white transition">
+                    {tag.count || 0}
+                  </span>
+                </a>
+              </li>
+            ))
+          ) : (
+            <div class="py-20">
+              <p class="text-text">Belum ada tag yang tersedia saat ini.</p>
+              <p class="text-sm text-gray-400 mt-2">
+                Pastikan WordPress di studio.amina.or.id terhubung.
+              </p>
+            </div>
+          )
         }
       </ul>
     </div>
