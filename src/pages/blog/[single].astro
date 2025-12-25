@@ -1,9 +1,12 @@
 ---
+import { Image } from "astro:assets";
 import Base from "@/layouts/Base.astro";
-import PostSingle from "@/layouts/partials/PostSingle.astro";
+import dateFormat from "@/lib/utils/dateFormat";
+import { humanize, markdownify, slugify } from "@/lib/utils/textConverter";
+import { BiCalendarEdit, BiCategoryAlt, BiUserCircle } from "react-icons/bi";
+import SimilarPosts from "@/components/SimilarPosts.astro";
 
 export async function getStaticPaths() {
-  // 1. Mengambil URL API dari Environment Variable Vercel
   const WP_URL = import.meta.env.PUBLIC_WP_URL;
   
   const query = {
@@ -16,76 +19,65 @@ export async function getStaticPaths() {
             content
             date
             excerpt
-            author {
-              node {
-                name
-              }
-            }
-            categories {
-              nodes {
-                name
-              }
-            }
-            featuredImage {
-              node {
-                sourceUrl
-              }
-            }
+            author { node { name } }
+            categories { nodes { name } }
+            featuredImage { node { sourceUrl } }
           }
         }
       }
     `,
   };
 
-  try {
-    const response = await fetch(WP_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(query),
-    });
+  const response = await fetch(WP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(query),
+  });
 
-    const result = await response.json();
-    const posts = result.data?.posts?.nodes || [];
+  const result = await response.json();
+  const posts = result.data?.posts?.nodes || [];
 
-    // 2. Format daftar seluruh artikel untuk fitur 'Artikel Terkait'
-    const allPostsFormatted = posts.map((p: any) => ({
-      slug: p.slug,
-      data: {
-        title: p.title || "Judul Artikel",
-        image: p.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
-        categories: p.categories?.nodes.map((c: any) => c.name) || [],
-        date: p.date
-      }
-    }));
+  const allPostsFormatted = posts.map((p: any) => ({
+    slug: p.slug,
+    data: {
+      title: p.title || "Judul Artikel",
+      image: p.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
+      categories: p.categories?.nodes.map((c: any) => c.name) || ["Islam"],
+      date: p.date
+    }
+  }));
 
-    // 3. Mapping data untuk setiap halaman artikel tunggal
-    return posts.map((post: any) => ({
-      params: { single: post.slug },
-      props: { 
-        post: {
-          id: post.slug,
-          slug: post.slug,
-          content: post.content || "", // Fallback agar tidak error marked()
-          data: {
-            title: post.title || "Judul Artikel", 
-            description: post.excerpt || "",
-            date: post.date,
-            image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
-            categories: post.categories?.nodes.map((c: any) => c.name) || ["Islam"],
-            authors: [post.author?.node?.name || "Admin"],
-          }
-        },
-        // MENGIRIM DATA POSTS KE PROPS (Solusi error filter)
-        posts: allPostsFormatted 
+  return posts.map((post: any) => ({
+    params: { single: post.slug },
+    props: { 
+      post: {
+        id: post.slug,
+        slug: post.slug,
+        content: post.content || "",
+        data: {
+          title: post.title || "Judul Artikel",
+          description: post.excerpt || "",
+          date: post.date,
+          image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
+          categories: post.categories?.nodes.map((c: any) => c.name) || ["Islam"],
+          authors: [post.author?.node?.name || "Admin"],
+        }
       },
-    }));
-  } catch (error) {
-    console.error("Gagal mengambil data dari studio.amina.or.id:", error);
-    return [];
-  }
+      posts: allPostsFormatted 
+    },
+  }));
 }
 
 const { post, posts } = Astro.props;
+
+// Logika Sidebar tetap 10 postingan
+const oneMonthAgo = new Date();
+oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+const popularPosts = posts
+  .filter((p: any) => new Date(p.data.date) >= oneMonthAgo)
+  .slice(0, 10);
+
+const uniqueCategories = [...new Set(posts.flatMap((p: any) => p.data.categories))];
 ---
 
 <Base 
@@ -93,6 +85,85 @@ const { post, posts } = Astro.props;
   description={post.data.description} 
   image={post.data.image}
 >
-  {/* Mengirim post (tunggal) dan posts (daftar semua) ke komponen */}
-  <PostSingle post={post} posts={posts} />
+  <section class="section pt-7">
+    <div class="container">
+      <div class="row gx-5">
+        <article class="col-12 lg:col-8">
+          {post.data.image && (
+            <div class="mb-10 overflow-hidden rounded-lg aspect-video w-full relative shadow-sm">
+              <Image
+                src={post.data.image}
+                class="absolute inset-0 w-full h-full object-cover"
+                alt={post.data.title}
+                width={900}
+                height={500}
+              />
+            </div>
+          )}
+          
+          <h1 set:html={post.data.title} class="h2 mb-4 font-extrabold" />
+          
+          <ul class="mb-8 flex flex-wrap items-center text-text italic text-sm">
+            <li class="mr-5 flex items-center">
+              <BiUserCircle className="mr-1 h-5 w-5 text-primary" />
+              {post.data.authors?.[0]}
+            </li>
+            <li class="mr-5 flex items-center">
+              <BiCalendarEdit className="mr-1 h-5 w-5 text-primary" />
+              {dateFormat(post.data.date)}
+            </li>
+          </ul>
+
+          <div class="content mb-16 text-left prose prose-img:rounded-lg max-w-none" set:html={post.content} />
+        </article>
+
+        <aside class="col-12 lg:col-4 mt-10 lg:mt-0">
+          <div class="sticky top-32">
+            <div class="bg-theme-light p-6 rounded-lg mb-8 shadow-sm border-t-4 border-primary">
+              <h2 class="h5 mb-6 pb-2 border-b font-bold">Postingan Populer</h2>
+              <ul class="space-y-5">
+                {popularPosts.map((p: any) => (
+                  <li class="flex gap-4 items-start group">
+                    <div class="w-20 h-16 shrink-0 overflow-hidden rounded bg-gray-200">
+                      <img src={p.data.image} class="w-full h-full object-cover group-hover:scale-110 transition duration-300" alt={p.data.title}/>
+                    </div>
+                    <div>
+                      <h3 class="text-sm font-bold leading-tight mb-1">
+                        <a href={`/blog/${p.slug}`} class="hover:text-primary transition line-clamp-2">{p.data.title}</a>
+                      </h3>
+                      <span class="text-xs opacity-70">{dateFormat(p.data.date)}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div class="bg-theme-light p-6 rounded-lg shadow-sm border-t-4 border-[#0b1c3c]">
+              <h2 class="h5 mb-6 pb-2 border-b font-bold">Kategori</h2>
+              <ul class="space-y-3">
+                {uniqueCategories.map((category: string) => (
+                  <li>
+                    <a href={`/categories/${slugify(category)}`} class="flex items-center justify-between p-2 rounded hover:bg-white hover:text-primary transition bg-gray-50/50 text-sm font-medium">
+                      <span>{humanize(category)}</span>
+                      <span class="text-[10px] bg-primary/10 text-primary px-2 py-1 rounded-full">
+                        {posts.filter((p: any) => p.data.categories.includes(category)).length}
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="mt-20 border-t pt-10">
+        <h2 class="h3 mb-8 text-center font-bold">Artikel Terkait</h2>
+        <SimilarPosts 
+          posts={posts.filter((p: any) => p.slug !== post.slug).slice(0, 3)} 
+          currentPost={post} 
+        />
+      </div>
+    </div>
+  </section>
 </Base>

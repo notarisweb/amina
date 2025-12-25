@@ -1,136 +1,121 @@
 ---
-import Share from "@/components/Share.astro";
-import SimilarPosts from "@/components/SimilarPosts.astro";
-import dateFormat from "@/lib/utils/dateFormat";
-import similerItems from "@/lib/utils/similarItems";
-import { humanize, markdownify, slugify } from "@/lib/utils/textConverter";
 import { Image } from "astro:assets";
+import dateFormat from "@/lib/utils/dateFormat";
+import { humanize, markdownify, slugify } from "@/lib/utils/textConverter";
 import { BiCalendarEdit, BiCategoryAlt, BiUserCircle } from "react-icons/bi";
+import SimilarPosts from "@/components/SimilarPosts.astro";
 
-// Menerima props post dan daftar posts untuk artikel terkait
 const { post, posts } = Astro.props;
 
-// Mencari artikel terkait berdasarkan kategori/tag yang sama
-const similarPosts = similerItems(post, posts, post.slug);
+// 1. Logika Mendapatkan 10 Postingan Terpopuler (Berdasarkan Tanggal Terbaru 1 Bulan Terakhir)
+const oneMonthAgo = new Date();
+oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
-// Destructuring data dengan fallback untuk keamanan build
-const { 
-  title = "Judul Artikel", 
-  description = "", 
-  authors = ["Admin"], 
-  categories = [], 
-  image, 
-  date, 
-  tags = [] 
-} = post.data;
+const popularPosts = posts
+  .filter((p: any) => new Date(p.data.date) >= oneMonthAgo)
+  .slice(0, 10);
+
+// 2. Logika Mendapatkan Daftar Kategori Unik untuk Sidebar
+const allCategories = posts.flatMap((p: any) => p.data.categories);
+const uniqueCategories = [...new Set(allCategories)];
 ---
 
-<section class="section">
+<section class="section pt-7">
   <div class="container">
-    <article class="row justify-center">
-      <div class="md:col-10 text-center">
-        <h1 set:html={markdownify(title || "")} class="h2 mb-6" />
+    <div class="row gx-5">
+      <article class="col-12 lg:col-8">
+        {post.data.image && (
+          <div class="mb-10 overflow-hidden rounded-lg aspect-video w-full relative">
+            <Image
+              src={post.data.image}
+              class="absolute inset-0 w-full h-full object-cover"
+              alt={post.data.title}
+              width={900}
+              height={500}
+            />
+          </div>
+        )}
         
-        <ul class="mt-4 flex flex-wrap items-center justify-center text-text text-sm border-b pb-6">
-          <li class="mx-3 flex items-center font-bold text-dark">
+        <h1 set:html={markdownify(post.data.title)} class="h2 mb-4" />
+        
+        <ul class="mb-8 flex flex-wrap items-center text-text italic">
+          <li class="mr-5 flex items-center">
             <BiUserCircle className="mr-1 h-5 w-5 text-primary" />
-            <a href={`/authors/${slugify(authors[0])}`} class="hover:text-primary transition">
-              {authors[0]}
-            </a>
+            {post.data.authors?.[0] || "Admin"}
           </li>
-          <li class="mx-3 flex items-center font-medium">
-            <BiCalendarEdit className="mr-1 h-5 w-5 text-gray-600" />
-            {date ? dateFormat(date) : "N/A"}
+          <li class="mr-5 flex items-center">
+            <BiCalendarEdit className="mr-1 h-5 w-5 text-primary" />
+            {dateFormat(post.data.date)}
           </li>
-          <li class="mx-3 flex items-center flex-wrap">
-            <BiCategoryAlt className="mr-1 h-[18px] w-[18px] text-gray-600" />
-            <ul class="flex">
-              {(categories || []).map((category: string, i: number) => (
-                <li class="inline-block">
-                  <a href={`/categories/${slugify(category)}`} class="mr-2 hover:text-primary font-bold">
-                    {humanize(category)}{i !== (categories.length - 1) && ","}
+          <li class="mr-5 flex items-center">
+            <BiCategoryAlt className="mr-1 h-5 w-5 text-primary" />
+            <ul class="flex gap-1">
+              {post.data.categories.map((category: string, i: number) => (
+                <li>
+                  <a href={`/categories/${slugify(category)}`} class="hover:text-primary transition">
+                    {humanize(category)}{i < post.data.categories.length - 1 && ","}
                   </a>
                 </li>
               ))}
             </ul>
           </li>
         </ul>
-      </div>
 
-      <div class="col-12 mt-8 mb-10">
-        {image && (
-          <div class="main-article-image shadow-lg">
-            <Image
-              src={image}
-              height={500}
-              width={1000}
-              alt={title || "Gambar Utama Artikel"} 
-              class="rounded-xl w-full object-cover"
-              loading="eager"
-            />
+        <div class="content mb-16 text-left prose prose-img:rounded-lg" set:html={post.content} />
+      </article>
+
+      <aside class="col-12 lg:col-4 mt-10 lg:mt-0">
+        <div class="sticky top-24">
+          <div class="bg-theme-light p-6 rounded-lg mb-8 shadow-sm border-t-4 border-primary">
+            <h2 class="h5 mb-6 pb-2 border-b">Postingan Populer</h2>
+            <ul class="space-y-5">
+              {popularPosts.map((p: any) => (
+                <li class="flex gap-4 items-start group border-b border-gray-100 pb-4 last:border-0">
+                  <div class="w-20 h-16 shrink-0 overflow-hidden rounded">
+                    <img 
+                      src={p.data.image} 
+                      class="w-full h-full object-cover group-hover:scale-110 transition duration-300" 
+                      alt={p.data.title}
+                    />
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-bold leading-tight mb-1">
+                      <a href={`/blog/${p.slug}`} class="hover:text-primary transition line-clamp-2">
+                        {p.data.title}
+                      </a>
+                    </h3>
+                    <span class="text-xs text-text opacity-70">{dateFormat(p.data.date)}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
-        )}
-      </div>
 
-      <div class="md:col-10">
-        <div 
-          class="content mb-16 text-left post-content-style" 
-          set:html={post.content || "Konten tidak tersedia."} 
-        />
-        
-        <div class="flex flex-wrap items-center justify-between border-t border-border pt-8">
-          <ul class="mr-4 mb-4 space-x-3">
-            {(tags || []).map((tag: string) => (
-              <li class="inline-block">
-                <a href={`/tags/${slugify(tag)}`} class="block rounded-lg bg-light px-4 py-2 font-semibold text-dark text-xs hover:text-primary transition duration-300">
-                  #{humanize(tag)}
-                </a>
-              </li>
-            ))}
-          </ul>
-          <Share 
-            className="social-share mb-4" 
-            title={title} 
-            description={description} 
-            slug={post.slug} 
-          />
+          <div class="bg-theme-light p-6 rounded-lg shadow-sm border-t-4 border-secondary">
+            <h2 class="h5 mb-6 pb-2 border-b">Kategori</h2>
+            <ul class="space-y-3 font-medium">
+              {uniqueCategories.map((category: string) => (
+                <li>
+                  <a 
+                    href={`/categories/${slugify(category)}`} 
+                    class="flex items-center justify-between p-2 rounded hover:bg-white hover:text-primary transition shadow-sm bg-gray-50/50"
+                  >
+                    <span>{humanize(category)}</span>
+                    <span class="text-xs bg-gray-200 px-2 py-1 rounded-full">
+                      {posts.filter((p: any) => p.data.categories.includes(category)).length}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-      </div>
-    </article>
+      </aside>
+    </div>
+
+    <div class="mt-20">
+      <h2 class="h3 mb-8 text-center">Artikel Terkait</h2>
+      <SimilarPosts posts={posts.filter((p: any) => p.slug !== post.slug)} currentPost={post} />
+    </div>
   </div>
 </section>
-
-{similarPosts && similarPosts.length > 0 && (
-  <section class="section pt-0">
-    <div class="container">
-      <hr class="mb-16 border-border" />
-      <h2 class="mb-8 text-center h3">Artikel Terkait</h2>
-      <SimilarPosts posts={similarPosts.slice(0, 3)} />
-    </div>
-  </section>
-)}
-
-<style>
-  /* Penyesuaian Rasio Gambar agar Persegi Panjang (Cinematic) */
-  .main-article-image { 
-    width: 100%; 
-    aspect-ratio: 21 / 9 !important; 
-    max-height: 500px; 
-    overflow: hidden; 
-    border-radius: 12px; 
-  }
-  .main-article-image img { 
-    width: 100% !important; 
-    height: 100% !important; 
-    object-fit: cover !important; 
-  }
-  
-  /* Styling Konten Artikel dari WordPress */
-  .post-content-style :global(p) { margin-bottom: 1.5rem; line-height: 1.8; color: #333; font-size: 1.125rem; }
-  .post-content-style :global(h2), .post-content-style :global(h3) { margin-top: 2rem; margin-bottom: 1rem; font-weight: 700; }
-  .post-content-style :global(img) { border-radius: 8px; margin: 2rem 0; }
-  
-  @media (max-width: 768px) { 
-    .main-article-image { aspect-ratio: 16 / 9 !important; height: auto; } 
-  }
-</style>
