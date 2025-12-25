@@ -47,25 +47,36 @@ export async function getStaticPaths() {
     const result = await response.json();
     const posts = result.data?.posts?.nodes || [];
 
-    // 2. Mapping data dengan pengaman nilai null/undefined
+    // 2. Format daftar seluruh artikel untuk fitur 'Artikel Terkait'
+    const allPostsFormatted = posts.map((p: any) => ({
+      slug: p.slug,
+      data: {
+        title: p.title || "Judul Artikel",
+        image: p.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
+        categories: p.categories?.nodes.map((c: any) => c.name) || [],
+        date: p.date
+      }
+    }));
+
+    // 3. Mapping data untuk setiap halaman artikel tunggal
     return posts.map((post: any) => ({
       params: { single: post.slug },
       props: { 
         post: {
           id: post.slug,
           slug: post.slug,
-          // Fallback string kosong untuk mencegah error marked()
-          content: post.content || "", 
+          content: post.content || "", // Fallback agar tidak error marked()
           data: {
-            // Fallback judul agar atribut alt gambar tidak kosong
             title: post.title || "Judul Artikel", 
             description: post.excerpt || "",
             date: post.date,
             image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
-            categories: post.categories?.nodes.map((c: any) => c.name) || ["Lainnya"],
+            categories: post.categories?.nodes.map((c: any) => c.name) || ["Islam"],
             authors: [post.author?.node?.name || "Admin"],
           }
-        } 
+        },
+        // MENGIRIM DATA POSTS KE PROPS (Solusi error filter)
+        posts: allPostsFormatted 
       },
     }));
   } catch (error) {
@@ -74,7 +85,7 @@ export async function getStaticPaths() {
   }
 }
 
-const { post } = Astro.props;
+const { post, posts } = Astro.props;
 ---
 
 <Base 
@@ -82,6 +93,6 @@ const { post } = Astro.props;
   description={post.data.description} 
   image={post.data.image}
 >
-  {/* Komponen PostSingle yang sudah diperbaiki rasio gambarnya */}
-  <PostSingle post={post} />
+  {/* Mengirim post (tunggal) dan posts (daftar semua) ke komponen */}
+  <PostSingle post={post} posts={posts} />
 </Base>

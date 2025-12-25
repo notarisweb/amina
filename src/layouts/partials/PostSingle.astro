@@ -1,18 +1,19 @@
 ---
 import Share from "@/components/Share.astro";
 import SimilarPosts from "@/components/SimilarPosts.astro";
-import { getSinglePage } from "@/lib/contentParser.astro";
 import dateFormat from "@/lib/utils/dateFormat";
 import similerItems from "@/lib/utils/similarItems";
 import { humanize, markdownify, slugify } from "@/lib/utils/textConverter";
 import { Image } from "astro:assets";
-import { BiCalendarEdit, BiCategoryAlt } from "react-icons/bi";
+import { BiCalendarEdit, BiCategoryAlt, BiUserCircle } from "react-icons/bi";
 
-const allAuthors = await getSinglePage("authors");
-const posts = await getSinglePage("posts");
-const { post } = Astro.props;
+// Menerima props post dan daftar posts untuk artikel terkait
+const { post, posts } = Astro.props;
+
+// Mencari artikel terkait berdasarkan kategori/tag yang sama
 const similarPosts = similerItems(post, posts, post.slug);
 
+// Destructuring data dengan fallback untuk keamanan build
 const { 
   title = "Judul Artikel", 
   description = "", 
@@ -29,8 +30,14 @@ const {
     <article class="row justify-center">
       <div class="md:col-10 text-center">
         <h1 set:html={markdownify(title || "")} class="h2 mb-6" />
+        
         <ul class="mt-4 flex flex-wrap items-center justify-center text-text text-sm border-b pb-6">
-          <li class="mx-3 flex items-center font-bold text-dark">Oleh: {authors[0]}</li>
+          <li class="mx-3 flex items-center font-bold text-dark">
+            <BiUserCircle className="mr-1 h-5 w-5 text-primary" />
+            <a href={`/authors/${slugify(authors[0])}`} class="hover:text-primary transition">
+              {authors[0]}
+            </a>
+          </li>
           <li class="mx-3 flex items-center font-medium">
             <BiCalendarEdit className="mr-1 h-5 w-5 text-gray-600" />
             {date ? dateFormat(date) : "N/A"}
@@ -59,13 +66,18 @@ const {
               width={1000}
               alt={title || "Gambar Utama Artikel"} 
               class="rounded-xl w-full object-cover"
+              loading="eager"
             />
           </div>
         )}
       </div>
 
       <div class="md:col-10">
-        <div class="content mb-16 text-left post-content-style" set:html={post.content || ""} />
+        <div 
+          class="content mb-16 text-left post-content-style" 
+          set:html={post.content || "Konten tidak tersedia."} 
+        />
+        
         <div class="flex flex-wrap items-center justify-between border-t border-border pt-8">
           <ul class="mr-4 mb-4 space-x-3">
             {(tags || []).map((tag: string) => (
@@ -76,7 +88,12 @@ const {
               </li>
             ))}
           </ul>
-          <Share className="social-share mb-4" title={title} description={description} slug={post.id} />
+          <Share 
+            className="social-share mb-4" 
+            title={title} 
+            description={description} 
+            slug={post.slug} 
+          />
         </div>
       </div>
     </article>
@@ -86,6 +103,7 @@ const {
 {similarPosts && similarPosts.length > 0 && (
   <section class="section pt-0">
     <div class="container">
+      <hr class="mb-16 border-border" />
       <h2 class="mb-8 text-center h3">Artikel Terkait</h2>
       <SimilarPosts posts={similarPosts.slice(0, 3)} />
     </div>
@@ -93,8 +111,26 @@ const {
 )}
 
 <style>
-  .main-article-image { width: 100%; aspect-ratio: 21 / 9 !important; max-height: 500px; overflow: hidden; border-radius: 12px; }
-  .main-article-image img { width: 100% !important; height: 100% !important; object-fit: cover !important; }
-  .post-content-style :global(p) { margin-bottom: 1.5rem; line-height: 1.8; color: #333; }
-  @media (max-width: 768px) { .main-article-image { aspect-ratio: 16 / 9 !important; height: auto; } }
+  /* Penyesuaian Rasio Gambar agar Persegi Panjang (Cinematic) */
+  .main-article-image { 
+    width: 100%; 
+    aspect-ratio: 21 / 9 !important; 
+    max-height: 500px; 
+    overflow: hidden; 
+    border-radius: 12px; 
+  }
+  .main-article-image img { 
+    width: 100% !important; 
+    height: 100% !important; 
+    object-fit: cover !important; 
+  }
+  
+  /* Styling Konten Artikel dari WordPress */
+  .post-content-style :global(p) { margin-bottom: 1.5rem; line-height: 1.8; color: #333; font-size: 1.125rem; }
+  .post-content-style :global(h2), .post-content-style :global(h3) { margin-top: 2rem; margin-bottom: 1rem; font-weight: 700; }
+  .post-content-style :global(img) { border-radius: 8px; margin: 2rem 0; }
+  
+  @media (max-width: 768px) { 
+    .main-article-image { aspect-ratio: 16 / 9 !important; height: auto; } 
+  }
 </style>

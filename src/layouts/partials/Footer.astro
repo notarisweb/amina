@@ -4,28 +4,53 @@ import config from "@/config/config.json";
 import menu from "@/config/menu.json";
 import social from "@/config/social.json";
 import { markdownify } from "@/lib/utils/textConverter";
+
+const { copyright } = config.params;
+const footerMenu = menu.footer || [];
 ---
 
 <footer class="section bg-dark">
   <div class="container text-center">
     {/* footer menu */}
-    <ul class="mb-8 space-x-4">
-      {
-        menu.footer.map((menu) => (
-          <li class="inline-block">
-            <a
-              href={menu.url}
-              class="p-4 text-white/75 hover:text-white transition-all"
-            >
-              {menu.name}
-            </a>
-          </li>
-        ))
-      }
-    </ul>
+    {footerMenu.length > 0 && (
+      <nav class="mb-8" aria-label="Footer Navigation">
+        <ul class="flex flex-wrap justify-center gap-x-4 gap-y-2">
+          {footerMenu.map((item) => (
+            <li>
+              <a
+                href={item.url}
+                class="p-2 text-white/75 hover:text-white transition-all duration-300 text-sm md:text-base"
+              >
+                {item.name}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    )}
+
     {/* social icons */}
-    <Social source={social.main} className="social-icons mb-8" />
-    {/* copyright */}
-    <p set:html={markdownify(config.params.copyright)} class="text-white/75" />
+    <div class="mb-8">
+      <Social source={social.main} className="social-icons" />
+    </div>
+
+    {/* Copyright diperbaiki agar tidak double */}
+    <p 
+      class="text-white/60 text-sm" 
+      set:html={markdownify(copyright || `&copy; ${new Date().getFullYear()} ${config.site.title}`)} 
+    />
   </div>
 </footer>
+
+<style is:global>
+  /* Tetap menggunakan CSS standar untuk menghindari error Tailwind @apply */
+  .social-icons li a svg {
+    fill: rgba(255, 255, 255, 0.75);
+    transition: all 0.3s ease;
+    display: inline-block;
+  }
+  
+  .social-icons li a:hover svg {
+    fill: rgba(255, 255, 255, 1);
+  }
+</style>

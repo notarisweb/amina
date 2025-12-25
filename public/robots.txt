@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Disallow: /api/*
+Sitemap: https://amina.or.id/sitemap.xml

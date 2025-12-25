@@ -15,16 +15,16 @@ export interface NavigationLink {
   children?: ChildNavigationLink[];
 }
 
-const { main }: { main: NavigationLink[] } = menu;
+// Mengambil data menu utama dengan pengaman jika data kosong
+const main: NavigationLink[] = menu.main || [];
 ---
 
 <header class="header pt-6">
   <nav class="navbar container">
-    <!-- logo -->
     <div class="order-0">
       <Logo />
     </div>
-    <!-- navbar toggler -->
+
     <input id="nav-toggle" type="checkbox" class="hidden" />
     <label
       id="show-button"
@@ -33,7 +33,7 @@ const { main }: { main: NavigationLink[] } = menu;
     >
       <svg class="h-6 fill-current" viewBox="0 0 20 20">
         <title>Menu Open</title>
-        <path d="M0 3h20v2H0V3z m0 6h20v2H0V9z m0 6h20v2H0V0z"></path>
+        <path d="M0 3h20v2H0V3z m0 6h20v2H0V9z m0 6h20v2H0V15z"></path>
       </svg>
     </label>
     <label
@@ -48,25 +48,23 @@ const { main }: { main: NavigationLink[] } = menu;
           transform="rotate(45 10 10)"></polygon>
       </svg>
     </label>
-    <!-- /navbar toggler -->
-
     <ul
       id="nav-menu"
       class="navbar-nav order-3 hidden w-full md:order-1 md:flex md:w-auto"
     >
       {
-        main.map((menu) => (
-          <>
-            {menu.hasChildren ? (
-              <li class="nav-item nav-dropdown group relative cursor-pointer">
-                <span class="nav-link inline-flex items-center">
-                  {menu.name}
-                  <svg class="h-5 w-5 fill-current" viewBox="0 0 20 20">
+        main.map((item) => (
+          <li class={`nav-item ${item.hasChildren ? "nav-dropdown group relative" : ""}`}>
+            {item.hasChildren ? (
+              <>
+                <span class="nav-link inline-flex items-center cursor-pointer">
+                  {item.name}
+                  <svg class="h-4 w-4 fill-current ml-1" viewBox="0 0 20 20">
                     <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
                   </svg>
                 </span>
-                <ul class="nav-dropdown-list hidden group-hover:block md:invisible md:absolute md:block md:opacity-0 md:group-hover:visible md:group-hover:opacity-100">
-                  {menu.children?.map((child) => (
+                <ul class="nav-dropdown-list hidden group-hover:block md:invisible md:absolute md:block md:opacity-0 md:group-hover:visible md:group-hover:opacity-100 transition-all duration-300">
+                  {item.children?.map((child) => (
                     <li class="nav-dropdown-item">
                       <a href={child.url} class="nav-dropdown-link">
                         {child.name}
@@ -74,27 +72,39 @@ const { main }: { main: NavigationLink[] } = menu;
                     </li>
                   ))}
                 </ul>
-              </li>
+              </>
             ) : (
-              <li class="nav-item">
-                <a href={menu.url} class="nav-link block">
-                  {menu.name}
-                </a>
-              </li>
+              <a href={item.url} class="nav-link block">
+                {item.name}
+              </a>
             )}
-          </>
+          </li>
         ))
       }
     </ul>
+
     <div class="order-1 ml-auto flex md:order-2 md:ml-0">
       <a
         class="mr-4 inline-block cursor-pointer p-2 text-xl text-dark transition hover:text-primary md:mr-0"
         href="/search"
-        title="seach"
-        aria-label="seach"
+        title="Search"
+        aria-label="Search" 
       >
         <IoSearch />
       </a>
     </div>
   </nav>
 </header>
+
+<style is:global>
+  /* Logika CSS untuk membuka menu saat checkbox dicentang */
+  #nav-toggle:checked ~ #nav-menu {
+    display: block;
+  }
+  #nav-toggle:checked ~ #show-button {
+    display: none;
+  }
+  #nav-toggle:checked ~ #hide-button {
+    display: flex;
+  }
+</style>

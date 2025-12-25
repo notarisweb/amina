@@ -36,22 +36,30 @@ export interface Props {
 // distructure frontmatters
 const { title, meta_title, description, image, noindex, canonical } =
   Astro.props;
+
+// Logika Judul yang diperbaiki: Page Title | Site Name
+const siteTitle = config.site.title;
+const finalTitle = plainify(
+  meta_title 
+    ? meta_title 
+    : title 
+      ? `${title} | ${siteTitle}` 
+      : siteTitle
+);
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- google tag manager -->
     {
       config.google_tag_manager.enable && (
         <GoogleTagmanager id={config.google_tag_manager.gtm_id} />
       )
     }
 
-    <!-- favicon -->
     <link rel="shortcut icon" href={config.site.favicon} />
-    <!-- theme meta -->
-    <meta name="theme-name" content="bookworm-light-astro" />
+    
+    <meta name="theme-name" content="amina-astro-headless" />
     <meta name="msapplication-TileColor" content="#000000" />
     <meta
       name="theme-color"
@@ -66,7 +74,6 @@ const { title, meta_title, description, image, noindex, canonical } =
     <meta name="generator" content={Astro.generator} />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 
-    <!-- google font css -->
     <AstroFont
       config={[
         {
@@ -81,24 +88,17 @@ const { title, meta_title, description, image, noindex, canonical } =
       ]}
     />
 
-    <!-- responsive meta -->
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=5"
     />
 
-    <!-- title -->
-    <title>
-      {plainify(meta_title ? meta_title : title ? title : config.site.title)}
-    </title>
+    <title>{finalTitle}</title>
 
-    <!-- canonical url -->
     {canonical && <link rel="canonical" href={canonical} item-prop="url" />}
 
-    <!-- noindex robots -->
     {noindex && <meta name="robots" content="noindex,nofollow" />}
 
-    <!-- meta-description -->
     <meta
       name="description"
       content={plainify(
@@ -108,18 +108,10 @@ const { title, meta_title, description, image, noindex, canonical } =
 
     <ClientRouter />
 
-    <!-- author from config.json -->
     <meta name="author" content={config.metadata.meta_author} />
 
-    <!-- og-title -->
-    <meta
-      property="og:title"
-      content={plainify(
-        meta_title ? meta_title : title ? title : config.site.title
-      )}
-    />
+    <meta property="og:title" content={finalTitle} />
 
-    <!-- og-description -->
     <meta
       property="og:description"
       content={plainify(
@@ -132,15 +124,8 @@ const { title, meta_title, description, image, noindex, canonical } =
       content={`${config.site.base_url}/${Astro.url.pathname.replace("/", "")}`}
     />
 
-    <!-- twitter-title -->
-    <meta
-      name="twitter:title"
-      content={plainify(
-        meta_title ? meta_title : title ? title : config.site.title
-      )}
-    />
+    <meta name="twitter:title" content={finalTitle} />
 
-    <!-- twitter-description -->
     <meta
       name="twitter:description"
       content={plainify(
@@ -148,7 +133,6 @@ const { title, meta_title, description, image, noindex, canonical } =
       )}
     />
 
-    <!-- og-image -->
     <meta
       property="og:image"
       content={`${config.site.base_url}${
@@ -156,7 +140,6 @@ const { title, meta_title, description, image, noindex, canonical } =
       }`}
     />
 
-    <!-- twitter-image -->
     <meta
       name="twitter:image"
       content={`${config.site.base_url}${
@@ -166,7 +149,6 @@ const { title, meta_title, description, image, noindex, canonical } =
     <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
-    {/* google tag manager noscript */}
     {
       config.google_tag_manager.enable && (
         <GoogleTagmanagerNoscript id={config.google_tag_manager.gtm_id} />

@@ -1,24 +1,24 @@
 {
   "site": {
-    "title": "Bookworm Light Astro | Blog Template",
-    "base_url": "https://bookworm-light-astro.vercel.app",
+    "title": "amina.or.id",
+    "base_url": "https://amina.or.id",
     "base_path": "/",
     "trailing_slash": false,
     "favicon": "/images/favicon.png",
     "logo": "/images/logo.png",
     "logo_width": "200",
     "logo_height": "57",
-    "logo_text": "Bookworm Light"
+    "logo_text": "Amina"
   },
 
   "settings": {
-    "pagination": 5
+    "pagination": 6
   },
 
   "metadata": {
-    "meta_author": "Themefisher",
+    "meta_author": "Amina",
     "meta_image": "/images/og-image.png",
-    "meta_description": "Bookworm Light Astro Blog Template"
+    "meta_description": "Berbagi Dan Peduli - Yayasan Amal Insan Abadi"
   },
 
   "google_tag_manager": {
@@ -28,12 +28,12 @@
 
   "params": {
     "contact_form_action": "#",
-    "copyright": "Copyright © 2025 a theme by [Themefisher](https://themefisher.com)"
+    "copyright": "Yayasan Amal Insan Abadi | Builded by [Ilham](https://lariso.web.id)"
   },
 
   "contactinfo": {
-    "address": "355 S Grand Ave <br/> Los Angeles, CA 90071",
-    "email": "info@bookworm.org",
-    "phone": "+800 567 1234"
+    "address": "Indonesia",
+    "email": "info@amina.or.id",
+    "phone": "-"
   }
 }
