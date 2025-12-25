@@ -1,0 +1,116 @@
+---
+import Posts from "@/components/Posts.astro";
+import Base from "@/layouts/Base.astro";
+import Pagination from "@/layouts/components/Pagination.astro";
+import { humanize } from "@/lib/utils/textConverter";
+
+export async function getStaticPaths({ paginate }: any) {
+  const WP_URL = "https://amina.or.id/graphql/";
+  
+  // 1. Ambil semua daftar kategori dari WordPress
+  const catQuery = {
+    query: `query { categories(first: 100) { nodes { name slug } } }`,
+  };
+
+  const catRes = await fetch(WP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(catQuery),
+  });
+  const catData = await catRes.json();
+  const allCategories = catData.data?.categories?.nodes || [];
+
+  // 2. Ambil artikel untuk setiap kategori tersebut
+  const allPaths = await Promise.all(
+    allCategories.map(async (cat: any) => {
+      const postQuery = {
+        query: `
+          query GetPostsByCat($catName: String!) {
+            posts(where: {categoryName: $catName}, first: 100) {
+              nodes {
+                title
+                slug
+                excerpt
+                date
+                author { node { name } }
+                categories { nodes { name } }
+                featuredImage { node { sourceUrl } }
+              }
+            }
+          }
+        `,
+        variables: { catName: cat.name },
+      };
+
+      const postRes = await fetch(WP_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(postQuery),
+      });
+      const postData = await postRes.json();
+      const wpPosts = postData.data?.posts?.nodes || [];
+
+      // Mapping data WordPress agar sesuai dengan komponen Posts.astro
+      const formattedPosts = wpPosts.map((post: any) => ({
+        id: post.slug,
+        slug: post.slug,
+        body: post.excerpt,
+        data: {
+          title: post.title,
+          description: post.excerpt,
+          date: post.date,
+          image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
+          categories: post.categories?.nodes.map((c: any) => c.name) || [cat.name],
+          authors: [post.author?.node?.name || "Admin"],
+          tags: [],
+        },
+      }));
+
+      // 3. Jalankan fungsi paginate (10 artikel per halaman)
+      return paginate(formattedPosts, {
+        params: { category: cat.slug },
+        props: { categoryName: cat.name },
+        pageSize: 10, 
+      });
+    })
+  );
+
+  return allPaths.flat();
+}
+
+const { page, categoryName } = Astro.props;
+const { category } = Astro.params;
+const title = humanize(categoryName || "");
+---
+
+<Base title={`${title} - Halaman ${page.currentPage}`}>
+  <div class="section">
+    <div class="container">
+      <div class="text-center mb-16">
+        <p class="text-text text-xl mb-2 text-dark">Kategori:</p>
+        <h1 class="h2 text-primary font-bold">{title}</h1>
+        <p class="mt-2 text-sm text-gray-500">Menampilkan halaman {page.currentPage} dari {page.lastPage}</p>
+      </div>
+      
+      {page.data.length > 0 ? (
+        <>
+          {/* Komponen Posts yang sudah kita buat persegi panjang sebelumnya */}
+          <Posts posts={page.data} fluid={false} />
+          
+          {/* Navigasi angka 1, 2, 3 di bawah */}
+          <div class="mt-16 flex justify-center">
+            <Pagination 
+              section={`categories/${category}`} 
+              currentPage={page.currentPage} 
+              totalPages={page.lastPage} 
+            />
+          </div>
+        </>
+      ) : (
+        <div class="text-center py-20">
+          <p>Belum ada artikel.</p>
+        </div>
+      )}
+    </div>
+  </div>
+</Base>

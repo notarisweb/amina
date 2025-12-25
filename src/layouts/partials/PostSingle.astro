@@ -1,0 +1,135 @@
+---
+import Share from "@/components/Share.astro";
+import SimilarPosts from "@/components/SimilarPosts.astro";
+import { getSinglePage } from "@/lib/contentParser.astro";
+import dateFormat from "@/lib/utils/dateFormat";
+import similerItems from "@/lib/utils/similarItems";
+import { humanize, markdownify, slugify } from "@/lib/utils/textConverter";
+import { Image } from "astro:assets";
+import { BiCalendarEdit, BiCategoryAlt } from "react-icons/bi";
+
+const allAuthors = await getSinglePage("authors");
+const posts = await getSinglePage("posts");
+const { post } = Astro.props;
+
+// Pengaman untuk Similar Posts
+const similarPosts = similerItems(post, posts, post.slug);
+
+// Destructuring dengan pengaman array kosong [] agar tidak error .map()
+const { 
+  title = "", 
+  description = "", 
+  authors = ["Admin"], 
+  categories = [], 
+  image, 
+  date, 
+  tags = [] 
+} = post.data;
+---
+
+<section class="section">
+  <div class="container">
+    <article class="row justify-center">
+      <div class="md:col-10 text-center">
+        <h1 set:html={markdownify(title)} class="h2 mb-6" />
+        
+        <ul class="mt-4 flex flex-wrap items-center justify-center text-text text-sm border-b pb-6">
+          <li class="mx-3 flex items-center font-bold text-dark">
+             Oleh: {authors[0]}
+          </li>
+          <li class="mx-3 flex items-center font-medium">
+            <BiCalendarEdit className="mr-1 h-5 w-5 text-gray-600" />
+            {date ? dateFormat(date) : "N/A"}
+          </li>
+          <li class="mx-3 flex items-center flex-wrap">
+            <BiCategoryAlt className="mr-1 h-[18px] w-[18px] text-gray-600" />
+            <ul class="flex">
+              {(categories || []).map((category: string, i: number) => (
+                <li class="inline-block">
+                  <a href={`/categories/${slugify(category)}`} class="mr-2 hover:text-primary font-bold">
+                    {humanize(category)}{i !== (categories.length - 1) && ","}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <div class="col-12 mt-8 mb-10">
+        {image && (
+          <div class="main-article-image shadow-lg">
+            <Image
+              src={image}
+              height={500}
+              width={1000}
+              alt={title}
+              class="rounded-xl w-full object-cover"
+            />
+          </div>
+        )}
+      </div>
+
+      <div class="md:col-10">
+        {/* Render konten dari WordPress amina.or.id */}
+        <div class="content mb-16 text-left post-content-style" set:html={post.content} />
+        
+        <div class="flex flex-wrap items-center justify-between border-t border-border pt-8">
+          <ul class="mr-4 mb-4 space-x-3">
+            {/* Pengaman tags agar tidak error undefined */}
+            {(tags || []).map((tag: string) => (
+              <li class="inline-block">
+                <a
+                  href={`/tags/${slugify(tag)}`}
+                  class="block rounded-lg bg-light px-4 py-2 font-semibold text-dark text-xs hover:text-primary transition duration-300"
+                >
+                  #{humanize(tag)}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <Share
+            className="social-share mb-4"
+            title={title}
+            description={description}
+            slug={post.id}
+          />
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+{similarPosts && similarPosts.length > 0 && (
+  <section class="section pt-0">
+    <div class="container">
+      <h2 class="mb-8 text-center h3">Artikel Terkait</h2>
+      <SimilarPosts posts={similarPosts.slice(0, 3)} />
+    </div>
+  </section>
+)}
+
+<style>
+  /* KUNCI GAMBAR UTAMA PERSEGI PANJANG (21:9) */
+  .main-article-image {
+    width: 100%;
+    aspect-ratio: 21 / 9 !important; /* Sangat memanjang untuk header artikel */
+    max-height: 500px;
+    overflow: hidden;
+    border-radius: 12px;
+  }
+  
+  .main-article-image img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important; /* Anti-gepeng */
+  }
+
+  /* Memperbaiki tampilan teks artikel dari WordPress */
+  .post-content-style :global(p) { margin-bottom: 1.5rem; line-height: 1.8; color: #333; }
+  .post-content-style :global(img) { border-radius: 8px; margin: 2rem 0; }
+
+  @media (max-width: 768px) {
+    .main-article-image { aspect-ratio: 16 / 9 !important; height: auto; }
+  }
+</style>

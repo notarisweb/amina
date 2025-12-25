@@ -1,0 +1,107 @@
+---
+import { getSinglePage } from "@/lib/contentParser.astro";
+import dateFormat from "@/lib/utils/dateFormat";
+import { humanize, plainify, slugify } from "@/lib/utils/textConverter";
+import { Image } from "astro:assets";
+import type { CollectionEntry } from "astro:content";
+import { BiCalendarEdit, BiCategoryAlt } from "react-icons/bi";
+
+type Props = {
+  posts: CollectionEntry<"posts">[];
+  className?: string;
+  fluid?: boolean;
+};
+
+const authors = await getSinglePage("authors");
+const { className, posts, fluid } = Astro.props;
+---
+
+<div class={`row gy-5 gx-4 ${className} ${posts.length == 1 ? "justify-center" : ""} `}>
+  {
+    posts.map((post, i: number) => (
+      <div class={i === 0 && fluid != false ? "col-12" : "col-12 sm:col-6"}>
+        {post.data.image && (
+          <a
+            href={`/blog/${post.id}`}
+            class="image-container rounded-lg block hover:text-primary overflow-hidden group shadow-sm"
+          >
+            <Image
+              class="group-hover:scale-[1.05] transition duration-500 w-full"
+              src={post.data.image}
+              alt={post.data.title}
+              width={i === 0 ? 925 : 445}
+              height={i === 0 ? 475 : 230}
+            />
+          </a>
+        )}
+        
+        <ul class="mt-6 mb-4 flex flex-wrap items-center text-text text-sm">
+          <li class="mr-5 flex items-center font-medium">
+            <span class="text-dark">Oleh: {(post.data.authors || ["Admin"])[0]}</span>
+          </li>
+          <li class="mr-5 flex items-center font-medium">
+            <BiCalendarEdit className="mr-1 h-4 w-4 text-gray-600" />
+            {post.data.date ? dateFormat(post.data.date) : "N/A"}
+          </li>
+          <li class="mr-5 flex items-center flex-wrap">
+            <BiCategoryAlt className="mr-1 h-4 w-4 text-gray-600" />
+            <ul class="flex">
+              {(post.data.categories || []).map((category, index: number) => (
+                <li class="inline-block">
+                  <a href={`/categories/${slugify(category)}`} class="mr-2 hover:text-primary font-bold">
+                    {humanize(category)}{index !== (post.data.categories?.length - 1) && ","}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </li>
+        </ul>
+
+        <h3 class="mb-4 h3-title">
+          <a
+            href={`/blog/${post.id}`}
+            class="block hover:text-primary transition duration-300 leading-snug"
+            set:html={post.data.title}
+          />
+        </h3>
+        <p class="text-text line-clamp-2" set:html={plainify(post.body ?? "")} />
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  /* KUNCI RASIO PERSEGI PANJANG (LANDSCAPE 16:9) */
+  .image-container {
+    width: 100%;
+    aspect-ratio: 16 / 9 !important; /* Rasio persegi panjang standar */
+    height: auto !important;
+    overflow: hidden;
+    display: block;
+    background-color: #f8f8f8;
+  }
+
+  /* Artikel Utama (Hero) lebih memanjang (Cinema Ratio) */
+  .col-12 .image-container {
+    aspect-ratio: 21 / 9 !important;
+  }
+
+  .image-container img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important; /* Gambar dipotong otomatis agar tidak gepeng */
+    object-position: center;
+  }
+
+  .h3-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+  }
+
+  @media (max-width: 640px) {
+    .image-container, .col-12 .image-container {
+      aspect-ratio: 16 / 9 !important;
+    }
+    .h3-title { font-size: 1.25rem; }
+  }
+</style>

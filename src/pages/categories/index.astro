@@ -1,0 +1,69 @@
+---
+import Base from "@/layouts/Base.astro";
+import { humanize } from "@/lib/utils/textConverter";
+import { BiCategoryAlt } from "react-icons/bi";
+
+// 1. Hubungkan ke WordPress amina.or.id untuk mengambil daftar kategori
+const WP_URL = "https://amina.or.id/graphql/";
+const query = {
+  query: `
+    query GetCategories {
+      categories(first: 100) {
+        nodes {
+          name
+          slug
+          count
+        }
+      }
+    }
+  `,
+};
+
+let categories = [];
+
+try {
+  const response = await fetch(WP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(query),
+  });
+  const result = await response.json();
+  
+  // Filter: Hanya tampilkan kategori yang memiliki artikel (count > 0)
+  categories = result.data?.categories?.nodes.filter(cat => cat.count > 0) || [];
+} catch (e) {
+  console.error("Gagal mengambil kategori dari WordPress:", e);
+}
+
+const title = "Kategori Artikel";
+---
+
+<Base title={title}>
+  <section class="section">
+    <div class="container text-center">
+      <h1 class="h2 page-heading mb-16">{title}</h1>
+      <ul class="flex flex-wrap justify-center gap-4">
+        {
+          categories.length > 0 ? (
+            categories.map((category) => (
+              <li class="inline-block">
+                <a
+                  href={`/categories/${category.slug}`}
+                  class="rounded-lg bg-light px-5 py-3 text-dark transition hover:bg-primary hover:text-white flex items-center group shadow-sm"
+                >
+                  <BiCategoryAlt className="mr-2 text-primary group-hover:text-white transition h-6 w-6" />
+                  <span class="font-bold">{category.name}</span>
+                  <span class="ml-2 text-xs bg-white bg-opacity-50 px-2 py-0.5 rounded-full text-dark group-hover:bg-dark group-hover:text-white transition">
+                    {category.count}
+                  </span>
+                </a>
+              </li>
+            ))
+          ) : (
+            <p class="text-text">Belum ada kategori yang tersedia di amina.or.id.</p>
+          )
+        }
+      </ul>
+    </div>
+  </section>
+</Base>

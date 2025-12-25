@@ -1,0 +1,82 @@
+---
+import Base from "../../layouts/Base.astro";
+// Jalur diperbaiki ke folder partials berdasarkan struktur folder Anda
+import PostSingle from "../../layouts/partials/PostSingle.astro";
+
+export async function getStaticPaths() {
+  const WP_URL = "https://amina.or.id/graphql/";
+  const query = {
+    query: `
+      query GetAllPosts {
+        posts(first: 100) {
+          nodes {
+            title
+            slug
+            content
+            date
+            excerpt
+            author {
+              node {
+                name
+              }
+            }
+            categories {
+              nodes {
+                name
+              }
+            }
+            featuredImage {
+              node {
+                sourceUrl
+              }
+            }
+          }
+        }
+      }
+    `,
+  };
+
+  try {
+    const response = await fetch(WP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(query),
+    });
+
+    const result = await response.json();
+    const posts = result.data?.posts?.nodes || [];
+
+    return posts.map((post) => ({
+      params: { single: post.slug },
+      props: { 
+        post: {
+          id: post.slug,
+          slug: post.slug,
+          content: post.content,
+          data: {
+            title: post.title,
+            description: post.excerpt,
+            date: post.date,
+            image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
+            categories: post.categories?.nodes.map((c) => c.name) || ["Islam"],
+            authors: [post.author?.node?.name || "Admin"],
+          }
+        } 
+      },
+    }));
+  } catch (error) {
+    console.error("Gagal mengambil data WordPress:", error);
+    return [];
+  }
+}
+
+const { post } = Astro.props;
+---
+
+<Base 
+  title={post.data.title} 
+  description={post.data.description} 
+  image={post.data.image}
+>
+  <PostSingle post={post} />
+</Base>

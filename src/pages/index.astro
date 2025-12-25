@@ -1,0 +1,89 @@
+---
+import Posts from "@/components/Posts.astro";
+import config from "@/config/config.json";
+import Base from "@/layouts/Base.astro";
+import Pagination from "@/layouts/components/Pagination.astro";
+
+const WP_URL = "https://amina.or.id/graphql/";
+
+// 1. Query diperbarui untuk mengambil data penulis (author)
+const query = {
+  query: `
+    query GetPosts {
+      posts(first: 10) {
+        nodes {
+          title
+          slug
+          excerpt
+          date
+          author {
+            node {
+              name
+            }
+          }
+          categories { 
+            nodes { 
+              name 
+            } 
+          }
+          featuredImage { 
+            node { 
+              sourceUrl 
+            } 
+          }
+        }
+      }
+    }
+  `,
+};
+
+let currentPosts = [];
+let totalPages = 1;
+
+try {
+  const response = await fetch(WP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(query),
+  });
+  
+  const result = await response.json();
+  const wpPosts = result.data?.posts?.nodes || [];
+
+  // 2. Pemetaan Data (Mapping) diperketat agar sesuai dengan Posts.astro
+  currentPosts = wpPosts.map((post) => ({
+    id: post.slug, // Dibutuhkan oleh template untuk link href
+    slug: post.slug,
+    body: post.excerpt, // Dibutuhkan oleh fungsi plainify di template
+    data: {
+      title: post.title,
+      description: post.excerpt,
+      date: post.date,
+      image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
+      categories: post.categories?.nodes.map(c => c.name) || ["Islam"],
+      // PERBAIKAN: Menambahkan array authors agar fungsi .map() di Posts.astro tidak error
+      authors: [post.author?.node?.name || "Admin"],
+    }
+  }));
+
+  totalPages = Math.ceil(currentPosts.length / config.settings.pagination);
+} catch (e) {
+  console.error("Gagal mengambil data dari WordPress:", e);
+}
+---
+
+<Base>
+  <section class="section">
+    <div class="container">
+      {currentPosts.length > 0 ? (
+        <Posts posts={currentPosts} className="mb-16" />
+      ) : (
+        <p class="text-center">Tidak ada artikel ditemukan. Pastikan koneksi ke amina.or.id lancar.</p>
+      )}
+      
+      {totalPages > 1 && (
+        <Pagination currentPage={1} totalPages={totalPages} />
+      )}
+    </div>
+  </section>
+</Base>
