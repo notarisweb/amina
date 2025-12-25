@@ -15,7 +15,6 @@ import { ClientRouter } from "astro:transitions";
 
 // font families
 const pf = theme.fonts.font_family.primary;
-
 let fontPrimary;
 if (theme.fonts.font_family.primary) {
   fontPrimary = theme.fonts.font_family.primary
@@ -33,11 +32,9 @@ export interface Props {
   canonical?: string;
 }
 
-// distructure frontmatters
-const { title, meta_title, description, image, noindex, canonical } =
-  Astro.props;
+const { title, meta_title, description, image, noindex, canonical } = Astro.props;
 
-// Logika Judul yang diperbaiki: Page Title | Site Name
+// 1. Logika Judul SEO
 const siteTitle = config.site.title;
 const finalTitle = plainify(
   meta_title 
@@ -46,31 +43,35 @@ const finalTitle = plainify(
       ? `${title} | ${siteTitle}` 
       : siteTitle
 );
+
+// 2. Logika Deskripsi Bersih (Tanpa HTML)
+const finalDescription = plainify(
+  description ? description : config.metadata.meta_description
+);
+
+// 3. SOLUSI THUMBNAIL WHATSAPP: Logika URL Gambar Absolut
+const siteUrl = config.site.base_url;
+let finalImage = "";
+if (image) {
+  // Jika gambar dari WordPress (diawali http), gunakan langsung. Jika lokal, tambah domain.
+  finalImage = image.startsWith("http") ? image : `${siteUrl}${image}`;
+} else {
+  finalImage = `${siteUrl}${config.metadata.meta_image}`;
+}
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="id">
   <head>
-    {
-      config.google_tag_manager.enable && (
-        <GoogleTagmanager id={config.google_tag_manager.gtm_id} />
-      )
-    }
+    {config.google_tag_manager.enable && (
+      <GoogleTagmanager id={config.google_tag_manager.gtm_id} />
+    )}
 
     <link rel="shortcut icon" href={config.site.favicon} />
-    
     <meta name="theme-name" content="amina-astro-headless" />
     <meta name="msapplication-TileColor" content="#000000" />
-    <meta
-      name="theme-color"
-      media="(prefers-color-scheme: light)"
-      content="#fff"
-    />
-    <meta
-      name="theme-color"
-      media="(prefers-color-scheme: dark)"
-      content="#000"
-    />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fff" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000" />
     <meta name="generator" content={Astro.generator} />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 
@@ -88,72 +89,37 @@ const finalTitle = plainify(
       ]}
     />
 
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=5"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
 
     <title>{finalTitle}</title>
 
     {canonical && <link rel="canonical" href={canonical} item-prop="url" />}
-
     {noindex && <meta name="robots" content="noindex,nofollow" />}
-
-    <meta
-      name="description"
-      content={plainify(
-        description ? description : config.metadata.meta_description
-      )}
-    />
+    <meta name="description" content={finalDescription} />
+    <meta name="author" content={config.metadata.meta_author} />
 
     <ClientRouter />
 
-    <meta name="author" content={config.metadata.meta_author} />
-
-    <meta property="og:title" content={finalTitle} />
-
-    <meta
-      property="og:description"
-      content={plainify(
-        description ? description : config.metadata.meta_description
-      )}
-    />
+    {/* Open Graph / Facebook / WhatsApp */}
     <meta property="og:type" content="website" />
-    <meta
-      property="og:url"
-      content={`${config.site.base_url}/${Astro.url.pathname.replace("/", "")}`}
-    />
+    <meta property="og:url" content={Astro.url.href} />
+    <meta property="og:title" content={finalTitle} />
+    <meta property="og:description" content={finalDescription} />
+    <meta property="og:image" content={finalImage} />
+    <meta property="og:image:secure_url" content={finalImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
 
-    <meta name="twitter:title" content={finalTitle} />
-
-    <meta
-      name="twitter:description"
-      content={plainify(
-        description ? description : config.metadata.meta_description
-      )}
-    />
-
-    <meta
-      property="og:image"
-      content={`${config.site.base_url}${
-        image ? image : config.metadata.meta_image
-      }`}
-    />
-
-    <meta
-      name="twitter:image"
-      content={`${config.site.base_url}${
-        image ? image : config.metadata.meta_image
-      }`}
-    />
+    {/* Twitter */}
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={finalTitle} />
+    <meta name="twitter:description" content={finalDescription} />
+    <meta name="twitter:image" content={finalImage} />
   </head>
   <body>
-    {
-      config.google_tag_manager.enable && (
-        <GoogleTagmanagerNoscript id={config.google_tag_manager.gtm_id} />
-      )
-    }
+    {config.google_tag_manager.enable && (
+      <GoogleTagmanagerNoscript id={config.google_tag_manager.gtm_id} />
+    )}
 
     <TwSizeIndicator />
     <Header />
