@@ -5,7 +5,7 @@ import Pagination from "@/layouts/components/Pagination.astro";
 import { humanize } from "@/lib/utils/textConverter";
 
 export async function getStaticPaths({ paginate }: any) {
-  const WP_URL = "https://amina.or.id/graphql/";
+  const WP_URL = "https://studio.amina.or.id/graphql/";
   
   // 1. Ambil semua daftar kategori dari WordPress
   const catQuery = {
