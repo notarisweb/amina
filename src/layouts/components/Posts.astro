@@ -28,7 +28,7 @@ const { className, posts, fluid } = Astro.props;
             <Image
               class="group-hover:scale-[1.05] transition duration-500 w-full"
               src={post.data.image}
-              alt={post.data.title}
+              alt={post.data.title || "Gambar Artikel Amina"} 
               width={i === 0 ? 925 : 445}
               height={i === 0 ? 475 : 230}
             />
@@ -61,7 +61,7 @@ const { className, posts, fluid } = Astro.props;
           <a
             href={`/blog/${post.id}`}
             class="block hover:text-primary transition duration-300 leading-snug"
-            set:html={post.data.title}
+            set:html={post.data.title || "Judul Tidak Tersedia"}
           />
         </h3>
         <p class="text-text line-clamp-2" set:html={plainify(post.body ?? "")} />
@@ -71,37 +71,23 @@ const { className, posts, fluid } = Astro.props;
 </div>
 
 <style>
-  /* KUNCI RASIO PERSEGI PANJANG (LANDSCAPE 16:9) */
   .image-container {
     width: 100%;
-    aspect-ratio: 16 / 9 !important; /* Rasio persegi panjang standar */
+    aspect-ratio: 16 / 9 !important;
     height: auto !important;
     overflow: hidden;
     display: block;
     background-color: #f8f8f8;
   }
-
-  /* Artikel Utama (Hero) lebih memanjang (Cinema Ratio) */
-  .col-12 .image-container {
-    aspect-ratio: 21 / 9 !important;
-  }
-
+  .col-12 .image-container { aspect-ratio: 21 / 9 !important; }
   .image-container img {
     width: 100% !important;
     height: 100% !important;
-    object-fit: cover !important; /* Gambar dipotong otomatis agar tidak gepeng */
+    object-fit: cover !important;
     object-position: center;
   }
-
-  .h3-title {
-    font-size: 1.5rem;
-    font-weight: 800;
-  }
-
+  .h3-title { font-size: 1.5rem; font-weight: 800; }
   @media (max-width: 640px) {
-    .image-container, .col-12 .image-container {
-      aspect-ratio: 16 / 9 !important;
-    }
-    .h3-title { font-size: 1.25rem; }
+    .image-container, .col-12 .image-container { aspect-ratio: 16 / 9 !important; }
   }
 </style>
