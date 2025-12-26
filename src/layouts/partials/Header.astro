@@ -2,82 +2,64 @@
 import Logo from "@/components/Logo.astro";
 import menu from "@/config/menu.json";
 import { IoSearch } from "react-icons/io5";
-import { BiTimeFive } from "react-icons/bi";
+import { BiTimeFive, BiChevronDown } from "react-icons/bi";
 
-export interface ChildNavigationLink {
-  name: string;
-  url: string;
-}
-
-export interface NavigationLink {
-  name: string;
-  url: string;
-  hasChildren?: boolean;
-  children?: ChildNavigationLink[];
-}
-
-const main: NavigationLink[] = menu.main || [];
-
+const main = menu.main || [];
 const today = new Date();
 const formattedDate = new Intl.DateTimeFormat('id-ID', {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric'
+  weekday: 'long', day: 'numeric', month: 'short', year: 'numeric'
 }).format(today);
 ---
 
-<header class="header sticky top-0 z-[1000] w-full bg-transparent">
+<header class="header sticky top-0 z-[1000] w-full">
   <div class="bg-[#0b1c3c] py-2 border-b border-white/5 w-full">
     <div class="container flex items-center">
-      <div class="flex items-center text-white/80 text-[11px] md:text-sm font-medium tracking-wide">
+      <div class="flex items-center text-white/80 text-[11px] md:text-xs font-medium">
         <BiTimeFive className="mr-2 h-4 w-4 text-orange-400" />
         <span class="capitalize">{formattedDate}</span>
       </div>
     </div>
   </div>
 
-  <div class="w-full bg-white/75 backdrop-blur-md shadow-sm border-b border-black/5 transition-all duration-300">
-    <nav class="container flex items-center justify-between py-3 md:py-4">
-      <div class="order-0">
+  <div class="w-full bg-white/50 backdrop-blur-md shadow-sm border-b border-black/5 transition-all duration-300">
+    <nav class="container flex items-center justify-between py-4">
+      <div class="flex items-center">
         <Logo />
       </div>
 
-      <div class="flex items-center order-1 md:order-2 ml-auto">
-        <input id="nav-toggle" type="checkbox" class="hidden" />
-        <label id="show-button" for="nav-toggle" class="order-2 flex cursor-pointer items-center text-dark md:order-1 md:hidden ml-4">
-          <svg class="h-6 fill-current" viewBox="0 0 20 20"><path d="M0 3h20v2H0V3z m0 6h20v2H0V9z m0 6h20v2H0V15z"></path></svg>
-        </label>
-        <label id="hide-button" for="nav-toggle" class="order-2 hidden cursor-pointer items-center text-dark md:order-1 ml-4">
-          <svg class="h-6 fill-current" viewBox="0 0 20 20"><polygon points="11 9 22 9 22 11 11 11 11 22 9 22 9 11 -2 11 -2 9 9 9 9 -2 11 -2" transform="rotate(45 10 10)"></polygon></svg>
-        </label>
-
-        <ul id="nav-menu" class="navbar-nav order-3 hidden w-full md:order-1 md:flex md:w-auto md:space-x-6">
+      <div class="flex items-center ml-auto">
+        <ul id="nav-menu" class="navbar-nav hidden md:flex md:items-center md:space-x-10 font-bold">
           {main.map((item) => (
-            <li class={`nav-item ${item.hasChildren ? "nav-dropdown group relative" : ""}`}>
+            <li class="nav-item group relative flex items-center h-full">
               {item.hasChildren ? (
+                // Tombol Dropdown (Pages)
                 <>
-                  <span class="nav-link inline-flex items-center cursor-pointer font-bold hover:text-primary transition">
+                  <button class="nav-link text-dark hover:text-primary transition text-base md:text-lg tracking-tight flex items-center py-2">
                     {item.name}
-                    <svg class="h-4 w-4 fill-current ml-1" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
-                  </span>
-                  <ul class="nav-dropdown-list hidden group-hover:block md:invisible md:absolute md:block md:opacity-0 md:group-hover:visible md:group-hover:opacity-100 transition-all duration-300 bg-white shadow-xl rounded-md border border-gray-100 p-2 min-w-[200px]">
-                    {item.children?.map((child) => (
-                      <li class="nav-dropdown-item">
-                        <a href={child.url} class="nav-dropdown-link block px-4 py-2 text-sm hover:bg-primary/5 hover:text-primary rounded font-semibold transition">{child.name}</a>
+                    <BiChevronDown className="ml-1 h-5 w-5 group-hover:rotate-180 transition-transform" />
+                  </button>
+                  <ul class="absolute left-0 top-full hidden group-hover:block w-48 bg-white/95 backdrop-blur-xl shadow-xl rounded-xl border border-gray-100 py-3 mt-0">
+                    {item.children.map((child: any) => (
+                      <li>
+                        <a href={child.url} class="block px-6 py-2 text-sm text-dark hover:text-primary hover:bg-gray-50 transition font-bold">
+                          {child.name}
+                        </a>
                       </li>
                     ))}
                   </ul>
                 </>
               ) : (
-                <a href={item.url} class="nav-link block font-bold hover:text-primary transition">{item.name}</a>
+                // Menu Biasa (Home, About, dll) - Ditambah flex items-center agar lurus
+                <a href={item.url} class="nav-link text-dark hover:text-primary transition text-base md:text-lg tracking-tight flex items-center py-2">
+                  {item.name}
+                </a>
               )}
             </li>
           ))}
         </ul>
 
-        <div class="order-2 ml-4 flex items-center md:order-3">
-          <a class="inline-block cursor-pointer p-2 text-xl text-dark transition hover:text-primary" href="/search" title="Cari Artikel" aria-label="Search">
+        <div class="ml-10 flex items-center border-l border-gray-300/50 pl-6 h-8">
+          <a class="text-dark hover:text-primary transition p-2 flex items-center" href="/search">
             <IoSearch className="h-6 w-6" />
           </a>
         </div>
@@ -85,22 +67,3 @@ const formattedDate = new Intl.DateTimeFormat('id-ID', {
     </nav>
   </div>
 </header>
-
-<style is:global>
-  /* Menghapus batasan lebar pada class .navbar bawaan tema */
-  .navbar {
-    width: 100% !important;
-    max-width: none !important;
-  }
-
-  #nav-toggle:checked ~ #nav-menu {
-    display: block;
-    background: rgba(255, 255, 255, 0.98);
-    position: absolute;
-    top: 100%;
-    left: 0;
-    padding: 20px;
-    border-bottom: 2px solid #0b1c3c;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  }
-</style>

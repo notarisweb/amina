@@ -1,5 +1,6 @@
 ---
 import Social from "@/components/Social.astro";
+import Logo from "@/components/Logo.astro";
 import config from "@/config/config.json";
 import menu from "@/config/menu.json";
 import social from "@/config/social.json";
@@ -9,48 +10,89 @@ const { copyright } = config.params;
 const footerMenu = menu.footer || [];
 ---
 
-<footer class="section bg-dark">
-  <div class="container text-center">
-    {/* footer menu */}
-    {footerMenu.length > 0 && (
-      <nav class="mb-8" aria-label="Footer Navigation">
-        <ul class="flex flex-wrap justify-center gap-x-4 gap-y-2">
+<footer class="bg-[#0b1c3c] pt-20 pb-10 text-white/70">
+  <div class="container"> 
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-12 text-left">
+      
+      <div class="md:col-span-12 lg:col-span-5">
+        <div class="mb-6 flex justify-start">
+          <Logo />
+        </div>
+        <p class="mb-8 max-w-[400px] text-sm leading-relaxed text-white/60">
+          Amina.or.id (Amal Insan Abadi) adalah platform yang berdedikasi untuk menyebarkan syiar Islam, ilmu bermanfaat, dan informasi seputar kegiatan sosial untuk membangun kepedulian antar sesama.
+        </p>
+        <Social source={social.main} className="social-icons-footer" />
+      </div>
+
+      <div class="md:col-span-6 lg:col-span-3">
+        <h4 class="mb-8 text-lg font-bold text-white relative inline-block">
+          Kategori
+          <span class="absolute -bottom-2 left-0 w-8 h-1 bg-primary rounded-full"></span>
+        </h4>
+        <ul class="space-y-4 text-sm font-medium">
+          <li><a href="/categories/artikel-islami" class="hover:text-primary transition-all">Artikel Islami</a></li>
+          <li><a href="/categories/doa-dan-dzikir" class="hover:text-primary transition-all">Doa & Dzikir</a></li>
+          <li><a href="/categories/kegiatan-sosial" class="hover:text-primary transition-all">Kegiatan Sosial</a></li>
+          <li><a href="/categories/khazanah" class="hover:text-primary transition-all">Khazanah</a></li>
+        </ul>
+      </div>
+
+      <div class="md:col-span-6 lg:col-span-4">
+        <h4 class="mb-8 text-lg font-bold text-white relative inline-block">
+          Tautan Cepat
+          <span class="absolute -bottom-2 left-0 w-8 h-1 bg-primary rounded-full"></span>
+        </h4>
+        <ul class="space-y-4 text-sm font-medium">
           {footerMenu.map((item) => (
             <li>
-              <a
-                href={item.url}
-                class="p-2 text-white/75 hover:text-white transition-all duration-300 text-sm md:text-base"
-              >
+              <a href={item.url} class="hover:text-primary transition-all">
                 {item.name}
               </a>
             </li>
           ))}
+          <li><a href="/contact" class="hover:text-primary transition-all">Hubungi Kami</a></li>
         </ul>
-      </nav>
-    )}
-
-    {/* social icons */}
-    <div class="mb-8">
-      <Social source={social.main} className="social-icons" />
+      </div>
     </div>
 
-    {/* Copyright diperbaiki agar tidak double */}
-    <p 
-      class="text-white/60 text-sm" 
-      set:html={markdownify(copyright || `&copy; ${new Date().getFullYear()} ${config.site.title}`)} 
-    />
+    <div class="mt-20 border-t border-white/10 pt-8 flex flex-wrap justify-between items-center gap-4">
+      <p 
+        class="text-xs font-medium text-white/40" 
+        set:html={markdownify(copyright || `&copy; ${new Date().getFullYear()} ${config.site.title}`)} 
+      />
+      <div class="text-[11px] text-white/30 font-medium tracking-widest uppercase italic">
+        Menyebar Kebaikan, Membangun Ummat.
+      </div>
+    </div>
   </div>
 </footer>
 
 <style is:global>
-  /* Tetap menggunakan CSS standar untuk menghindari error Tailwind @apply */
-  .social-icons li a svg {
-    fill: rgba(255, 255, 255, 0.75);
-    transition: all 0.3s ease;
-    display: inline-block;
+  /* Menyesuaikan social icons agar rapi di sisi kiri */
+  .social-icons-footer {
+    display: flex;
+    gap: 0.75rem;
   }
-  
-  .social-icons li a:hover svg {
-    fill: rgba(255, 255, 255, 1);
+  .social-icons-footer li a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+  }
+  .social-icons-footer li a svg {
+    fill: rgba(255, 255, 255, 0.5);
+    width: 16px;
+    height: 16px;
+  }
+  .social-icons-footer li a:hover {
+    background: #009688; /* Ganti dengan warna primary Anda */
+    transform: translateY(-3px);
+  }
+  .social-icons-footer li a:hover svg {
+    fill: white;
   }
 </style>
