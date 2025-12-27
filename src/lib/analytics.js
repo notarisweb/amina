@@ -10,30 +10,29 @@ let analyticsDataClient;
 
 if (base64Key) {
   try {
-    // 1. DECODE: Ubah Base64 kembali menjadi text biasa
+    // 1. DECODE & PARSE secara aman untuk lingkungan Node.js maupun Edge
     const decodedKey = Buffer.from(base64Key, 'base64').toString('utf-8');
-    
-    // 2. PARSE: Ubah text menjadi JSON Object
     const credentials = JSON.parse(decodedKey);
 
-    // 3. Masukkan ke Google Analytics Client
+    // 2. Inisialisasi Google Analytics Client
     analyticsDataClient = new BetaAnalyticsDataClient({
-      credentials, // Langsung masukkan object utuh, lebih aman!
+      credentials,
     });
-    
   } catch (err) {
-    console.error("Gagal Decode GA Key (Base64 Error):", err.message);
+    // Gunakan warn agar build Vercel tidak berhenti total jika terjadi kesalahan key
+    console.warn("Gagal inisialisasi GA Client (Cek Base64 Key):", err.message);
   }
 }
 
 export async function getVisitorStats() {
+  // Pastikan client dan ID tersedia sebelum melakukan fetch
   if (!analyticsDataClient || !propertyId) {
-    console.warn("Analytics: GA_KEY_BASE64 atau GA_PROPERTY_ID belum diisi.");
+    console.warn("Analytics: GA_KEY_BASE64 atau GA_PROPERTY_ID belum diisi di Environment Variables.");
     return { online: 0, today: 0, yesterday: 0, total: 0 };
   }
 
   try {
-    // A. Realtime (Online User)
+    // A. Realtime (Sedang Online)
     const [realtime] = await analyticsDataClient.runRealtimeReport({
       property: `properties/${propertyId}`,
       metrics: [{ name: 'activeUsers' }],
@@ -63,7 +62,8 @@ export async function getVisitorStats() {
     };
 
   } catch (error) {
-    console.error("Error fetching Analytics data:", error.message);
+    // Mengembalikan angka 0 jika API gagal (misal: kuota habis atau gangguan koneksi saat build)
+    console.error("Gagal mengambil data Analytics:", error.message);
     return { online: 0, today: 0, yesterday: 0, total: 0 };
   }
 }
