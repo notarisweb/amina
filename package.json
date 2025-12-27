@@ -17,6 +17,7 @@
     "@astrojs/react": "4.4.0",
     "@astrojs/sitemap": "^3.6.0",
     "@digi4care/astro-google-tagmanager": "^1.6.0",
+    "@google-analytics/data": "^5.2.1",
     "@justinribeiro/lite-youtube": "^1.8.2",
     "astro": "^5.16.6",
     "astro-auto-import": "^0.4.5",

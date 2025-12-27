@@ -6,25 +6,41 @@ import menu from "@/config/menu.json";
 import social from "@/config/social.json";
 import { markdownify } from "@/lib/utils/textConverter";
 
+// Import fungsi Analytics
+import { getVisitorStats } from "@/lib/analytics";
+
 const { copyright } = config.params;
 const footerMenu = menu.footer || [];
+
+// Fetch Data Statistik (Server Side)
+// Default value 0 agar tidak error saat loading awal
+let stats = { online: 0, today: 0, yesterday: 0, total: 0 };
+
+try {
+  const data = await getVisitorStats();
+  if (data) stats = data;
+} catch (error) {
+  console.log("Analytics data not available:", error.message);
+}
 ---
 
 <footer class="bg-[#0b1c3c] pt-20 pb-10 text-white/70">
   <div class="container"> 
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-12 text-left">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-8 text-left">
       
-      <div class="md:col-span-12 lg:col-span-5">
+      {/* KOLOM 1: Logo & Deskripsi */}
+      <div class="md:col-span-12 lg:col-span-4">
         <div class="mb-6 flex justify-start">
           <Logo />
         </div>
-        <p class="mb-8 max-w-[400px] text-sm leading-relaxed text-white/60">
+        <p class="mb-8 text-sm leading-relaxed text-white/60">
           Amina.or.id (Amal Insan Abadi) adalah platform yang berdedikasi untuk menyebarkan syiar Islam, ilmu bermanfaat, dan informasi seputar kegiatan sosial untuk membangun kepedulian antar sesama.
         </p>
         <Social source={social.main} className="social-icons-footer" />
       </div>
 
-      <div class="md:col-span-6 lg:col-span-3">
+      {/* KOLOM 2: Kategori */}
+      <div class="md:col-span-6 lg:col-span-2">
         <h4 class="mb-8 text-lg font-bold text-white relative inline-block">
           Kategori
           <span class="absolute -bottom-2 left-0 w-8 h-1 bg-primary rounded-full"></span>
@@ -37,7 +53,8 @@ const footerMenu = menu.footer || [];
         </ul>
       </div>
 
-      <div class="md:col-span-6 lg:col-span-4">
+      {/* KOLOM 3: Tautan Cepat */}
+      <div class="md:col-span-6 lg:col-span-3">
         <h4 class="mb-8 text-lg font-bold text-white relative inline-block">
           Tautan Cepat
           <span class="absolute -bottom-2 left-0 w-8 h-1 bg-primary rounded-full"></span>
@@ -53,6 +70,56 @@ const footerMenu = menu.footer || [];
           <li><a href="/contact" class="hover:text-primary transition-all">Hubungi Kami</a></li>
         </ul>
       </div>
+
+      {/* KOLOM 4: Statistik Pengunjung (DESAIN ASLI, DATA LENGKAP) */}
+      <div class="md:col-span-6 lg:col-span-3">
+        <h4 class="mb-8 text-lg font-bold text-white relative inline-block">
+          Statistik Web
+          <span class="absolute -bottom-2 left-0 w-8 h-1 bg-primary rounded-full"></span>
+        </h4>
+        
+        {/* Container Desain Asli (bg-white/5) */}
+        <div class="bg-white/5 rounded-xl p-5 border border-white/10">
+            <ul class="space-y-4 text-sm font-medium">
+                
+                {/* Sedang Online */}
+                <li class="flex justify-between items-center border-b border-white/10 pb-3 last:border-0 last:pb-0">
+                    <span class="text-white/60">Sedang Online</span>
+                    <span class="text-white font-bold bg-primary/20 px-2 py-1 rounded text-xs text-primary-light flex items-center gap-2">
+                        {/* Indikator Hijau Kecil */}
+                        <span class="relative flex h-2 w-2">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                        </span>
+                        {stats.online}
+                    </span>
+                </li>
+
+                {/* Hari Ini */}
+                <li class="flex justify-between items-center border-b border-white/10 pb-3 last:border-0 last:pb-0">
+                    <span class="text-white/60">Hari Ini</span>
+                    <span class="text-white font-bold">{stats.today}</span>
+                </li>
+
+                {/* Kemarin */}
+                <li class="flex justify-between items-center border-b border-white/10 pb-3 last:border-0 last:pb-0">
+                    <span class="text-white/60">Kemarin</span>
+                    <span class="text-white font-bold">{stats.yesterday}</span>
+                </li>
+
+                {/* Total */}
+                <li class="flex justify-between items-center border-b border-white/10 pb-3 last:border-0 last:pb-0">
+                    <span class="text-white/60">Total Hits</span>
+                    <span class="text-white font-bold">{stats.total}</span>
+                </li>
+
+            </ul>
+             <p class="mt-4 text-[10px] text-white/30 text-right italic">
+                Data by Google Analytics
+            </p>
+        </div>
+      </div>
+
     </div>
 
     <div class="mt-20 border-t border-white/10 pt-8 flex flex-wrap justify-between items-center gap-4">
@@ -94,5 +161,10 @@ const footerMenu = menu.footer || [];
   }
   .social-icons-footer li a:hover svg {
     fill: white;
+  }
+  
+  /* Warna teks primary light untuk badge statistik */
+  .text-primary-light {
+    color: #4db6ac; 
   }
 </style>

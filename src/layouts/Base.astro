@@ -63,6 +63,19 @@ if (image) {
 <!doctype html>
 <html lang="id">
   <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XDX1TKCDP1"></script>
+    <script is:inline>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-XDX1TKCDP1');
+    </script>
+
     {config.google_tag_manager.enable && (
       <GoogleTagmanager id={config.google_tag_manager.gtm_id} />
     )}
@@ -73,7 +86,6 @@ if (image) {
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fff" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000" />
     <meta name="generator" content={Astro.generator} />
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 
     <AstroFont
       config={[
@@ -88,8 +100,6 @@ if (image) {
         },
       ]}
     />
-
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
 
     <title>{finalTitle}</title>
 
