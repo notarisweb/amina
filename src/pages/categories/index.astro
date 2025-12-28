@@ -3,10 +3,12 @@ import Base from "@/layouts/Base.astro";
 import { humanize } from "@/lib/utils/textConverter";
 import { BiCategoryAlt } from "react-icons/bi";
 
-// 1. Menggunakan Environment Variable untuk keamanan dan fleksibilitas
+// 1. AKTIFKAN SSR: Penting agar rute dinamis tidak 404 di Vercel
+export const prerender = false;
+
+// 2. Lingkungan API
 const WP_URL = import.meta.env.PUBLIC_WP_URL;
 
-// 2. Query untuk mengambil daftar kategori dari WordPress studio.amina.or.id
 const query = {
   query: `
     query GetCategories {
@@ -31,45 +33,53 @@ try {
   });
   const result = await response.json();
   
-  // Ambil data dengan pengaman jika result.data null
   const allCategories = result.data?.categories?.nodes || [];
   
-  // Filter: Hanya tampilkan kategori yang memiliki artikel (count > 0)
+  // Filter: Hanya tampilkan kategori yang memiliki artikel
   categories = allCategories.filter((cat: any) => (cat.count || 0) > 0);
 } catch (e) {
-  console.error("Gagal mengambil kategori dari WordPress studio.amina.or.id:", e);
+  console.error("Gagal mengambil kategori dari WordPress:", e);
 }
 
 const title = "Kategori Artikel";
 ---
 
-<Base title={title}>
-  <section class="section">
+<Base title={title} description="Daftar kategori artikel Islami di Amina">
+  <section class="bg-[#0b1c3c] py-16 md:py-20 text-white w-full border-t border-white/5">
     <div class="container text-center">
-      <h1 class="h2 page-heading mb-16">{title}</h1>
-      <ul class="flex flex-wrap justify-center gap-4">
+      <h1 class="text-3xl md:text-5xl font-black mb-4">{title}</h1>
+      <p class="text-white/60 text-sm md:text-base max-w-xl mx-auto italic">
+        Jelajahi berbagai hikmah dan ilmu melalui klasifikasi tema di bawah ini.
+      </p>
+    </div>
+  </section>
+
+  <section class="section py-20 bg-white">
+    <div class="container text-center">
+      <ul class="flex flex-wrap justify-center gap-6 md:gap-8">
         {
           categories.length > 0 ? (
             categories.map((category) => (
               <li class="inline-block">
                 <a
                   href={`/categories/${category.slug}`}
-                  class="rounded-lg bg-light px-5 py-3 text-dark transition hover:bg-primary hover:text-white flex items-center group shadow-sm"
+                  class="group flex items-center transition duration-300"
                 >
-                  <BiCategoryAlt className="mr-2 text-primary group-hover:text-white transition h-6 w-6" />
-                  <span class="font-bold">{category.name || "Kategori"}</span>
-                  <span class="ml-2 text-xs bg-white bg-opacity-50 px-2 py-0.5 rounded-full text-dark group-hover:bg-dark group-hover:text-white transition">
-                    {category.count || 0}
-                  </span>
+                  <div class="flex items-center space-x-4 border-b-2 border-transparent group-hover:border-primary pb-2 transition-all">
+                    <BiCategoryAlt className="text-primary h-6 w-6 opacity-80 group-hover:opacity-100" />
+                    <span class="text-lg md:text-xl font-bold text-dark group-hover:text-primary transition">
+                      {humanize(category.name)}
+                    </span>
+                    <span class="text-[10px] md:text-[11px] font-black bg-gray-100 px-2.5 py-1 rounded-full text-dark/40 group-hover:bg-primary group-hover:text-white transition">
+                      {category.count}
+                    </span>
+                  </div>
                 </a>
               </li>
             ))
           ) : (
             <div class="py-20">
-              <p class="text-text">Belum ada kategori yang tersedia saat ini.</p>
-              <p class="text-sm text-gray-400 mt-2">
-                Periksa koneksi API ke studio.amina.or.id
-              </p>
+              <p class="text-dark/40 italic">Belum ada kategori yang tersedia saat ini.</p>
             </div>
           )
         }
