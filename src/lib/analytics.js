@@ -1,58 +1,68 @@
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 
-// Ambil ID Properti
+// Ambil ID Properti (Angka saja dari Admin GA4)
 const propertyId = import.meta.env.GA_PROPERTY_ID;
 
-// Ambil Sandi Base64
+// Ambil Kredensial dalam format Base64 (Untuk keamanan di Vercel/Hosting)
 const base64Key = import.meta.env.GA_KEY_BASE64;
 
 let analyticsDataClient;
 
 if (base64Key) {
   try {
-    // 1. DECODE & PARSE secara aman untuk lingkungan Node.js maupun Edge
-    const decodedKey = Buffer.from(base64Key, 'base64').toString('utf-8');
+    // 1. DECODE: Mengonversi Base64 kembali ke format JSON string asli
+    // Mendukung runtime Node.js (Vercel) maupun browser/edge
+    const decodedKey = typeof Buffer !== 'undefined' 
+      ? Buffer.from(base64Key, 'base64').toString('utf-8')
+      : atob(base64Key);
+    
+    // 2. PARSE: Mengubah string menjadi objek JSON
     const credentials = JSON.parse(decodedKey);
 
-    // 2. Inisialisasi Google Analytics Client
+    // 3. INISIALISASI: Menghubungkan ke layanan Google Analytics Data API
     analyticsDataClient = new BetaAnalyticsDataClient({
       credentials,
     });
   } catch (err) {
-    // Gunakan warn agar build Vercel tidak berhenti total jika terjadi kesalahan key
-    console.warn("Gagal inisialisasi GA Client (Cek Base64 Key):", err.message);
+    // Memberikan peringatan jika terjadi kesalahan kunci agar proses build tidak terhenti
+    console.warn("Gagal inisialisasi GA Client (Cek Environment Variables):", err.message);
   }
 }
 
 export async function getVisitorStats() {
-  // Pastikan client dan ID tersedia sebelum melakukan fetch
+  // Validasi ketersediaan kredensial sebelum memanggil API
   if (!analyticsDataClient || !propertyId) {
-    console.warn("Analytics: GA_KEY_BASE64 atau GA_PROPERTY_ID belum diisi di Environment Variables.");
+    console.warn("Analytics: Kredensial atau Property ID belum diisi.");
     return { online: 0, today: 0, yesterday: 0, total: 0 };
   }
 
   try {
-    // A. Realtime (Sedang Online)
+    // A. PENGAMBILAN DATA REAL-TIME (Sedang Online)
+    // Mengambil jumlah pengguna yang aktif dalam 30 menit terakhir
     const [realtime] = await analyticsDataClient.runRealtimeReport({
       property: `properties/${propertyId}`,
       metrics: [{ name: 'activeUsers' }],
     });
     const online = realtime.rows?.[0]?.metricValues?.[0]?.value || 0;
 
-    // B. Historis (Hari ini, Kemarin, Total)
+    // B. PENGAMBILAN DATA HISTORIS (Hari Ini, Kemarin, Total)
     const [response] = await analyticsDataClient.runReport({
       property: `properties/${propertyId}`,
       dateRanges: [
-        { startDate: 'today', endDate: 'today' },
-        { startDate: 'yesterday', endDate: 'yesterday' },
-        { startDate: '2024-01-01', endDate: 'today' } 
+        { startDate: 'today', endDate: 'today' },           // Index 0: Hari ini
+        { startDate: 'yesterday', endDate: 'yesterday' },   // Index 1: Kemarin
+        { startDate: '2024-01-01', endDate: 'today' }       // Index 2: Total sejak awal
       ],
-      metrics: [{ name: 'activeUsers' }, { name: 'sessions' }],
+      // Menggunakan 'activeUsers' agar angka Total sinkron dengan angka harian
+      metrics: [{ name: 'activeUsers' }], 
     });
 
+    // Ekstraksi nilai dari baris laporan historis
     const today = response.rows?.[0]?.metricValues?.[0]?.value || 0;
     const yesterday = response.rows?.[1]?.metricValues?.[0]?.value || 0;
-    const total = response.rows?.[2]?.metricValues?.[1]?.value || 0;
+    
+    // Total Hits kini menggunakan akumulasi activeUsers (Pengguna Aktif)
+    const total = response.rows?.[2]?.metricValues?.[0]?.value || 0; 
 
     return {
       online: parseInt(online),
@@ -62,8 +72,8 @@ export async function getVisitorStats() {
     };
 
   } catch (error) {
-    // Mengembalikan angka 0 jika API gagal (misal: kuota habis atau gangguan koneksi saat build)
-    console.error("Gagal mengambil data Analytics:", error.message);
+    // Mengembalikan angka nol jika terjadi gangguan koneksi atau kuota API habis
+    console.error("Error fetching Analytics data:", error.message);
     return { online: 0, today: 0, yesterday: 0, total: 0 };
   }
 }
