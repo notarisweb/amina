@@ -3,98 +3,115 @@ import { Image } from "astro:assets";
 import Base from "@/layouts/Base.astro";
 import dateFormat from "@/lib/utils/dateFormat";
 import { humanize, markdownify, slugify } from "@/lib/utils/textConverter";
-import { BiCalendarEdit, BiCategoryAlt, BiUserCircle, BiChevronRight } from "react-icons/bi";
+import { BiCalendarEdit, BiUserCircle, BiChevronRight } from "react-icons/bi";
 
-// 1. AKTIFKAN SSR: Pastikan rute ini tidak dianggap statis oleh Vercel
+// 1. Matikan Prerender untuk memaksa SSR
 export const prerender = false;
 
-export async function getStaticPaths() {
-  const WP_URL = import.meta.env.PUBLIC_WP_URL;
-  const query = {
-    query: `query GetAllPosts { posts(first: 100) { nodes { title slug content date excerpt author { node { name } } categories { nodes { name } } featuredImage { node { sourceUrl } } } } }`,
-  };
+// 2. Ambil slug dari URL
+const { single } = Astro.params;
 
-  try {
-    const response = await fetch(WP_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(query),
-    });
+const WP_URL = import.meta.env.PUBLIC_WP_URL;
 
-    const result = await response.json();
-    const posts = result.data?.posts?.nodes || [];
-
-    const allPostsFormatted = posts.map((p: any) => ({
-      slug: p.slug,
-      data: {
-        title: p.title,
-        image: p.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
-        categories: p.categories?.nodes.map((c: any) => c.name) || ["Artikel Islami"],
-        date: p.date
+// 3. Query untuk mengambil SATU postingan berdasarkan slug (lebih ringan & cepat)
+const query = {
+  query: `
+    query GetPostBySlug($id: ID!) {
+      post(id: $id, idType: SLUG) {
+        title
+        content
+        date
+        excerpt
+        author { node { name } }
+        categories { nodes { name } }
+        featuredImage { node { sourceUrl } }
       }
-    }));
+      posts(first: 10) { 
+        nodes {
+          title
+          slug
+          categories { nodes { name } }
+          featuredImage { node { sourceUrl } }
+        }
+      }
+    }
+  `,
+  variables: { id: single },
+};
 
-    return posts.map((post: any) => ({
-      params: { single: post.slug },
-      props: { 
-        post: {
-          id: post.slug, slug: post.slug, content: post.content || "",
-          data: {
-            title: post.title, description: post.excerpt, date: post.date,
-            image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
-            categories: post.categories?.nodes.map((c: any) => c.name) || ["Artikel Islami"],
-            authors: [post.author?.node?.name || "Admin"],
-          }
-        },
-        posts: allPostsFormatted 
-      },
-    }));
-  } catch (error) {
-    console.error("Gagal mengambil data posts:", error);
-    return [];
-  }
+let postData;
+let allPosts = [];
+
+try {
+  const response = await fetch(WP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(query),
+  });
+
+  const result = await response.json();
+  postData = result.data?.post;
+  allPosts = result.data?.posts?.nodes || [];
+} catch (error) {
+  console.error("Gagal fetch data WordPress:", error);
 }
 
-// 2. AMBIL DATA DARI PROPS
-const { post, posts } = Astro.props;
-
-// 3. PROTEKSI: Jika post tidak ditemukan (URL salah), lempar ke 404
-if (!post || !post.data) {
+// 4. Jika postingan tidak ada di WordPress, langsung 404
+if (!postData) {
   return Astro.redirect("/404");
 }
 
-// LOGIKA BREADCRUMB & RELATED
-const primaryCategory = post.data.categories[0] || "Berita";
-const popularPosts = posts ? posts.slice(0, 5) : []; 
-const relatedPosts = posts
-  ? posts.filter((p: any) => p.slug !== post.slug && p.data.categories.includes(primaryCategory)).slice(0, 2)
-  : [];
+// Format data untuk template
+const post = {
+  content: postData.content,
+  data: {
+    title: postData.title,
+    description: postData.excerpt,
+    date: postData.date,
+    image: postData.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
+    categories: postData.categories?.nodes.map((c: any) => c.name) || ["Artikel Islami"],
+    authors: [postData.author?.node?.name || "Admin"],
+  }
+};
 
-const uniqueCategories = posts 
-  ? [...new Set(posts.flatMap((p: any) => p.data.categories))]
-  : [];
+const formattedAllPosts = allPosts.map((p: any) => ({
+  slug: p.slug,
+  data: {
+    title: p.title,
+    image: p.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
+    categories: p.categories?.nodes.map((c: any) => c.name) || [],
+  }
+}));
+
+// Logika Sidebar & Related
+const primaryCategory = post.data.categories[0] || "Berita";
+const relatedPosts = formattedAllPosts
+  .filter((p: any) => p.slug !== single && p.data.categories.includes(primaryCategory))
+  .slice(0, 2);
+const popularPosts = formattedAllPosts.slice(0, 5);
+const uniqueCategories = [...new Set(formattedAllPosts.flatMap((p: any) => p.data.categories))];
 ---
 
 <Base title={post.data.title} description={post.data.description} image={post.data.image}>
   <section class="bg-[#0b1c3c] py-8 md:py-10 text-white w-full border-t border-white/5">
     <div class="container">
-      <nav class="flex items-center space-x-2 text-[10px] md:text-[11px] mb-5 text-white/40 font-bold uppercase tracking-widest">
-        <a href="/" class="hover:text-primary transition text-white/60">BERANDA</a>
-        <BiChevronRight className="h-3 w-3 opacity-30" />
-        <a href={`/categories/${slugify(primaryCategory)}`} class="hover:text-primary transition text-white/60">{primaryCategory}</a>
-        <BiChevronRight className="h-3 w-3 opacity-30" />
-        <span class="text-white/90 line-clamp-1 italic normal-case font-medium">{post.data.title}</span>
+       <nav class="flex items-center space-x-2 text-[10px] md:text-[11px] mb-5 text-white/40 font-bold uppercase tracking-widest">
+        <a href="/" class="hover:text-primary transition">BERANDA</a>
+        <BiChevronRight />
+        <a href={`/categories/${slugify(primaryCategory)}`} class="hover:text-primary transition">{primaryCategory}</a>
+        <BiChevronRight />
+        <span class="text-white/90 italic normal-case font-medium">{post.data.title}</span>
       </nav>
-      <h1 set:html={post.data.title} class="text-2xl md:text-4xl text-white font-black leading-tight mb-6" />
+      <h1 set:html={post.data.title} class="text-2xl md:text-4xl font-black leading-tight mb-6" />
       <div class="flex flex-wrap gap-5 text-[10px] md:text-[11px] font-bold text-white/60 uppercase tracking-widest border-t border-white/10 pt-6">
-        <span class="flex items-center"><BiUserCircle className="mr-2 h-4 w-4 text-primary" /> {post.data.authors?.[0]}</span>
+        <span class="flex items-center"><BiUserCircle className="mr-2 h-4 w-4 text-primary" /> {post.data.authors[0]}</span>
         <span class="flex items-center"><BiCalendarEdit className="mr-2 h-4 w-4 text-primary" /> {dateFormat(post.data.date)}</span>
       </div>
     </div>
   </section>
 
-  <section class="py-12 bg-white text-left">
-    <div class="container"> 
+  <section class="py-12 bg-white">
+    <div class="container">
       <div class="flex flex-wrap lg:flex-nowrap gap-12">
         <article class="w-full lg:w-[70%]">
           {post.data.image && (
@@ -102,64 +119,21 @@ const uniqueCategories = posts
               <img src={post.data.image} class="absolute inset-0 w-full h-full object-cover" alt={post.data.title} />
             </div>
           )}
-          <div class="content mb-16 prose prose-lg md:prose-xl max-w-none text-dark/90 leading-relaxed" set:html={post.content} />
-
-          <div class="border-t border-gray-100 pt-12 mt-12">
-            <h2 class="h4 font-extrabold mb-8 text-dark flex items-center">
-              <span class="w-2 h-8 bg-primary mr-3 rounded-full"></span>
-              Artikel Terkait
-            </h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {relatedPosts.map((p: any) => (
-                <div class="group">
-                  <div class="overflow-hidden rounded-2xl shadow-md mb-4 aspect-video relative">
-                    <img src={p.data.image} class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-500" alt={p.data.title} />
-                  </div>
-                  <h3 class="text-base font-bold leading-snug">
-                    <a href={`/blog/${p.slug}`} class="hover:text-primary transition line-clamp-2 text-dark/90">{p.data.title}</a>
-                  </h3>
-                </div>
-              ))}
-            </div>
-          </div>
+          <div class="content prose prose-lg max-w-none" set:html={post.content} />
         </article>
-
-        <aside class="w-full lg:w-[30%] text-left">
-          <div class="sticky top-32 space-y-12">
-            <div>
-              <h2 class="h5 font-extrabold mb-6 pb-2 border-b-2 border-primary inline-block text-dark uppercase tracking-tight">Postingan Populer</h2>
-              <ul class="space-y-6 mt-4">
-                {popularPosts.map((p: any) => (
-                  <li class="flex gap-4 items-start group border-b border-gray-100 pb-4 last:border-0">
-                    <div class="w-16 h-12 shrink-0 overflow-hidden rounded-xl shadow-sm">
-                      <img src={p.data.image} class="w-full h-full object-cover group-hover:scale-110 transition duration-500" alt={p.data.title} />
-                    </div>
-                    <div class="flex-1">
-                      <h3 class="text-[13px] font-bold leading-snug text-dark/90 line-clamp-2">
-                        <a href={`/blog/${p.slug}`} class="hover:text-primary transition">{p.data.title}</a>
-                      </h3>
-                    </div>
+        
+        <aside class="w-full lg:w-[30%]">
+           <div class="sticky top-32 space-y-8">
+              <h2 class="font-bold border-b-2 border-primary inline-block mb-4 text-dark">POSTINGAN TERBARU</h2>
+              <ul class="space-y-4">
+                {popularPosts.map((p) => (
+                  <li class="flex gap-3">
+                    <img src={p.data.image} class="w-16 h-12 object-cover rounded-lg" />
+                    <a href={`/blog/${p.slug}`} class="text-sm font-bold hover:text-primary transition line-clamp-2 text-dark">{p.data.title}</a>
                   </li>
                 ))}
               </ul>
-            </div>
-
-            <div>
-              <h2 class="h5 font-extrabold mb-6 pb-2 border-b-2 border-[#0b1c3c] inline-block text-dark uppercase tracking-tight">Kategori</h2>
-              <ul class="space-y-3 mt-4">
-                {uniqueCategories.map((category: string) => (
-                  <li class="border-b border-gray-50 pb-2 last:border-0">
-                    <a href={`/categories/${slugify(category)}`} class="flex items-center justify-between group text-sm font-bold text-dark/70 hover:text-primary transition duration-300">
-                      <span>{humanize(category)}</span>
-                      <span class="text-[11px] opacity-40 group-hover:opacity-100 transition">
-                        ({posts.filter((p: any) => p.data.categories.includes(category)).length})
-                      </span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
+           </div>
         </aside>
       </div>
     </div>
