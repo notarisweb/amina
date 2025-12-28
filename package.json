@@ -16,6 +16,7 @@
     "@astrojs/mdx": "4.3.7",
     "@astrojs/react": "4.4.0",
     "@astrojs/sitemap": "^3.6.0",
+    "@astrojs/vercel": "^9.0.2",
     "@digi4care/astro-google-tagmanager": "^1.6.0",
     "@google-analytics/data": "^5.2.1",
     "@justinribeiro/lite-youtube": "^1.8.2",

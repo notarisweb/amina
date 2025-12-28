@@ -9,8 +9,17 @@ import remarkToc from "remark-toc";
 import sharp from "sharp";
 import config from "./src/config/config.json";
 
+// 1. IMPORT ADAPTER VERCEL
+import vercel from "@astrojs/vercel/serverless";
+
 // https://astro.build/config
 export default defineConfig({
+  // 2. UBAH OUTPUT MENJADI SERVER (Agar data Analytics tidak statis)
+  output: "server",
+  
+  // 3. PASANG ADAPTER VERCEL
+  adapter: vercel(),
+
   site: config.site.base_url ? config.site.base_url : "http://examplesite.com",
   base: config.site.base_path ? config.site.base_path : "/",
   trailingSlash: config.site.trailing_slash ? "always" : "never",
