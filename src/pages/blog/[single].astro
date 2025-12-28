@@ -5,6 +5,9 @@ import dateFormat from "@/lib/utils/dateFormat";
 import { humanize, markdownify, slugify } from "@/lib/utils/textConverter";
 import { BiCalendarEdit, BiCategoryAlt, BiUserCircle, BiChevronRight } from "react-icons/bi";
 
+// 1. AKTIFKAN SSR: Pastikan rute ini tidak dianggap statis oleh Vercel
+export const prerender = false;
+
 export async function getStaticPaths() {
   const WP_URL = import.meta.env.PUBLIC_WP_URL;
   const query = {
@@ -52,9 +55,10 @@ export async function getStaticPaths() {
   }
 }
 
+// 2. AMBIL DATA DARI PROPS
 const { post, posts } = Astro.props;
 
-// --- PROTEKSI SSR: Mencegah error "Cannot read properties of undefined" ---
+// 3. PROTEKSI: Jika post tidak ditemukan (URL salah), lempar ke 404
 if (!post || !post.data) {
   return Astro.redirect("/404");
 }
@@ -75,9 +79,9 @@ const uniqueCategories = posts
   <section class="bg-[#0b1c3c] py-8 md:py-10 text-white w-full border-t border-white/5">
     <div class="container">
       <nav class="flex items-center space-x-2 text-[10px] md:text-[11px] mb-5 text-white/40 font-bold uppercase tracking-widest">
-        <a href="/" class="hover:text-primary transition">BERANDA</a>
+        <a href="/" class="hover:text-primary transition text-white/60">BERANDA</a>
         <BiChevronRight className="h-3 w-3 opacity-30" />
-        <a href={`/categories/${slugify(primaryCategory)}`} class="hover:text-primary transition">{primaryCategory}</a>
+        <a href={`/categories/${slugify(primaryCategory)}`} class="hover:text-primary transition text-white/60">{primaryCategory}</a>
         <BiChevronRight className="h-3 w-3 opacity-30" />
         <span class="text-white/90 line-clamp-1 italic normal-case font-medium">{post.data.title}</span>
       </nav>
@@ -109,7 +113,7 @@ const uniqueCategories = posts
               {relatedPosts.map((p: any) => (
                 <div class="group">
                   <div class="overflow-hidden rounded-2xl shadow-md mb-4 aspect-video relative">
-                    <img src={p.data.image} class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-500" />
+                    <img src={p.data.image} class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-500" alt={p.data.title} />
                   </div>
                   <h3 class="text-base font-bold leading-snug">
                     <a href={`/blog/${p.slug}`} class="hover:text-primary transition line-clamp-2 text-dark/90">{p.data.title}</a>
@@ -128,7 +132,7 @@ const uniqueCategories = posts
                 {popularPosts.map((p: any) => (
                   <li class="flex gap-4 items-start group border-b border-gray-100 pb-4 last:border-0">
                     <div class="w-16 h-12 shrink-0 overflow-hidden rounded-xl shadow-sm">
-                      <img src={p.data.image} class="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
+                      <img src={p.data.image} class="w-full h-full object-cover group-hover:scale-110 transition duration-500" alt={p.data.title} />
                     </div>
                     <div class="flex-1">
                       <h3 class="text-[13px] font-bold leading-snug text-dark/90 line-clamp-2">
