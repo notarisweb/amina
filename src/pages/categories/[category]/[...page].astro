@@ -1,19 +1,23 @@
 ---
 import Posts from "@/components/Posts.astro";
 import Base from "@/layouts/Base.astro";
+import Pagination from "@/layouts/components/Pagination.astro";
 import { humanize } from "@/lib/utils/textConverter";
 
-// 1. AKTIFKAN SSR: Wajib untuk mode server agar tidak 404
 export const prerender = false;
 
-// 2. Ambil parameter kategori dari URL
+// 1. Ambil Parameter: category (slug) dan page (nomor halaman dari query)
 const { category } = Astro.params;
+const url = new URL(Astro.request.url);
+const currentPage = parseInt(url.searchParams.get("page") || "1");
+const pageSize = 10; // 10 card per halaman
+
 const WP_URL = import.meta.env.PUBLIC_WP_URL;
 
-// 3. Query untuk mengambil data kategori & postingannya secara langsung
+// 2. Query WordPress: Mengambil data kategori dan daftar artikel
 const query = {
   query: `
-    query GetPostsByCat($catSlug: ID!) {
+    query GetCategoryPosts($catSlug: ID!) {
       category(id: $catSlug, idType: SLUG) {
         name
         description
@@ -35,7 +39,7 @@ const query = {
 };
 
 let categoryData = null;
-let formattedPosts = [];
+let allFormattedPosts = [];
 
 try {
   const response = await fetch(WP_URL, {
@@ -48,7 +52,7 @@ try {
 
   if (categoryData) {
     const wpPosts = categoryData.posts?.nodes || [];
-    formattedPosts = wpPosts.map((post: any) => ({
+    allFormattedPosts = wpPosts.map((post: any) => ({
       id: post.slug,
       slug: post.slug,
       body: post.excerpt || "",
@@ -66,35 +70,45 @@ try {
   console.error("Gagal mengambil data kategori:", e);
 }
 
-// 4. Jika kategori tidak ditemukan di WordPress, arahkan ke 404
-if (!categoryData) {
-  return Astro.redirect("/404");
-}
+if (!categoryData) return Astro.redirect("/404");
+
+// 3. Logika Pagination Manual
+const totalPosts = allFormattedPosts.length;
+const totalPages = Math.ceil(totalPosts / pageSize);
+const startIdx = (currentPage - 1) * pageSize;
+const endIdx = startIdx + pageSize;
+const paginatedPosts = allFormattedPosts.slice(startIdx, endIdx);
 
 const title = humanize(categoryData.name || "");
 ---
 
-<Base title={`${title} - Amina`} description={categoryData.description}>
-  <section class="bg-[#0b1c3c] py-16 md:py-20 text-white w-full border-t border-white/5">
+<Base title={`${title} - Halaman ${currentPage}`} description={categoryData.description}>
+  <section class="bg-[#0b1c3c] py-16 text-white w-full border-t border-white/5">
     <div class="container text-center">
       <p class="text-white/50 text-[11px] font-bold uppercase tracking-[0.2em] mb-4">ARSIP KATEGORI</p>
       <h1 class="text-3xl md:text-5xl font-black text-primary uppercase italic">{title}</h1>
-      {categoryData.description && (
-        <p class="mt-4 text-white/60 max-w-2xl mx-auto text-sm md:text-base italic" set:html={categoryData.description} />
-      )}
+      <p class="mt-4 text-white/60 text-sm italic">Halaman {currentPage} dari {totalPages}</p>
     </div>
   </section>
 
   <section class="section py-16 bg-white">
     <div class="container">
-      {formattedPosts.length > 0 ? (
-        <div class="grid grid-cols-1 gap-12">
-          <Posts posts={formattedPosts} fluid={false} />
-        </div>
+      {paginatedPosts.length > 0 ? (
+        <>
+          <Posts posts={paginatedPosts} fluid={false} />
+          
+          <div class="mt-16 flex justify-center">
+            <Pagination 
+              section={`categories/${category}`} 
+              currentPage={currentPage} 
+              totalPages={totalPages} 
+            />
+          </div>
+        </>
       ) : (
         <div class="text-center py-24 border-2 border-dashed border-gray-100 rounded-3xl">
-          <p class="text-dark/40 italic font-medium">Belum ada artikel dalam kategori ini.</p>
-          <a href="/" class="mt-6 inline-block text-primary font-bold hover:underline">Kembali ke Beranda</a>
+          <p class="text-dark/40 italic">Tidak ada artikel di halaman ini.</p>
+          <a href={`/categories/${category}`} class="mt-4 inline-block text-primary font-bold">Kembali ke Halaman 1</a>
         </div>
       )}
     </div>

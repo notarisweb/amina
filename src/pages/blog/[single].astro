@@ -9,9 +9,10 @@ export const prerender = false;
 const { single } = Astro.params;
 const WP_URL = import.meta.env.PUBLIC_WP_URL;
 
+// 1. EDIT QUERY: Tambahkan query 'categories' secara terpisah untuk mengambil SEMUA kategori
 const query = {
   query: `
-    query GetPostBySlug($id: ID!) {
+    query GetPostAndAllCategories($id: ID!) {
       post(id: $id, idType: SLUG) {
         title
         content
@@ -29,6 +30,13 @@ const query = {
           featuredImage { node { sourceUrl } }
         }
       }
+      categories(first: 100) { 
+        nodes {
+          name
+          slug
+          count
+        }
+      }
     }
   `,
   variables: { id: single },
@@ -36,6 +44,7 @@ const query = {
 
 let postData;
 let allPosts = [];
+let sidebarCategories = []; // Variabel baru untuk kategori sidebar
 
 try {
   const response = await fetch(WP_URL, {
@@ -46,6 +55,9 @@ try {
   const result = await response.json();
   postData = result.data?.post;
   allPosts = result.data?.posts?.nodes || [];
+  
+  // 2. AMBIL DATA KATEGORI ASLI: Ambil dari hasil query categories yang baru
+  sidebarCategories = result.data?.categories?.nodes?.filter((c: any) => c.count > 0) || [];
 } catch (error) {
   console.error("Gagal fetch data WordPress:", error);
 }
@@ -75,7 +87,8 @@ const formattedAllPosts = allPosts.map((p: any) => ({
 
 const primaryCategory = post.data.categories[0] || "Berita";
 const popularPosts = formattedAllPosts.slice(0, 5);
-const uniqueCategories = [...new Set(formattedAllPosts.flatMap((p: any) => p.data.categories))];
+
+// 3. HAPUS uniqueCategories LAMA: Kita tidak lagi mengambil dari formattedAllPosts
 ---
 
 <Base title={post.data.title} description={post.data.description} image={post.data.image}>
@@ -88,9 +101,7 @@ const uniqueCategories = [...new Set(formattedAllPosts.flatMap((p: any) => p.dat
         <BiChevronRight className="opacity-30" />
         <span class="text-primary italic normal-case font-medium line-clamp-1">{post.data.title}</span>
       </nav>
-      
       <h1 set:html={post.data.title} class="text-3xl md:text-5xl text-white font-black leading-tight mb-8" />
-      
       <div class="flex flex-wrap gap-6 text-[11px] font-bold text-white/70 uppercase tracking-widest border-t border-white/10 pt-8">
         <span class="flex items-center"><BiUserCircle className="mr-2 h-4 w-4 text-primary" /> {post.data.authors[0]}</span>
         <span class="flex items-center"><BiCalendarEdit className="mr-2 h-4 w-4 text-primary" /> {dateFormat(post.data.date)}</span>
@@ -101,7 +112,6 @@ const uniqueCategories = [...new Set(formattedAllPosts.flatMap((p: any) => p.dat
   <section class="py-16 bg-white text-left">
     <div class="container">
       <div class="flex flex-wrap lg:flex-nowrap gap-16">
-        
         <article class="w-full lg:w-[68%]">
           {post.data.image && (
             <div class="mb-12 overflow-hidden rounded-3xl shadow-2xl aspect-video relative">
@@ -113,7 +123,6 @@ const uniqueCategories = [...new Set(formattedAllPosts.flatMap((p: any) => p.dat
 
         <aside class="w-full lg:w-[32%]">
           <div class="sticky top-32 space-y-12">
-            
             <div>
               <h2 class="text-lg font-black mb-8 text-dark flex items-center">
                 <span class="w-2 h-6 bg-primary mr-3 rounded-full"></span>
@@ -140,22 +149,20 @@ const uniqueCategories = [...new Set(formattedAllPosts.flatMap((p: any) => p.dat
             <div>
               <h2 class="text-lg font-black mb-6 text-dark uppercase tracking-tight">Kategori</h2>
               <ul class="space-y-3">
-                {uniqueCategories.map((category: string) => (
+                {sidebarCategories.map((category) => (
                   <li class="border-b border-gray-100 pb-3 last:border-0">
-                    <a href={`/categories/${slugify(category)}`} class="flex items-center justify-between group text-sm font-bold text-dark/70 hover:text-primary transition">
-                      <span>{humanize(category)}</span>
+                    <a href={`/categories/${category.slug}`} class="flex items-center justify-between group text-sm font-bold text-dark/70 hover:text-primary transition">
+                      <span>{category.name}</span>
                       <span class="text-[11px] opacity-40 group-hover:opacity-100 transition">
-                        ({formattedAllPosts.filter(item => item.data.categories.includes(category)).length})
+                        ({category.count})
                       </span>
                     </a>
                   </li>
                 ))}
               </ul>
             </div>
-
           </div>
         </aside>
-
       </div>
     </div>
   </section>
