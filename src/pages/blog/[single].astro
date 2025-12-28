@@ -11,57 +11,67 @@ export async function getStaticPaths() {
     query: `query GetAllPosts { posts(first: 100) { nodes { title slug content date excerpt author { node { name } } categories { nodes { name } } featuredImage { node { sourceUrl } } } } }`,
   };
 
-  const response = await fetch(WP_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(query),
-  });
+  try {
+    const response = await fetch(WP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(query),
+    });
 
-  const result = await response.json();
-  const posts = result.data?.posts?.nodes || [];
+    const result = await response.json();
+    const posts = result.data?.posts?.nodes || [];
 
-  const allPostsFormatted = posts.map((p: any) => ({
-    slug: p.slug,
-    data: {
-      title: p.title,
-      image: p.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
-      categories: p.categories?.nodes.map((c: any) => c.name) || ["Artikel Islami"],
-      date: p.date
-    }
-  }));
+    const allPostsFormatted = posts.map((p: any) => ({
+      slug: p.slug,
+      data: {
+        title: p.title,
+        image: p.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
+        categories: p.categories?.nodes.map((c: any) => c.name) || ["Artikel Islami"],
+        date: p.date
+      }
+    }));
 
-  return posts.map((post: any) => ({
-    params: { single: post.slug },
-    props: { 
-      post: {
-        id: post.slug, slug: post.slug, content: post.content || "",
-        data: {
-          title: post.title, description: post.excerpt, date: post.date,
-          image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
-          categories: post.categories?.nodes.map((c: any) => c.name) || ["Artikel Islami"],
-          authors: [post.author?.node?.name || "Admin"],
-        }
+    return posts.map((post: any) => ({
+      params: { single: post.slug },
+      props: { 
+        post: {
+          id: post.slug, slug: post.slug, content: post.content || "",
+          data: {
+            title: post.title, description: post.excerpt, date: post.date,
+            image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
+            categories: post.categories?.nodes.map((c: any) => c.name) || ["Artikel Islami"],
+            authors: [post.author?.node?.name || "Admin"],
+          }
+        },
+        posts: allPostsFormatted 
       },
-      posts: allPostsFormatted 
-    },
-  }));
+    }));
+  } catch (error) {
+    console.error("Gagal mengambil data posts:", error);
+    return [];
+  }
 }
 
 const { post, posts } = Astro.props;
 
+// --- PROTEKSI SSR: Mencegah error "Cannot read properties of undefined" ---
+if (!post || !post.data) {
+  return Astro.redirect("/404");
+}
+
 // LOGIKA BREADCRUMB & RELATED
 const primaryCategory = post.data.categories[0] || "Berita";
-const popularPosts = posts.slice(0, 5); // 5 postingan populer
+const popularPosts = posts ? posts.slice(0, 5) : []; 
 const relatedPosts = posts
-  .filter((p: any) => p.slug !== post.slug && p.data.categories.includes(primaryCategory))
-  .slice(0, 2);
+  ? posts.filter((p: any) => p.slug !== post.slug && p.data.categories.includes(primaryCategory)).slice(0, 2)
+  : [];
 
-// LOGIKA KATEGORI: Mengambil semua kategori unik dari semua postingan
-const uniqueCategories = [...new Set(posts.flatMap((p: any) => p.data.categories))];
+const uniqueCategories = posts 
+  ? [...new Set(posts.flatMap((p: any) => p.data.categories))]
+  : [];
 ---
 
 <Base title={post.data.title} description={post.data.description} image={post.data.image}>
-  
   <section class="bg-[#0b1c3c] py-8 md:py-10 text-white w-full border-t border-white/5">
     <div class="container">
       <nav class="flex items-center space-x-2 text-[10px] md:text-[11px] mb-5 text-white/40 font-bold uppercase tracking-widest">
@@ -80,8 +90,8 @@ const uniqueCategories = [...new Set(posts.flatMap((p: any) => p.data.categories
   </section>
 
   <section class="py-12 bg-white text-left">
-    <div class="container"> <div class="flex flex-wrap lg:flex-nowrap gap-12">
-        
+    <div class="container"> 
+      <div class="flex flex-wrap lg:flex-nowrap gap-12">
         <article class="w-full lg:w-[70%]">
           {post.data.image && (
             <div class="mb-10 overflow-hidden rounded-3xl shadow-xl aspect-video relative">
@@ -101,7 +111,9 @@ const uniqueCategories = [...new Set(posts.flatMap((p: any) => p.data.categories
                   <div class="overflow-hidden rounded-2xl shadow-md mb-4 aspect-video relative">
                     <img src={p.data.image} class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-500" />
                   </div>
-                  <h3 class="text-base font-bold leading-snug"><a href={`/blog/${p.slug}`} class="hover:text-primary transition line-clamp-2 text-dark/90">{p.data.title}</a></h3>
+                  <h3 class="text-base font-bold leading-snug">
+                    <a href={`/blog/${p.slug}`} class="hover:text-primary transition line-clamp-2 text-dark/90">{p.data.title}</a>
+                  </h3>
                 </div>
               ))}
             </div>
@@ -110,14 +122,19 @@ const uniqueCategories = [...new Set(posts.flatMap((p: any) => p.data.categories
 
         <aside class="w-full lg:w-[30%] text-left">
           <div class="sticky top-32 space-y-12">
-            
             <div>
               <h2 class="h5 font-extrabold mb-6 pb-2 border-b-2 border-primary inline-block text-dark uppercase tracking-tight">Postingan Populer</h2>
               <ul class="space-y-6 mt-4">
                 {popularPosts.map((p: any) => (
                   <li class="flex gap-4 items-start group border-b border-gray-100 pb-4 last:border-0">
-                    <div class="w-16 h-12 shrink-0 overflow-hidden rounded-xl shadow-sm"><img src={p.data.image} class="w-full h-full object-cover group-hover:scale-110 transition duration-500" /></div>
-                    <div class="flex-1"><h3 class="text-[13px] font-bold leading-snug text-dark/90 line-clamp-2"><a href={`/blog/${p.slug}`} class="hover:text-primary transition">{p.data.title}</a></h3></div>
+                    <div class="w-16 h-12 shrink-0 overflow-hidden rounded-xl shadow-sm">
+                      <img src={p.data.image} class="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
+                    </div>
+                    <div class="flex-1">
+                      <h3 class="text-[13px] font-bold leading-snug text-dark/90 line-clamp-2">
+                        <a href={`/blog/${p.slug}`} class="hover:text-primary transition">{p.data.title}</a>
+                      </h3>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -130,16 +147,16 @@ const uniqueCategories = [...new Set(posts.flatMap((p: any) => p.data.categories
                   <li class="border-b border-gray-50 pb-2 last:border-0">
                     <a href={`/categories/${slugify(category)}`} class="flex items-center justify-between group text-sm font-bold text-dark/70 hover:text-primary transition duration-300">
                       <span>{humanize(category)}</span>
-                      <span class="text-[11px] opacity-40 group-hover:opacity-100 transition">({posts.filter((p: any) => p.data.categories.includes(category)).length})</span>
+                      <span class="text-[11px] opacity-40 group-hover:opacity-100 transition">
+                        ({posts.filter((p: any) => p.data.categories.includes(category)).length})
+                      </span>
                     </a>
                   </li>
                 ))}
               </ul>
             </div>
-
           </div>
         </aside>
-
       </div>
     </div>
   </section>
