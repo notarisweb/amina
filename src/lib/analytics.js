@@ -27,15 +27,13 @@ export async function getVisitorStats() {
   }
 
   try {
-    // Menambahkan opsi timeout untuk mencegah error DEADLINE_EXCEEDED di Vercel
-    const requestOptions = { timeout: 20000 }; // Maksimal 20 detik
+    const requestOptions = { timeout: 20000 }; 
 
-    // Menggunakan Promise.all agar data Realtime dan Report ditarik bersamaan (Paralel)
-    // Ini jauh lebih cepat daripada menunggu satu per satu
+    // PERBAIKAN: Menggunakan 'screenPageViews' untuk menghitung total tayangan halaman
     const [realtimeResponse, historisResponse] = await Promise.all([
       analyticsDataClient.runRealtimeReport({
         property: `properties/${propertyId}`,
-        metrics: [{ name: 'activeUsers' }],
+        metrics: [{ name: 'activeUsers' }], // Online tetap menggunakan user aktif
       }, requestOptions),
       analyticsDataClient.runReport({
         property: `properties/${propertyId}`,
@@ -44,7 +42,8 @@ export async function getVisitorStats() {
           { startDate: 'yesterday', endDate: 'yesterday' },
           { startDate: '2024-01-01', endDate: 'today' } 
         ],
-        metrics: [{ name: 'activeUsers' }],
+        // MENGUBAH METRIK: activeUsers -> screenPageViews
+        metrics: [{ name: 'screenPageViews' }], 
       }, requestOptions)
     ]);
 
@@ -57,11 +56,10 @@ export async function getVisitorStats() {
       online: parseInt(online),
       today: parseInt(today),
       yesterday: parseInt(yesterday),
-      total: parseInt(total)
+      total: parseInt(total) // Sekarang akan berisi Total Views (Tayangan)
     };
 
   } catch (error) {
-    // Jika terjadi timeout atau DEADLINE_EXCEEDED, log tetap terekam tapi web tidak crash
     console.error("Analytics Timeout/Error:", error.message);
     return { online: 0, today: 0, yesterday: 0, total: 0 };
   }

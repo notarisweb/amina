@@ -13,7 +13,6 @@ import {
 import { AstroFont } from "astro-font";
 import { ClientRouter } from "astro:transitions";
 
-// font families
 const pf = theme.fonts.font_family.primary;
 let fontPrimary;
 if (theme.fonts.font_family.primary) {
@@ -22,7 +21,6 @@ if (theme.fonts.font_family.primary) {
     .replace(/:[ital,]*[ital@]*[wght@]*[0-9,;]+/gi, "");
 }
 
-// types for frontmatters
 export interface Props {
   title?: string;
   meta_title?: string;
@@ -34,7 +32,6 @@ export interface Props {
 
 const { title, meta_title, description, image, noindex, canonical } = Astro.props;
 
-// 1. Logika Judul SEO
 const siteTitle = config.site.title;
 const finalTitle = plainify(
   meta_title 
@@ -44,20 +41,20 @@ const finalTitle = plainify(
       : siteTitle
 );
 
-// 2. Logika Deskripsi Bersih (Tanpa HTML)
 const finalDescription = plainify(
   description ? description : config.metadata.meta_description
 );
 
-// 3. SOLUSI THUMBNAIL WHATSAPP: Logika URL Gambar Absolut
 const siteUrl = config.site.base_url;
 let finalImage = "";
 if (image) {
-  // Jika gambar dari WordPress (diawali http), gunakan langsung. Jika lokal, tambah domain.
   finalImage = image.startsWith("http") ? image : `${siteUrl}${image}`;
 } else {
   finalImage = `${siteUrl}${config.metadata.meta_image}`;
 }
+
+// Gunakan Measurement ID Anda
+const GA_ID = "G-XDX1TKCDP1";
 ---
 
 <!doctype html>
@@ -67,13 +64,19 @@ if (image) {
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XDX1TKCDP1"></script>
-    <script is:inline>
+    <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}></script>
+    <script is:inline define:vars={{ GA_ID }}>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
+      gtag('config', GA_ID);
 
-      gtag('config', 'G-XDX1TKCDP1');
+      // SOLUSI UNTUK REALTIME: Kirim ulang pageview setiap kali ClientRouter berpindah halaman
+      document.addEventListener('astro:after-swap', () => {
+        gtag('config', GA_ID, {
+          page_path: window.location.pathname,
+        });
+      });
     </script>
 
     {config.google_tag_manager.enable && (
@@ -110,7 +113,7 @@ if (image) {
 
     <ClientRouter />
 
-    {/* Open Graph / Facebook / WhatsApp */}
+    {/* Open Graph Tags */}
     <meta property="og:type" content="website" />
     <meta property="og:url" content={Astro.url.href} />
     <meta property="og:title" content={finalTitle} />
@@ -120,7 +123,7 @@ if (image) {
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
 
-    {/* Twitter */}
+    {/* Twitter Tags */}
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={finalTitle} />
     <meta name="twitter:description" content={finalDescription} />
