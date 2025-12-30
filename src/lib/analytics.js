@@ -29,34 +29,45 @@ export async function getVisitorStats() {
   try {
     const requestOptions = { timeout: 20000 }; 
 
-    // PERBAIKAN: Menggunakan 'screenPageViews' untuk menghitung total tayangan halaman
     const [realtimeResponse, historisResponse] = await Promise.all([
       analyticsDataClient.runRealtimeReport({
         property: `properties/${propertyId}`,
-        metrics: [{ name: 'activeUsers' }], // Online tetap menggunakan user aktif
+        metrics: [
+          { name: 'activeUsers' }, 
+          { name: 'screenPageViews' } // Ambil juga views hari ini dari realtime
+        ], 
       }, requestOptions),
       analyticsDataClient.runReport({
         property: `properties/${propertyId}`,
         dateRanges: [
           { startDate: 'today', endDate: 'today' },
           { startDate: 'yesterday', endDate: 'yesterday' },
-          { startDate: '2024-01-01', endDate: 'today' } 
+          { startDate: '2020-01-01', endDate: 'yesterday' } // Ambil total HANYA sampai kemarin
         ],
-        // MENGUBAH METRIK: activeUsers -> screenPageViews
         metrics: [{ name: 'screenPageViews' }], 
       }, requestOptions)
     ]);
 
+    // 1. Data Realtime
     const online = realtimeResponse[0].rows?.[0]?.metricValues?.[0]?.value || 0;
-    const today = historisResponse[0].rows?.[0]?.metricValues?.[0]?.value || 0;
+    const viewsTodayRealtime = realtimeResponse[0].rows?.[0]?.metricValues?.[1]?.value || 0;
+
+    // 2. Data Laporan (Historis)
+    const todayReport = historisResponse[0].rows?.[0]?.metricValues?.[0]?.value || 0;
     const yesterday = historisResponse[0].rows?.[1]?.metricValues?.[0]?.value || 0;
-    const total = historisResponse[0].rows?.[2]?.metricValues?.[0]?.value || 0;
+    const totalUntilYesterday = historisResponse[0].rows?.[2]?.metricValues?.[0]?.value || 0;
+
+    // 3. LOGIKA TOTAL HITS:
+    // Menggunakan angka terbesar antara laporan hari ini vs realtime hari ini, 
+    // lalu ditambahkan ke total historis agar angka tidak pernah turun.
+    const effectiveToday = Math.max(parseInt(todayReport), parseInt(viewsTodayRealtime));
+    const totalHits = parseInt(totalUntilYesterday) + effectiveToday;
 
     return {
       online: parseInt(online),
-      today: parseInt(today),
+      today: effectiveToday,
       yesterday: parseInt(yesterday),
-      total: parseInt(total) // Sekarang akan berisi Total Views (Tayangan)
+      total: totalHits 
     };
 
   } catch (error) {
