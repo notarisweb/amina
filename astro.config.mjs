@@ -14,20 +14,42 @@ import vercel from "@astrojs/vercel/serverless";
 
 // https://astro.build/config
 export default defineConfig({
-  // 2. UBAH OUTPUT MENJADI SERVER (Agar data Analytics tidak statis)
+  // 2. OUTPUT SERVER & ADAPTER VERCEL (Untuk Analytics & Data Dinamis)
   output: "server",
-  
-  // 3. PASANG ADAPTER VERCEL
   adapter: vercel(),
 
-  site: config.site.base_url ? config.site.base_url : "http://examplesite.com",
+  // 3. KONFIGURASI DOMAIN & URL
+  site: config.site.base_url ? config.site.base_url : "https://amina.or.id",
   base: config.site.base_path ? config.site.base_path : "/",
   trailingSlash: config.site.trailing_slash ? "always" : "never",
-  image: { service: sharp() },
-  vite: { plugins: [tailwindcss()] },
+
+  // 4. OPTIMASI GAMBAR (Kunci Kecepatan & SEO)
+  image: {
+    service: { entrypoint: 'astro/assets/services/sharp' },
+    domains: ["studio.amina.or.id"], // Whitelist domain backend Hawkhost
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "studio.amina.or.id",
+      },
+    ],
+  },
+
+  // 5. VITE & PLUGINS
+  vite: { 
+    plugins: [tailwindcss()],
+    optimizeDeps: {
+      exclude: ['sharp']
+    }
+  },
+
+  // 6. INTEGRASI
   integrations: [
     react(),
-    sitemap(),
+    sitemap({
+      // Optimasi SEO: Generate sitemap otomatis untuk Google
+      filter: (page) => !page.includes('/studio') 
+    }),
     AutoImport({
       imports: [
         "@/shortcodes/Button",
@@ -41,6 +63,8 @@ export default defineConfig({
     }),
     mdx(),
   ],
+
+  // 7. MARKDOWN & SHIKI
   markdown: {
     remarkPlugins: [remarkToc, [remarkCollapse, { test: "Table of contents" }]],
     shikiConfig: { theme: "one-dark-pro", wrap: true },

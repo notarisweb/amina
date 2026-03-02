@@ -15,8 +15,8 @@ import { ClientRouter } from "astro:transitions";
 
 const pf = theme.fonts.font_family.primary;
 let fontPrimary;
-if (theme.fonts.font_family.primary) {
-  fontPrimary = theme.fonts.font_family.primary
+if (pf) {
+  fontPrimary = pf
     .replace(/\+/g, " ")
     .replace(/:[ital,]*[ital@]*[wght@]*[0-9,;]+/gi, "");
 }
@@ -28,24 +28,35 @@ export interface Props {
   image?: string;
   noindex?: boolean;
   canonical?: string;
+  structuredData?: object; 
+  articleDate?: string;
+  articleAuthor?: string;
 }
 
-const { title, meta_title, description, image, noindex, canonical } = Astro.props;
+const { 
+  title, 
+  meta_title, 
+  description, 
+  image, 
+  noindex, 
+  canonical, 
+  structuredData,
+  articleDate,
+  articleAuthor
+} = Astro.props;
 
 const siteTitle = config.site.title;
 const finalTitle = plainify(
-  meta_title 
-    ? meta_title 
-    : title 
-      ? `${title} | ${siteTitle}` 
-      : siteTitle
+  meta_title || (title ? `${title} | ${siteTitle}` : siteTitle)
 );
-
 const finalDescription = plainify(
-  description ? description : config.metadata.meta_description
+  description || config.metadata.meta_description
 );
 
 const siteUrl = config.site.base_url;
+const currentUrl = Astro.url.href;
+const finalCanonical = canonical || currentUrl.replace('studio.', '');
+
 let finalImage = "";
 if (image) {
   finalImage = image.startsWith("http") ? image : `${siteUrl}${image}`;
@@ -53,16 +64,16 @@ if (image) {
   finalImage = `${siteUrl}${config.metadata.meta_image}`;
 }
 
-// Gunakan Measurement ID Anda
 const GA_ID = "G-XDX1TKCDP1";
 ---
 
 <!doctype html>
-<html lang="id">
+<html lang="id" class="scroll-smooth">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="generator" content={Astro.generator} />
 
     <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}></script>
     <script is:inline define:vars={{ GA_ID }}>
@@ -70,31 +81,16 @@ const GA_ID = "G-XDX1TKCDP1";
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', GA_ID);
-
-      // SOLUSI UNTUK REALTIME: Kirim ulang pageview setiap kali ClientRouter berpindah halaman
       document.addEventListener('astro:after-swap', () => {
-        gtag('config', GA_ID, {
-          page_path: window.location.pathname,
-        });
+        gtag('config', GA_ID, { page_path: window.location.pathname });
       });
     </script>
-
-    {config.google_tag_manager.enable && (
-      <GoogleTagmanager id={config.google_tag_manager.gtm_id} />
-    )}
-
-    <link rel="shortcut icon" href={config.site.favicon} />
-    <meta name="theme-name" content="amina-astro-headless" />
-    <meta name="msapplication-TileColor" content="#000000" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fff" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000" />
-    <meta name="generator" content={Astro.generator} />
 
     <AstroFont
       config={[
         {
           src: [],
-          preload: false,
+          preload: true,
           display: "swap",
           name: fontPrimary!,
           fallback: "sans-serif",
@@ -105,40 +101,76 @@ const GA_ID = "G-XDX1TKCDP1";
     />
 
     <title>{finalTitle}</title>
-
-    {canonical && <link rel="canonical" href={canonical} item-prop="url" />}
-    {noindex && <meta name="robots" content="noindex,nofollow" />}
     <meta name="description" content={finalDescription} />
-    <meta name="author" content={config.metadata.meta_author} />
+    <link rel="canonical" href={finalCanonical} />
+    <meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow"} />
+    
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(structuredData || {})} />
 
     <ClientRouter />
 
-    {/* Open Graph Tags */}
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content={Astro.url.href} />
-    <meta property="og:title" content={finalTitle} />
-    <meta property="og:description" content={finalDescription} />
-    <meta property="og:image" content={finalImage} />
-    <meta property="og:image:secure_url" content={finalImage} />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    <style is:global>
+      /* PROGRESS BAR FIX - TINGKAT DEWA */
+      #progress-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px; /* Lebih tebal agar terlihat jelas */
+        z-index: 999999; /* Di atas segalanya, termasuk Admin Bar WP */
+        background: rgba(255, 255, 255, 0.1);
+        pointer-events: none;
+      }
+      #progress-bar {
+        height: 100%;
+        width: 0%;
+        background: #2563eb; /* Biru Solid */
+        box-shadow: 0 0 15px rgba(37, 99, 235, 1); /* Efek Menyala */
+        transition: width 0.2s ease-out;
+      }
 
-    {/* Twitter Tags */}
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={finalTitle} />
-    <meta name="twitter:description" content={finalDescription} />
-    <meta name="twitter:image" content={finalImage} />
+      /* Scrollbar */
+      ::-webkit-scrollbar { width: 8px; }
+      ::-webkit-scrollbar-track { background: #f8fafc; }
+      ::-webkit-scrollbar-thumb { background: #0b1c3c; border-radius: 10px; }
+    </style>
   </head>
-  <body>
-    {config.google_tag_manager.enable && (
-      <GoogleTagmanagerNoscript id={config.google_tag_manager.gtm_id} />
-    )}
+
+  <body class="antialiased">
+    <div id="progress-container">
+      <div id="progress-bar"></div>
+    </div>
+
+    {config.google_tag_manager.enable && <GoogleTagmanagerNoscript id={config.google_tag_manager.gtm_id} />}
 
     <TwSizeIndicator />
     <Header />
-    <main id="main-content" class="min-h-[60vh]">
+    
+    <main id="main-content" class="min-h-[70vh]" transition:animate="fade">
       <slot />
     </main>
+
     <Footer />
+
+    <script is:inline>
+      const setupProgress = () => {
+        const bar = document.getElementById('progress-bar');
+        if (!bar) return;
+
+        const update = () => {
+          const scroll = window.scrollY || document.documentElement.scrollTop;
+          const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+          const pct = (scroll / height) * 100;
+          bar.style.width = pct + "%";
+        };
+
+        window.addEventListener('scroll', update);
+        update(); // Jalankan sekali saat inisialisasi
+      };
+
+      // Inisialisasi awal dan setiap kali halaman berpindah (Astro SPA Mode)
+      setupProgress();
+      document.addEventListener('astro:page-load', setupProgress);
+    </script>
   </body>
 </html>
