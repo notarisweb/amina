@@ -1,62 +1,148 @@
 ---
 import Base from "@/layouts/Base.astro";
-import { markdownify } from "@/lib/utils/textConverter";
 import { Image } from "astro:assets";
-import type { CollectionEntry } from "astro:content";
-import { getEntry, render } from "astro:content";
+import { BiChevronRight, BiHeart, BiBookOpen, BiWorld, BiCheckShield } from "react-icons/bi";
 
-const entry = (await getEntry("about", "-index")) as CollectionEntry<"about">;
-const { Content } = await render(entry);
-const { title, meta_title, image, what_i_do } = entry.data;
+// Import gambar secara lokal untuk optimasi Astro Assets
+import aboutImage from "../../public/images/about.webp";
+
+export const prerender = true;
+
+const title = "Tentang Amina";
+const description = "Mengenal Amal Insan Abadi (Amina), platform syiar Islam dan aksi nyata untuk kemaslahatan ummat.";
+
+const what_i_do = {
+  title: "Pilar Pergerakan Kami",
+  items: [
+    {
+      title: "Syiar Islam",
+      description: "Menyebarkan ilmu bermanfaat melalui artikel islami, khazanah, serta doa dan dzikir yang bersumber dari Al-Qur'an dan Hadits.",
+      icon: BiBookOpen
+    },
+    {
+      title: "Kegiatan Sosial",
+      description: "Membangun kepedulian melalui penyaluran bantuan dan dokumentasi aksi nyata untuk meringankan beban sesama.",
+      icon: BiHeart
+    },
+    {
+      title: "Membangun Ummat",
+      description: "Menjadi wadah informasi yang mengedukasi dan menginspirasi untuk membangun masyarakat yang lebih religius dan peduli.",
+      icon: BiWorld
+    }
+  ]
+};
 ---
 
-<Base title={title} meta_title={meta_title} image={image}>
-  <section class="section">
-    <div class="container">
-      <div class="row md:gx-4">
-        <div class="sm:col-5 md:col-4">
-          {
-            image && (
-              <div class="img-cover mb-8">
-                <Image
-                  src={image}
-                  width={295}
-                  height={395}
-                  alt={title}
-                  class="rounded-lg w-full"
-                />
-              </div>
-            )
-          }
-        </div>
-        <div class="sm:col-7 md:col-8">
-          <h1 set:html={markdownify(title)} class="h3 mb-8" />
+<Base title={`${title} | Amina Media`} description={description}>
+  
+  <section class="bg-[#0b1c3c] py-16 md:py-24 text-white w-full border-t border-white/5 relative overflow-hidden">
+    <div class="container relative z-10 mx-auto px-4">
+      <nav class="flex items-center space-x-2 text-[10px] md:text-[11px] mb-8 text-white/40 font-bold uppercase tracking-[0.2em]">
+        <a href="/" class="hover:text-primary transition">BERANDA</a>
+        <BiChevronRight className="opacity-20" />
+        <span class="text-primary italic normal-case font-medium opacity-80">{title}</span>
+      </nav>
+      
+      <div class="max-w-4xl">
+        <h1 class="text-4xl md:text-7xl text-white font-black leading-[1.1] mb-8 tracking-tighter uppercase">
+          Menyebar Kebaikan, <br/> 
+          <span class="text-primary">Membangun Ummat.</span>
+        </h1>
+        <p class="text-white/50 text-base md:text-xl leading-relaxed font-medium max-w-2xl">
+          Amina (Amal Insan Abadi) hadir sebagai jembatan informasi dan aksi nyata untuk menebar keberkahan di setiap langkah kehidupan.
+        </p>
+      </div>
+    </div>
+    <div class="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-primary/10 to-transparent pointer-events-none"></div>
+  </section>
 
-          <div class="content">
-            <Content />
+  <section class="py-24 bg-white">
+    <div class="container mx-auto px-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+        
+        <div class="lg:col-span-5">
+          <div class="relative">
+            <div class="absolute -top-4 -left-4 w-full h-full border-2 border-primary/20 rounded-2xl"></div>
+            
+            <div class="relative overflow-hidden rounded-2xl shadow-2xl aspect-[4/5] bg-gray-100 group">
+               <Image 
+                  src={aboutImage} 
+                  alt="Tentang Amina Media"
+                  class="w-full h-full object-cover transition duration-700 group-hover:scale-110"
+               />
+               <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <span class="text-white/20 italic text-7xl font-black uppercase rotate-12 tracking-widest select-none">
+                    AMINA
+                  </span>
+               </div>
+            </div>
+
+            <div class="absolute -bottom-8 -right-8 bg-white p-8 rounded-2xl shadow-2xl border border-gray-50 hidden md:block">
+              <BiCheckShield className="text-primary h-12 w-12 mb-4" />
+              <p class="text-dark font-black uppercase text-[10px] tracking-widest m-0 leading-tight">
+                Terpercaya & <br/> Akuntabel
+              </p>
+            </div>
           </div>
-          <a href="/contact" class="btn btn-primary text-white py-2"
-            >Get In Touch</a
-          >
+        </div>
+
+        <div class="lg:col-span-7">
+          <h2 class="text-xs font-black text-primary uppercase tracking-[0.4em] mb-4">Kisah Kami</h2>
+          <h3 class="text-3xl md:text-5xl font-black text-dark mb-8 uppercase tracking-tighter leading-tight">
+            Dedikasi Tanpa Batas <br/> Untuk Syiar Islami
+          </h3>
+          <div class="content prose prose-lg max-w-none text-dark/70 leading-relaxed first-letter:text-6xl first-letter:font-black first-letter:text-primary first-letter:mr-3 first-letter:float-left">
+            <p>
+              Amina.or.id (Amal Insan Abadi) lahir dari visi besar untuk menyatukan kekuatan literasi islami yang kredibel dengan aksi sosial yang transparan. Kami percaya bahwa setiap informasi yang bermanfaat adalah sedekah jariyah yang tak terputus pahalanya.
+            </p>
+            <p>
+              Melalui platform ini, kami berkomitmen menyajikan konten khazanah Islam yang menyejukkan, doa-doa yang menguatkan, serta laporan kegiatan sosial yang menginspirasi lebih banyak orang untuk peduli terhadap sesama.
+            </p>
+          </div>
+          <div class="mt-12">
+            <a href="/contact" class="inline-flex items-center gap-3 bg-primary text-white px-10 py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:scale-105 transition shadow-xl shadow-primary/20">
+              Jalin Silaturahmi <BiChevronRight className="h-4 w-4" />
+            </a>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="section pt-0">
-    <div class="container">
-      <h3 class="page-heading mb-20">{what_i_do.title}</h3>
-      <div class="row justify-center gy-4 text-center">
+  <section class="py-24 bg-[#fcfcfc] border-y border-gray-100">
+    <div class="container mx-auto px-4">
+      <div class="text-center max-w-2xl mx-auto mb-20">
+        <h2 class="text-xs font-black text-primary uppercase tracking-[0.4em] mb-4 tracking-widest">{what_i_do.title}</h2>
+        <p class="text-3xl font-black text-dark uppercase tracking-tighter">Komitmen Nyata Kami Untuk Ummat</p>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
         {
           what_i_do.items.map((item: any) => (
-            <div class="lg:col-4 md:col-6">
-              <i class="{{.icon}} fa-3x text-primary mb-4" />
-              <h4 class="text-dark font-weight-700 mb-3">{item.title}</h4>
-              <p>{item.description}</p>
+            <div class="bg-white p-10 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.03)] border border-gray-50 hover:-translate-y-2 transition-all duration-500 group">
+              <div class="w-16 h-16 rounded-2xl bg-[#0b1c3c] flex items-center justify-center mb-8 group-hover:bg-primary transition-colors duration-500 shadow-xl">
+                <item.icon className="text-white h-8 w-8" />
+              </div>
+              <h4 class="text-dark font-black uppercase text-xl mb-4 tracking-tight group-hover:text-primary transition-colors">{item.title}</h4>
+              <p class="text-dark/60 text-sm leading-relaxed">{item.description}</p>
             </div>
           ))
         }
       </div>
     </div>
   </section>
+
+  <section class="py-24 bg-dark relative overflow-hidden">
+    <div class="container relative z-10 text-center mx-auto px-4">
+      <div class="max-w-3xl mx-auto">
+        <div class="text-primary text-6xl font-black mb-8 italic opacity-20">"</div>
+        <blockquote class="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter leading-tight mb-8 italic">
+          Sebaik-baik manusia adalah yang paling bermanfaat bagi manusia lainnya.
+        </blockquote>
+        <p class="text-primary font-black uppercase tracking-[0.4em] text-xs">(HR. Ahmad & Thabrani)</p>
+      </div>
+    </div>
+    <div class="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent pointer-events-none"></div>
+  </section>
+
 </Base>
