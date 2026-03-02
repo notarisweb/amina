@@ -1,18 +1,80 @@
+/* 1. TAILWIND CORE & PLUGINS */
 @import "tailwindcss";
 @plugin "../tailwind-plugin/tw-theme.mjs";
 @plugin "../tailwind-plugin/tw-bs-grid.mjs";
 @plugin "@tailwindcss/forms";
 @plugin "@tailwindcss/typography";
 
+/* 2. CUSTOM IMPORTS */
 @import "./safe.css";
 @import "./utilities.css";
 
 @layer base {
   @import "./base.css";
+
+  /* FIX: Melebarkan container agar tidak "ciut" dan "numpuk" */
+  .container {
+    @apply mx-auto px-4;
+    max-width: 1350px !important; /* Standar portal berita modern agar lega */
+  }
+
+  @media (min-width: 1536px) {
+    .container {
+      max-width: 1420px !important; /* Memberikan ruang ekstra di layar monitor besar */
+    }
+  }
+
+  body {
+    @apply antialiased text-dark bg-[#fcfcfc];
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
 }
 
 @layer components {
   @import "./components.css";
   @import "./navigation.css";
   @import "./buttons.css";
+
+  /* STYLE PROGRESS BAR (Terintegrasi ke sistem CSS) */
+  #progress-container {
+    @apply fixed top-0 left-0 w-full bg-transparent pointer-events-none;
+    height: 5px;
+    z-index: 999999; /* Pastikan di atas menu admin */
+  }
+  #progress-bar {
+    @apply h-full bg-primary transition-all duration-200 ease-out;
+    width: 0%;
+    box-shadow: 0 0 15px rgba(var(--color-primary), 1); /* Efek bercahaya premium */
+  }
+
+  /* CUSTOM SCROLLBAR PROFESIONAL */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { @apply bg-[#f8fafc]; }
+  ::-webkit-scrollbar-thumb { 
+    @apply bg-[#0b1c3c] rounded-full; 
+    border: 2px solid #f8fafc;
+  }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-primary; }
+}
+
+@layer utilities {
+  /* ANIMASI MARQUEE UNTUK TRENDING TICKER */
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .animate-marquee {
+    display: inline-flex;
+    animation: marquee 40s linear infinite;
+    width: max-content;
+  }
+  .animate-marquee:hover {
+    animation-play-state: paused;
+  }
+
+  /* EFEK GLASSMORPHISM UNTUK WIDGET STATISTIK */
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-md border border-white/10 shadow-2xl;
+  }
 }

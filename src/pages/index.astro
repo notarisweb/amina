@@ -1,37 +1,34 @@
 ---
-import Posts from "@/components/Posts.astro";
-import config from "@/config/config.json";
+import { Image } from "astro:assets";
 import Base from "@/layouts/Base.astro";
+import Posts from "@/components/Posts.astro";
 import Pagination from "@/layouts/components/Pagination.astro";
+import config from "@/config/config.json";
+import dateFormat from "@/lib/utils/dateFormat";
+import { BiTrendingUp, BiTimeFive, BiChevronRight, BiUserCircle } from "react-icons/bi";
 
-// 1. Menggunakan Environment Variable dari dashboard Vercel
+export const prerender = false;
 const WP_URL = import.meta.env.PUBLIC_WP_URL;
 
-// 2. Query diperbarui untuk mengambil data penulis, kategori, dan gambar utama
 const query = {
   query: `
-    query GetPosts {
-      posts(first: 10) {
+    query GetHomepageData {
+      posts(first: 13) {
         nodes {
           title
           slug
           excerpt
           date
-          author {
-            node {
-              name
-            }
-          }
-          categories { 
-            nodes { 
-              name 
-            } 
-          }
-          featuredImage { 
-            node { 
-              sourceUrl 
-            } 
-          }
+          author { node { name } }
+          categories { nodes { name slug } }
+          featuredImage { node { sourceUrl } }
+        }
+      }
+      categories(first: 6) {
+        nodes {
+          name
+          slug
+          count
         }
       }
     }
@@ -39,7 +36,7 @@ const query = {
 };
 
 let currentPosts = [];
-let totalPages = 1;
+let allCategories = [];
 
 try {
   const response = await fetch(WP_URL, {
@@ -47,54 +44,101 @@ try {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(query),
   });
-  
   const result = await response.json();
   const wpPosts = result.data?.posts?.nodes || [];
+  allCategories = result.data?.categories?.nodes?.filter((c: any) => c.count > 0) || [];
 
-  // 3. Pemetaan Data diperketat dengan fallback string kosong || "" untuk keamanan
   currentPosts = wpPosts.map((post: any) => ({
     id: post.slug, 
     slug: post.slug,
-    body: post.excerpt || "", // Mencegah error marked() jika kutipan kosong
+    body: post.excerpt || "",
     data: {
-      title: post.title || "Judul Tidak Tersedia", // Mencegah error ImageMissingAlt
+      title: post.title || "Judul Tidak Tersedia",
       description: post.excerpt || "", 
       date: post.date,
       image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
-      categories: post.categories?.nodes.map((c: any) => c.name) || ["Islam"],
-      authors: [post.author?.node?.name || "Admin"], // Fallback nama penulis agar tidak undefined
+      categories: post.categories?.nodes.map((c: any) => c.name) || ["Berita"],
+      authors: [post.author?.node?.name || "Admin"],
     }
   }));
-
-  totalPages = Math.ceil(currentPosts.length / config.settings.pagination);
 } catch (e) {
-  console.error("Gagal mengambil data dari WordPress studio.amina.or.id:", e);
+  console.error("Gagal ambil data:", e);
 }
+
+const featuredPost = currentPosts[0];
+const secondaryPosts = currentPosts.slice(1, 4);
+const listPosts = currentPosts.slice(4);
+const totalPages = Math.ceil(currentPosts.length / config.settings.pagination);
 ---
 
-<Base>
-  <section class="section">
-    <div class="container">
-      {currentPosts.length > 0 ? (
-        <>
-          {/* Komponen Posts dengan data yang sudah di-mapping aman */}
-          <Posts posts={currentPosts} className="mb-16" />
-          
-          {/* Navigasi Pagination angka jika artikel lebih dari batas halaman */}
-          {totalPages > 1 && (
-            <div class="mt-16 flex justify-center">
-              <Pagination currentPage={1} totalPages={totalPages} />
-            </div>
-          )}
-        </>
-      ) : (
-        <div class="text-center py-20">
-          <p class="text-xl">Tidak ada artikel ditemukan.</p>
-          <p class="text-sm text-gray-500 mt-2">
-            Pastikan WordPress di studio.amina.or.id dapat diakses.
-          </p>
+<Base title="Portal Berita Islami & Sosial">
+  <div class="bg-white border-b border-gray-100 py-3 overflow-hidden">
+    <div class="container mx-auto px-4 flex items-center">
+      <div class="flex items-center gap-2 bg-primary text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mr-6 shrink-0 shadow-lg shadow-primary/20 z-10">
+        <BiTrendingUp className="h-4 w-4" /> Trending
+      </div>
+      <div class="flex-1 overflow-hidden">
+        <div class="flex gap-12 animate-marquee whitespace-nowrap text-[11px] font-bold text-dark/60 uppercase">
+          {currentPosts.map(p => (
+            <a href={`/blog/${p.slug}`} class="hover:text-primary transition shrink-0">
+              {p.data.title} <span class="ml-12 text-gray-200">|</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="py-12 bg-[#fcfcfc]">
+    <div class="container mx-auto px-4">
+      {featuredPost && (
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div class="lg:col-span-8">
+            <a href={`/blog/${featuredPost.slug}`} class="relative block overflow-hidden rounded-2xl shadow-2xl aspect-video lg:h-[500px] group bg-dark">
+              <Image src={featuredPost.data.image} width={1200} height={800} class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition duration-1000 group-hover:opacity-60" alt={featuredPost.data.title} />
+              <div class="absolute inset-0 bg-gradient-to-t from-dark via-dark/10 to-transparent"></div>
+              <div class="absolute bottom-0 left-0 p-8 md:p-12 w-full">
+                <span class="inline-block bg-primary text-white text-[10px] font-black px-4 py-1 rounded-full uppercase mb-6 tracking-widest">{featuredPost.data.categories[0]}</span>
+                <h2 class="text-3xl md:text-5xl font-black text-white leading-tight mb-6">{featuredPost.data.title}</h2>
+                <div class="flex items-center gap-6 text-[11px] text-white/60 font-bold uppercase tracking-widest">
+                  <span class="flex items-center gap-2"><BiUserCircle className="text-primary h-4 w-4" /> {featuredPost.data.authors[0]}</span>
+                  <span class="flex items-center gap-2"><BiTimeFive className="text-primary h-4 w-4" /> {dateFormat(featuredPost.data.date)}</span>
+                </div>
+              </div>
+            </a>
+          </div>
+          <div class="lg:col-span-4 space-y-6">
+            {secondaryPosts.map(p => (
+              <a href={`/blog/${p.slug}`} class="flex gap-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-lg transition-all group items-center">
+                <div class="w-24 h-24 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                  <Image src={p.data.image} width={200} height={200} class="w-full h-full object-cover group-hover:scale-110 transition duration-500" alt={p.data.title} />
+                </div>
+                <div>
+                  <span class="text-[9px] font-black text-primary uppercase mb-1 block">{p.data.categories[0]}</span>
+                  <h3 class="text-sm font-black text-dark group-hover:text-primary transition line-clamp-2 uppercase">{p.data.title}</h3>
+                </div>
+              </a>
+            ))}
+          </div>
         </div>
       )}
     </div>
   </section>
+
+  <section class="py-16">
+    <div class="container mx-auto px-4">
+      <div class="border-b border-gray-100 pb-6 mb-12">
+        <h2 class="text-xs font-black text-primary uppercase tracking-[0.3em] mb-2">Feed Terbaru</h2>
+        <p class="text-3xl font-black text-dark tracking-tighter uppercase">Kabar Amina Media</p>
+      </div>
+      <Posts posts={listPosts} className="mb-16" />
+      {totalPages > 1 && <div class="flex justify-center mt-12"><Pagination currentPage={1} totalPages={totalPages} /></div>}
+    </div>
+  </section>
 </Base>
+
+<style>
+  @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+  .animate-marquee { display: flex; animation: marquee 35s linear infinite; width: max-content; }
+  .animate-marquee:hover { animation-play-state: paused; }
+</style>
