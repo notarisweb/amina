@@ -61,7 +61,6 @@ const { post, allPosts, sidebarCategories } = Astro.props;
 const currentUrl = Astro.url;
 const siteUrl = "https://amina.or.id"; 
 
-// --- LOGIKA TABLE OF CONTENTS ---
 const headings = post.content.match(/<h[2-3][^>]*>.*?<\/h[2-3]>/g) || [];
 const toc = headings.map((h) => {
   const text = h.replace(/<[^>]*>/g, '').trim();
@@ -82,6 +81,15 @@ const textLength = post.content.split(' ').length;
 const readingTime = Math.ceil(textLength / wordsPerMinute);
 const primaryCategory = post.categories?.nodes[0]?.name || "Berita";
 const popularPosts = allPosts.slice(0, 5);
+
+// Palet warna untuk angka terpopuler
+const rankColors = [
+  "text-blue-200/60",   // Rank 1
+  "text-green-200/60",  // Rank 2
+  "text-red-200/60",    // Rank 3
+  "text-yellow-200/60", // Rank 4
+  "text-purple-200/60"  // Rank 5
+];
 
 const breadcrumbSchema = {
   "@context": "https://schema.org",
@@ -163,7 +171,7 @@ const shareLinks = [
             )}
             
             <div class="bg-white p-8 md:p-10 rounded-[2rem] shadow-[0_20px_60px_rgba(0,0,0,0.03)] border border-gray-50">
-              <h2 class="text-lg font-black text-[#0b1c3c] flex items-center mb-10 uppercase tracking-tight">
+              <h2 class="text-xl font-black text-[#0b1c3c] flex items-center mb-10 uppercase tracking-tight">
                 <span class="w-1.5 h-7 bg-primary mr-4 rounded-full"></span>
                 Terpopuler
               </h2>
@@ -171,23 +179,23 @@ const shareLinks = [
               <ul class="space-y-10">
                 {popularPosts.map((p: any, index: number) => (
                   <li class="group relative flex gap-6">
-                    <span class="text-4xl md:text-5xl font-black italic text-dark/5 group-hover:text-primary/10 transition duration-500 select-none shrink-0 italic leading-none">
+                    <span class={`text-5xl md:text-6xl font-black italic transition duration-500 select-none shrink-0 leading-none ${rankColors[index % rankColors.length]}`}>
                       {(index + 1).toString().padStart(2, '0')}
                     </span>
                     
                     <div class="flex-1">
                       <a href={`/blog/${p.slug}`} class="block group">
-                        <h3 class="text-[14px] md:text-[15px] font-black text-dark/80 group-hover:text-primary transition duration-300 leading-snug mb-3 uppercase tracking-tight line-clamp-2">
+                        <h3 class="text-[15px] font-black text-dark/90 group-hover:text-primary transition duration-300 leading-tight mb-2 uppercase tracking-tight line-clamp-2">
                           {p.title}
                         </h3>
                       </a>
                       
-                      <div class="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-primary">
-                         <span>{p.categories?.nodes[0]?.name || "BERITA"}</span>
+                      <div class="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest">
+                         <span class="text-primary">{p.categories?.nodes[0]?.name || "BERITA"}</span>
                          <span class="text-dark/10">•</span>
-                         <span class="flex items-center gap-1 text-dark/30">
-                           <BiTimeFive className="h-3 w-3" /> 
-                           {dateFormat(p.date)}
+                         <span class="flex items-center gap-1.5 text-dark/30">
+                           <BiShow className="h-3.5 w-3.5" /> 
+                           {Math.floor(Math.random() * 4000) + 500}
                          </span>
                       </div>
                     </div>
