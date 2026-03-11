@@ -8,7 +8,11 @@ import { FaFacebookF, FaWhatsapp, FaTelegramPlane } from "react-icons/fa";
 
 export const prerender = true;
 
-// 1. LOGIKA BUILD-PROOF: Ambil semua data sekaligus
+// 1. HELPER ANTI-CRASH: Menghindari error RegExp pada judul dengan karakter spesial
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export async function getStaticPaths() {
   const WP_URL = import.meta.env.PUBLIC_WP_URL;
   const query = {
@@ -43,7 +47,6 @@ export async function getStaticPaths() {
     const allPosts = result.data?.posts?.nodes || [];
     const sidebarCategories = result.data?.categories?.nodes?.filter((c: any) => c.count > 0) || [];
 
-    // Kirim data lengkap ke setiap halaman lewat 'props'
     return allPosts.map((post: any) => ({
       params: { single: post.slug },
       props: { post, allPosts, sidebarCategories },
@@ -54,12 +57,11 @@ export async function getStaticPaths() {
   }
 }
 
-// Ambil data dari props, BUKAN fetch lagi
 const { post, allPosts, sidebarCategories } = Astro.props;
 const currentUrl = Astro.url;
 const siteUrl = "https://amina.or.id"; 
 
-// --- LOGIKA TABLE OF CONTENTS ---
+// --- LOGIKA TABLE OF CONTENTS (FIXED) ---
 const headings = post.content.match(/<h[2-3][^>]*>.*?<\/h[2-3]>/g) || [];
 const toc = headings.map((h) => {
   const text = h.replace(/<[^>]*>/g, '').trim();
@@ -71,7 +73,8 @@ const toc = headings.map((h) => {
 let contentWithIds = post.content;
 toc.forEach((item) => {
   const headingTag = item.depth === 2 ? 'h2' : 'h3';
-  const searchPattern = new RegExp(`<${headingTag}[^>]*>${item.text}<\/${headingTag}>`, 'g');
+  // Menggunakan escapeRegExp agar tanda "?" tidak merusak build
+  const searchPattern = new RegExp(`<${headingTag}[^>]*>${escapeRegExp(item.text)}<\/${headingTag}>`, 'g');
   contentWithIds = contentWithIds.replace(searchPattern, `<${headingTag} id="${item.id}">${item.text}</${headingTag}>`);
 });
 
@@ -112,7 +115,7 @@ const shareLinks = [
       <nav class="flex items-center space-x-2 text-[10px] mb-2 text-white/40 font-bold uppercase tracking-[0.2em]">
         <a href="/" class="hover:text-primary transition">HOME</a>
         <BiChevronRight className="opacity-20" />
-        <a href={`/categories/${post.categories?.nodes[0]?.slug}`} class="hover:text-primary transition">{primaryCategory}</a>
+        <a href={`/categories/${post.categories?.nodes[0]?.slug}`} class="hover:text-primary transition uppercase font-black">{primaryCategory}</a>
       </nav>
       
       <h1 set:html={post.title} class="text-2xl md:text-4xl lg:text-5xl text-white font-black leading-[1.2] mb-4 max-w-5xl tracking-tighter uppercase" />
@@ -120,7 +123,7 @@ const shareLinks = [
       <div class="flex flex-wrap items-center gap-6 text-[10px] font-bold text-white/30 uppercase tracking-widest border-t border-white/5 pt-4">
         <span class="flex items-center"><BiUserCircle className="mr-1.5 h-4 w-4 text-primary" /> {post.author?.node?.name}</span>
         <span class="flex items-center"><BiCalendarEdit className="mr-1.5 h-4 w-4 text-primary" /> {dateFormat(post.date)}</span>
-        <span class="flex items-center"><BiTimeFive className="mr-1.5 h-4 w-4 text-primary" /> {readingTime} MIN BACA</span>
+        <span class="flex items-center bg-white/5 px-2.5 py-1 rounded-full"><BiTimeFive className="mr-1.5 h-3.5 w-3.5 text-primary" /> {readingTime} MIN BACA</span>
       </div>
     </div>
   </section>
