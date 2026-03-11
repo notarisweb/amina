@@ -8,7 +8,6 @@ import { FaFacebookF, FaWhatsapp, FaTelegramPlane } from "react-icons/fa";
 
 export const prerender = true;
 
-// HELPER: Menghindari error RegExp pada judul dengan karakter spesial
 function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -61,7 +60,6 @@ const { post, allPosts, sidebarCategories } = Astro.props;
 const currentUrl = Astro.url;
 const siteUrl = "https://amina.or.id"; 
 
-// --- LOGIKA TABLE OF CONTENTS ---
 const headings = post.content.match(/<h[2-3][^>]*>.*?<\/h[2-3]>/g) || [];
 const toc = headings.map((h) => {
   const text = h.replace(/<[^>]*>/g, '').trim();
@@ -80,7 +78,6 @@ toc.forEach((item) => {
 const wordsPerMinute = 200;
 const textLength = post.content.split(' ').length;
 const readingTime = Math.ceil(textLength / wordsPerMinute);
-
 const primaryCategory = post.categories?.nodes[0]?.name || "Berita";
 const popularPosts = allPosts.slice(0, 5);
 
@@ -112,13 +109,11 @@ const shareLinks = [
   <section class="bg-[#0b1c3c] py-4 md:py-8 text-white w-full border-t border-white/5 relative overflow-hidden">
     <div class="container relative z-10">
       <nav class="flex items-center space-x-2 text-[10px] mb-2 text-white/40 font-bold uppercase tracking-[0.2em]">
-        <a href="/" class="hover:text-primary transition uppercase">Home</a>
+        <a href="/" class="hover:text-primary transition">HOME</a>
         <BiChevronRight className="opacity-20" />
-        <a href={`/categories/${post.categories?.nodes[0]?.slug}`} class="hover:text-primary transition uppercase font-black">{primaryCategory}</a>
+        <a href={`/categories/${post.categories?.nodes[0]?.slug}`} class="hover:text-primary transition font-black">{primaryCategory}</a>
       </nav>
-      
       <h1 set:html={post.title} class="text-2xl md:text-4xl lg:text-5xl text-white font-black leading-[1.2] mb-4 max-w-5xl tracking-tighter uppercase" />
-      
       <div class="flex flex-wrap items-center gap-6 text-[10px] font-bold text-white/30 uppercase tracking-widest border-t border-white/5 pt-4">
         <span class="flex items-center"><BiUserCircle className="mr-1.5 h-4 w-4 text-primary" /> {post.author?.node?.name}</span>
         <span class="flex items-center"><BiCalendarEdit className="mr-1.5 h-4 w-4 text-primary" /> {dateFormat(post.date)}</span>
@@ -133,16 +128,7 @@ const shareLinks = [
         <article class="w-full lg:w-[70%]">
           {post.featuredImage?.node?.sourceUrl && (
             <div class="mb-8 overflow-hidden rounded-xl shadow-2xl aspect-video relative group bg-gray-100">
-              <Image 
-                src={post.featuredImage.node.sourceUrl} 
-                width={1200} 
-                height={675} 
-                format="webp" 
-                loading="eager" 
-                fetchpriority="high" 
-                class="absolute inset-0 w-full h-full object-cover" 
-                alt={post.title || "Gambar Artikel Amina Media"} 
-              />
+              <Image src={post.featuredImage.node.sourceUrl} width={1200} height={675} format="webp" loading="eager" fetchpriority="high" class="absolute inset-0 w-full h-full object-cover" alt={post.title || "Gambar Artikel"} />
             </div>
           )}
 
@@ -157,15 +143,16 @@ const shareLinks = [
         </article>
 
         <aside class="w-full lg:w-[30%]">
-          <div class="sticky top-24 space-y-8">
+          <div class="sticky top-24 space-y-10">
+            
             {toc.length > 0 && (
-              <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <h2 class="text-[10px] font-black mb-5 text-dark flex items-center tracking-[0.2em] uppercase">
-                  <BiListUl className="mr-2 h-4 w-4 text-primary" /> DAFTAR ISI
+              <div class="bg-white p-10 rounded-[2rem] shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-gray-50">
+                <h2 class="text-[11px] font-black mb-8 text-dark flex items-center tracking-[0.25em] uppercase">
+                  <BiListUl className="mr-3 h-5 w-5 text-primary" /> DAFTAR ISI
                 </h2>
-                <nav class="space-y-2.5">
+                <nav class="space-y-4">
                   {toc.map((item) => (
-                    <a href={`#${item.id}`} class={`block text-[11px] font-bold transition hover:text-primary pl-4 border-l-2 ${item.depth === 3 ? 'border-transparent text-dark/40 ml-2 font-medium' : 'border-primary/20 text-dark/70'}`}>
+                    <a href={`#${item.id}`} class={`block text-[13px] transition hover:text-primary leading-relaxed ${item.depth === 3 ? 'ml-6 text-dark/40 font-medium' : 'text-dark/60 font-bold'}`}>
                       {item.text}
                     </a>
                   ))}
@@ -173,27 +160,33 @@ const shareLinks = [
               </div>
             )}
             
-            <div class="bg-[#0b1c3c] p-6 rounded-xl shadow-2xl text-white">
-              <h2 class="text-[10px] font-black mb-6 uppercase tracking-[0.2em] border-b border-white/10 pb-4">TERPOPULER</h2>
-              <ul class="space-y-6">
+            <div class="bg-[#0b1c3c] p-10 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden">
+              <h2 class="text-[10px] font-black mb-10 uppercase tracking-[0.3em] text-white/40 border-b border-white/5 pb-6">
+                TERPOPULER
+              </h2>
+              <ul class="space-y-8 relative z-10">
                 {popularPosts.map((p: any) => (
                   <li>
-                    <a href={`/blog/${p.slug}`} class="group flex gap-4 items-center">
-                      <div class="w-16 h-12 shrink-0 overflow-hidden rounded bg-white/5">
+                    <a href={`/blog/${p.slug}`} class="group flex gap-5 items-center">
+                      <div class="w-20 h-14 shrink-0 overflow-hidden rounded-xl bg-white/5 shadow-lg border border-white/5">
                         <Image 
                           src={p.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} 
-                          width={100} 
+                          width={150} 
                           height={100} 
-                          class="w-full h-full object-cover group-hover:scale-110 transition" 
-                          alt={p.title || "Berita Populer Amina"} 
+                          class="w-full h-full object-cover group-hover:scale-110 transition duration-500" 
+                          alt={p.title || "Berita Populer"} 
                         />
                       </div>
-                      <h3 class="text-[11px] font-bold leading-tight group-hover:text-primary transition line-clamp-2 uppercase">{p.title}</h3>
+                      <h3 class="text-[11px] font-black leading-snug text-white/50 group-hover:text-primary transition duration-300 line-clamp-2 uppercase tracking-tight">
+                        {p.title}
+                      </h3>
                     </a>
                   </li>
                 ))}
               </ul>
+              <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl"></div>
             </div>
+
           </div>
         </aside>
       </div>
