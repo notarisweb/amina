@@ -1,6 +1,6 @@
 {
   "site": {
-    "title": "amina.or.id",
+    "title": "Amina Media | Berbagi & Peduli",
     "base_url": "https://amina.or.id",
     "base_path": "/",
     "trailing_slash": false,
@@ -12,23 +12,23 @@
   },
 
   "settings": {
-    "pagination": 6
+    "pagination": 9
   },
 
   "metadata": {
-    "meta_author": "Amina",
+    "meta_author": "Amina Media",
     "meta_image": "/images/og-image.png",
-    "meta_description": "Berbagi Dan Peduli - Yayasan Amal Insan Abadi"
+    "meta_description": "Portal berita Islami dan aksi sosial Yayasan Amal Insan Abadi. Menebar manfaat, membangun kepedulian ummat."
   },
 
   "google_tag_manager": {
-    "enable": false,
-    "gtm_id": "GTM-XXXXXX"
+    "enable": true,
+    "gtm_id": "G-XDX1TKCDP1"
   },
 
   "params": {
     "contact_form_action": "#",
-    "copyright": "Yayasan Amal Insan Abadi | Builded by [Ilham](https://lariso.web.id)"
+    "copyright": "© 2026 Yayasan Amal Insan Abadi | Developed by [Aris](https://amina.or.id)"
   },
 
   "contactinfo": {

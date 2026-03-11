@@ -4,98 +4,63 @@ import Base from "@/layouts/Base.astro";
 import dateFormat from "@/lib/utils/dateFormat";
 import { slugify } from "@/lib/utils/textConverter";
 import { BiCalendarEdit, BiUserCircle, BiChevronRight, BiShareAlt, BiTimeFive, BiListUl } from "react-icons/bi";
-import { FaFacebookF, FaWhatsapp, FaPinterestP, FaTelegramPlane } from "react-icons/fa";
+import { FaFacebookF, FaWhatsapp, FaTelegramPlane } from "react-icons/fa";
 
-// 1. FIX ERROR: Wajib ada getStaticPaths jika prerender = true
 export const prerender = true;
 
+// 1. LOGIKA BUILD-PROOF: Ambil semua data sekaligus
 export async function getStaticPaths() {
   const WP_URL = import.meta.env.PUBLIC_WP_URL;
   const query = {
     query: `
-      query GetAllPostSlugs {
+      query GetStaticBuildData {
         posts(first: 100) {
           nodes {
             slug
+            title
+            content
+            date
+            excerpt
+            author { node { name } }
+            categories { nodes { name slug } }
+            featuredImage { node { sourceUrl } }
           }
+        }
+        categories(first: 30) { 
+          nodes { name slug count }
         }
       }
     `,
   };
 
-  const response = await fetch(WP_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(query),
-  });
-  const result = await response.json();
-  const posts = result.data?.posts?.nodes || [];
+  try {
+    const response = await fetch(WP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(query),
+    });
+    const result = await response.json();
+    const allPosts = result.data?.posts?.nodes || [];
+    const sidebarCategories = result.data?.categories?.nodes?.filter((c: any) => c.count > 0) || [];
 
-  return posts.map((post: any) => ({
-    params: { single: post.slug },
-  }));
+    // Kirim data lengkap ke setiap halaman lewat 'props'
+    return allPosts.map((post: any) => ({
+      params: { single: post.slug },
+      props: { post, allPosts, sidebarCategories },
+    }));
+  } catch (e) {
+    console.error("Gagal ambil data build:", e);
+    return [];
+  }
 }
 
-const { single } = Astro.params;
-const WP_URL = import.meta.env.PUBLIC_WP_URL;
+// Ambil data dari props, BUKAN fetch lagi
+const { post, allPosts, sidebarCategories } = Astro.props;
 const currentUrl = Astro.url;
 const siteUrl = "https://amina.or.id"; 
 
-// 2. FETCH DATA UNTUK HALAMAN INI
-const query = {
-  query: `
-    query GetPostDetails($id: ID!) {
-      post(id: $id, idType: SLUG) {
-        title
-        content
-        date
-        excerpt
-        author { node { name } }
-        categories { nodes { name slug } }
-        featuredImage { node { sourceUrl } }
-      }
-      posts(first: 10) { 
-        nodes {
-          title
-          slug
-          categories { nodes { name } }
-          featuredImage { node { sourceUrl } }
-        }
-      }
-      categories(first: 20) { 
-        nodes {
-          name
-          slug
-          count
-        }
-      }
-    }
-  `,
-  variables: { id: single },
-};
-
-let postData;
-let allPosts = [];
-let sidebarCategories = [];
-
-try {
-  const response = await fetch(WP_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(query),
-  });
-  const result = await response.json();
-  postData = result.data?.post;
-  allPosts = result.data?.posts?.nodes || [];
-  sidebarCategories = result.data?.categories?.nodes?.filter((c: any) => c.count > 0) || [];
-} catch (error) {
-  console.error("Gagal fetch data WordPress:", error);
-}
-
-if (!postData) return Astro.redirect("/404");
-
-// LOGIKA TABLE OF CONTENTS (ToC)
-const headings = postData.content.match(/<h[2-3][^>]*>.*?<\/h[2-3]>/g) || [];
+// --- LOGIKA TABLE OF CONTENTS ---
+const headings = post.content.match(/<h[2-3][^>]*>.*?<\/h[2-3]>/g) || [];
 const toc = headings.map((h) => {
   const text = h.replace(/<[^>]*>/g, '').trim();
   const id = slugify(text);
@@ -103,7 +68,7 @@ const toc = headings.map((h) => {
   return { text, id, depth };
 });
 
-let contentWithIds = postData.content;
+let contentWithIds = post.content;
 toc.forEach((item) => {
   const headingTag = item.depth === 2 ? 'h2' : 'h3';
   const searchPattern = new RegExp(`<${headingTag}[^>]*>${item.text}<\/${headingTag}>`, 'g');
@@ -111,30 +76,11 @@ toc.forEach((item) => {
 });
 
 const wordsPerMinute = 200;
-const textLength = postData.content.split(' ').length;
+const textLength = post.content.split(' ').length;
 const readingTime = Math.ceil(textLength / wordsPerMinute);
 
-const post = {
-  content: contentWithIds,
-  data: {
-    title: postData.title,
-    description: postData.excerpt,
-    date: postData.date,
-    image: postData.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
-    categories: postData.categories?.nodes.map((c: any) => c.name) || ["Artikel"],
-    authors: [postData.author?.node?.name || "Admin Amina"],
-  }
-};
-
-const primaryCategory = post.data.categories[0] || "Berita";
-const popularPosts = allPosts.map((p: any) => ({
-  slug: p.slug,
-  data: {
-    title: p.title,
-    image: p.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
-    categories: p.categories?.nodes.map((c: any) => c.name) || [],
-  }
-})).slice(0, 5);
+const primaryCategory = post.categories?.nodes[0]?.name || "Berita";
+const popularPosts = allPosts.slice(0, 5);
 
 const breadcrumbSchema = {
   "@context": "https://schema.org",
@@ -142,57 +88,55 @@ const breadcrumbSchema = {
   "itemListElement": [
     { "@type": "ListItem", "position": 1, "name": "Beranda", "item": siteUrl },
     { "@type": "ListItem", "position": 2, "name": primaryCategory, "item": `${siteUrl}/categories/${slugify(primaryCategory)}` },
-    { "@type": "ListItem", "position": 3, "name": post.data.title, "item": currentUrl.href }
+    { "@type": "ListItem", "position": 3, "name": post.title, "item": currentUrl.href }
   ]
 };
 
 const shareLinks = [
   { name: 'Facebook', icon: FaFacebookF, color: '#1877F2', url: `https://www.facebook.com/sharer/sharer.php?u=${currentUrl}` },
-  { name: 'WhatsApp', icon: FaWhatsapp, color: '#25D366', url: `https://api.whatsapp.com/send?text=${post.data.title} ${currentUrl}` },
-  { name: 'Telegram', icon: FaTelegramPlane, color: '#0088cc', url: `https://t.me/share/url?url=${currentUrl}&text=${post.data.title}` },
+  { name: 'WhatsApp', icon: FaWhatsapp, color: '#25D366', url: `https://api.whatsapp.com/send?text=${post.title} ${currentUrl}` },
+  { name: 'Telegram', icon: FaTelegramPlane, color: '#0088cc', url: `https://t.me/share/url?url=${currentUrl}&text=${post.title}` },
 ];
 ---
 
 <Base 
-  title={post.data.title} 
-  description={post.data.description} 
-  image={post.data.image}
+  title={post.title} 
+  description={post.excerpt} 
+  image={post.featuredImage?.node?.sourceUrl}
   structuredData={breadcrumbSchema}
-  articleDate={post.data.date}
-  articleAuthor={post.data.authors[0]}
+  articleDate={post.date}
+  articleAuthor={post.author?.node?.name}
 >
-  <section class="bg-[#0b1c3c] py-6 md:py-10 text-white w-full border-t border-white/5 relative overflow-hidden">
+  <section class="bg-[#0b1c3c] py-4 md:py-8 text-white w-full border-t border-white/5 relative overflow-hidden">
     <div class="container relative z-10">
-      <nav class="flex items-center space-x-2 text-[10px] md:text-[11px] mb-3 text-white/40 font-bold uppercase tracking-[0.2em]">
-        <a href="/" class="hover:text-primary transition">BERANDA</a>
+      <nav class="flex items-center space-x-2 text-[10px] mb-2 text-white/40 font-bold uppercase tracking-[0.2em]">
+        <a href="/" class="hover:text-primary transition">HOME</a>
         <BiChevronRight className="opacity-20" />
-        <a href={`/categories/${slugify(primaryCategory)}`} class="hover:text-primary transition">{primaryCategory}</a>
-        <BiChevronRight className="opacity-20" />
-        <span class="text-primary italic normal-case font-medium line-clamp-1 opacity-80">{post.data.title}</span>
+        <a href={`/categories/${post.categories?.nodes[0]?.slug}`} class="hover:text-primary transition">{primaryCategory}</a>
       </nav>
       
-      <h1 set:html={post.data.title} class="text-2xl md:text-4xl lg:text-5xl text-white font-black leading-tight mb-4 max-w-4xl tracking-tight uppercase" />
+      <h1 set:html={post.title} class="text-2xl md:text-4xl lg:text-5xl text-white font-black leading-[1.2] mb-4 max-w-5xl tracking-tighter uppercase" />
       
-      <div class="flex flex-wrap items-center gap-6 text-[10px] md:text-[11px] font-bold text-white/60 uppercase tracking-widest border-t border-white/10 pt-4">
-        <span class="flex items-center"><BiUserCircle className="mr-2 h-4 w-4 text-primary" /> {post.data.authors[0]}</span>
-        <span class="flex items-center"><BiCalendarEdit className="mr-2 h-4 w-4 text-primary" /> {dateFormat(post.data.date)}</span>
-        <span class="flex items-center bg-white/5 px-2.5 py-1 rounded-full"><BiTimeFive className="mr-2 h-3 w-3 text-primary" /> {readingTime} Menit Baca</span>
+      <div class="flex flex-wrap items-center gap-6 text-[10px] font-bold text-white/30 uppercase tracking-widest border-t border-white/5 pt-4">
+        <span class="flex items-center"><BiUserCircle className="mr-1.5 h-4 w-4 text-primary" /> {post.author?.node?.name}</span>
+        <span class="flex items-center"><BiCalendarEdit className="mr-1.5 h-4 w-4 text-primary" /> {dateFormat(post.date)}</span>
+        <span class="flex items-center"><BiTimeFive className="mr-1.5 h-4 w-4 text-primary" /> {readingTime} MIN BACA</span>
       </div>
     </div>
   </section>
 
-  <section class="py-12 bg-[#fcfcfc]">
+  <section class="py-10 bg-[#fcfcfc]">
     <div class="container">
-      <div class="flex flex-wrap lg:flex-nowrap gap-12">
-        <article class="w-full lg:w-[68%]">
-          {post.data.image && (
-            <div class="mb-10 overflow-hidden rounded-xl shadow-2xl aspect-video relative group bg-gray-100">
-              <Image src={post.data.image} width={1200} height={675} format="webp" loading="eager" fetchpriority="high" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-700" alt={post.data.title} />
+      <div class="flex flex-wrap lg:flex-nowrap gap-10">
+        <article class="w-full lg:w-[70%]">
+          {post.featuredImage?.node?.sourceUrl && (
+            <div class="mb-8 overflow-hidden rounded-xl shadow-2xl aspect-video relative group bg-gray-100">
+              <Image src={post.featuredImage.node.sourceUrl} width={1200} height={675} format="webp" loading="eager" fetchpriority="high" class="absolute inset-0 w-full h-full object-cover" alt={post.title} />
             </div>
           )}
 
-          <div class="flex items-center gap-3 mb-8 pb-5 border-b border-gray-100">
-             <span class="text-[10px] font-bold text-dark/40 uppercase tracking-widest mr-2 flex items-center"><BiShareAlt className="mr-1 h-3 w-3" /> Bagikan:</span>
+          <div class="flex items-center gap-3 mb-8 pb-4 border-b border-gray-100">
+             <span class="text-[10px] font-bold text-dark/40 uppercase tracking-widest mr-2 flex items-center"><BiShareAlt className="mr-1 h-3 w-3" /> BAGIKAN:</span>
              {shareLinks.map((item) => (
                 <a href={item.url} target="_blank" rel="noopener noreferrer" class="w-8 h-8 flex items-center justify-center rounded-lg text-white transition hover:scale-110 shadow-sm" style={{ backgroundColor: item.color }}><item.icon className="h-3 w-3" /></a>
              ))}
@@ -201,39 +145,38 @@ const shareLinks = [
           <div class="content prose prose-lg md:prose-xl max-w-none text-dark/80 leading-[1.7] first-letter:text-5xl first-letter:font-black first-letter:text-primary first-letter:mr-2 first-letter:float-left" set:html={post.content} />
         </article>
 
-        <aside class="w-full lg:w-[32%]">
+        <aside class="w-full lg:w-[30%]">
           <div class="sticky top-24 space-y-8">
-            <div class="bg-[#0b1c3c] p-6 rounded-xl shadow-2xl border border-white/5 text-white">
-              <h2 class="text-[10px] font-black mb-6 uppercase tracking-[0.2em] border-b border-white/10 pb-4 flex justify-between items-center">
-                <span class="bg-primary px-2 py-1 rounded-sm text-white">Kategori</span>
-                <span class="text-primary italic opacity-90 tracking-widest uppercase">Insight</span>
-              </h2>
-              <ul class="space-y-3">
-                {sidebarCategories.map((category) => (
-                  <li class="group">
-                    <a href={`/categories/${category.slug}`} class="flex items-center justify-between text-[12px] font-bold text-white/70 hover:text-primary transition">
-                      <span class="group-hover:translate-x-1 transition-transform">{category.name}</span>
-                      <span class="bg-white/5 text-white/30 px-2 py-0.5 rounded text-[8px] group-hover:bg-primary group-hover:text-white transition">{category.count}</span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
             {toc.length > 0 && (
               <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <h2 class="text-[10px] font-black mb-5 text-dark flex items-center tracking-[0.2em] uppercase">
-                  <BiListUl className="mr-2 h-4 w-4 text-primary" /> Daftar Isi
+                  <BiListUl className="mr-2 h-4 w-4 text-primary" /> DAFTAR ISI
                 </h2>
-                <nav class="space-y-2.5 border-l-2 border-gray-50">
+                <nav class="space-y-2.5">
                   {toc.map((item) => (
-                    <a href={`#${item.id}`} class={`block text-[11px] font-bold transition hover:text-primary pl-4 border-l-2 -ml-[2px] ${item.depth === 3 ? 'border-transparent font-medium text-dark/40 ml-2' : 'border-primary/20 text-dark/70 hover:border-primary'}`}>
+                    <a href={`#${item.id}`} class={`block text-[11px] font-bold transition hover:text-primary pl-4 border-l-2 ${item.depth === 3 ? 'border-transparent text-dark/40 ml-2 font-medium' : 'border-primary/20 text-dark/70'}`}>
                       {item.text}
                     </a>
                   ))}
                 </nav>
               </div>
             )}
+            
+            <div class="bg-[#0b1c3c] p-6 rounded-xl shadow-2xl text-white">
+              <h2 class="text-[10px] font-black mb-6 uppercase tracking-[0.2em] border-b border-white/10 pb-4">TERPOPULER</h2>
+              <ul class="space-y-6">
+                {popularPosts.map((p: any) => (
+                  <li>
+                    <a href={`/blog/${p.slug}`} class="group flex gap-4 items-center">
+                      <div class="w-16 h-12 shrink-0 overflow-hidden rounded bg-white/5">
+                        <Image src={p.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} width={100} height={100} class="w-full h-full object-cover group-hover:scale-110 transition" alt={p.title} />
+                      </div>
+                      <h3 class="text-[11px] font-bold leading-tight group-hover:text-primary transition line-clamp-2 uppercase">{p.title}</h3>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </aside>
       </div>
