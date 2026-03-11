@@ -2,20 +2,49 @@
 import { Image } from "astro:assets";
 import Base from "@/layouts/Base.astro";
 import dateFormat from "@/lib/utils/dateFormat";
-import { humanize, markdownify, slugify } from "@/lib/utils/textConverter";
+import { slugify } from "@/lib/utils/textConverter";
 import { BiCalendarEdit, BiUserCircle, BiChevronRight, BiShareAlt, BiTimeFive, BiListUl } from "react-icons/bi";
 import { FaFacebookF, FaWhatsapp, FaPinterestP, FaTelegramPlane } from "react-icons/fa";
 
-// 1. OPTIMASI PERFORMA: Aktifkan Prerender agar Loading Sekejap
+// 1. FIX ERROR: Wajib ada getStaticPaths jika prerender = true
 export const prerender = true;
+
+export async function getStaticPaths() {
+  const WP_URL = import.meta.env.PUBLIC_WP_URL;
+  const query = {
+    query: `
+      query GetAllPostSlugs {
+        posts(first: 100) {
+          nodes {
+            slug
+          }
+        }
+      }
+    `,
+  };
+
+  const response = await fetch(WP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(query),
+  });
+  const result = await response.json();
+  const posts = result.data?.posts?.nodes || [];
+
+  return posts.map((post: any) => ({
+    params: { single: post.slug },
+  }));
+}
+
 const { single } = Astro.params;
 const WP_URL = import.meta.env.PUBLIC_WP_URL;
 const currentUrl = Astro.url;
 const siteUrl = "https://amina.or.id"; 
 
+// 2. FETCH DATA UNTUK HALAMAN INI
 const query = {
   query: `
-    query GetPostAndAllCategories($id: ID!) {
+    query GetPostDetails($id: ID!) {
       post(id: $id, idType: SLUG) {
         title
         content
@@ -25,7 +54,7 @@ const query = {
         categories { nodes { name slug } }
         featuredImage { node { sourceUrl } }
       }
-      posts(first: 50) { 
+      posts(first: 10) { 
         nodes {
           title
           slug
@@ -33,7 +62,7 @@ const query = {
           featuredImage { node { sourceUrl } }
         }
       }
-      categories(first: 100) { 
+      categories(first: 20) { 
         nodes {
           name
           slug
@@ -65,7 +94,7 @@ try {
 
 if (!postData) return Astro.redirect("/404");
 
-// --- LOGIKA TABLE OF CONTENTS (ToC) DINAMIS ---
+// LOGIKA TABLE OF CONTENTS (ToC)
 const headings = postData.content.match(/<h[2-3][^>]*>.*?<\/h[2-3]>/g) || [];
 const toc = headings.map((h) => {
   const text = h.replace(/<[^>]*>/g, '').trim();
@@ -97,22 +126,16 @@ const post = {
   }
 };
 
-const formattedAllPosts = allPosts.map((p: any) => ({
+const primaryCategory = post.data.categories[0] || "Berita";
+const popularPosts = allPosts.map((p: any) => ({
   slug: p.slug,
   data: {
     title: p.title,
     image: p.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
     categories: p.categories?.nodes.map((c: any) => c.name) || [],
   }
-}));
+})).slice(0, 5);
 
-const primaryCategory = post.data.categories[0] || "Berita";
-const popularPosts = formattedAllPosts.slice(0, 5);
-const relatedPosts = formattedAllPosts
-  .filter(p => p.slug !== single && p.data.categories.some(cat => post.data.categories.includes(cat)))
-  .slice(0, 3);
-
-// SEO: Skema Breadcrumb Detail untuk Google
 const breadcrumbSchema = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
@@ -126,7 +149,6 @@ const breadcrumbSchema = {
 const shareLinks = [
   { name: 'Facebook', icon: FaFacebookF, color: '#1877F2', url: `https://www.facebook.com/sharer/sharer.php?u=${currentUrl}` },
   { name: 'WhatsApp', icon: FaWhatsapp, color: '#25D366', url: `https://api.whatsapp.com/send?text=${post.data.title} ${currentUrl}` },
-  { name: 'Pinterest', icon: FaPinterestP, color: '#E60023', url: `https://pinterest.com/pin/create/button/?url=${currentUrl}&media=${post.data.image}&description=${post.data.title}` },
   { name: 'Telegram', icon: FaTelegramPlane, color: '#0088cc', url: `https://t.me/share/url?url=${currentUrl}&text=${post.data.title}` },
 ];
 ---
@@ -139,9 +161,9 @@ const shareLinks = [
   articleDate={post.data.date}
   articleAuthor={post.data.authors[0]}
 >
-  <section class="bg-[#0b1c3c] py-8 md:py-14 text-white w-full border-t border-white/5 relative overflow-hidden">
+  <section class="bg-[#0b1c3c] py-6 md:py-10 text-white w-full border-t border-white/5 relative overflow-hidden">
     <div class="container relative z-10">
-      <nav class="flex items-center space-x-2 text-[10px] md:text-[11px] mb-4 text-white/40 font-bold uppercase tracking-[0.2em]">
+      <nav class="flex items-center space-x-2 text-[10px] md:text-[11px] mb-3 text-white/40 font-bold uppercase tracking-[0.2em]">
         <a href="/" class="hover:text-primary transition">BERANDA</a>
         <BiChevronRight className="opacity-20" />
         <a href={`/categories/${slugify(primaryCategory)}`} class="hover:text-primary transition">{primaryCategory}</a>
@@ -149,75 +171,49 @@ const shareLinks = [
         <span class="text-primary italic normal-case font-medium line-clamp-1 opacity-80">{post.data.title}</span>
       </nav>
       
-      <h1 set:html={post.data.title} class="text-3xl md:text-5xl lg:text-6xl text-white font-black leading-[1.1] mb-6 max-w-4xl tracking-tight uppercase" />
+      <h1 set:html={post.data.title} class="text-2xl md:text-4xl lg:text-5xl text-white font-black leading-tight mb-4 max-w-4xl tracking-tight uppercase" />
       
-      <div class="flex flex-wrap items-center gap-8 text-[11px] font-bold text-white/60 uppercase tracking-widest border-t border-white/10 pt-6">
-        <span class="flex items-center"><BiUserCircle className="mr-2 h-5 w-5 text-primary" /> {post.data.authors[0]}</span>
-        <span class="flex items-center"><BiCalendarEdit className="mr-2 h-5 w-5 text-primary" /> {dateFormat(post.data.date)}</span>
-        <span class="flex items-center bg-white/5 px-3 py-1 rounded-full"><BiTimeFive className="mr-2 h-4 w-4 text-primary" /> {readingTime} Menit Baca</span>
+      <div class="flex flex-wrap items-center gap-6 text-[10px] md:text-[11px] font-bold text-white/60 uppercase tracking-widest border-t border-white/10 pt-4">
+        <span class="flex items-center"><BiUserCircle className="mr-2 h-4 w-4 text-primary" /> {post.data.authors[0]}</span>
+        <span class="flex items-center"><BiCalendarEdit className="mr-2 h-4 w-4 text-primary" /> {dateFormat(post.data.date)}</span>
+        <span class="flex items-center bg-white/5 px-2.5 py-1 rounded-full"><BiTimeFive className="mr-2 h-3 w-3 text-primary" /> {readingTime} Menit Baca</span>
       </div>
     </div>
   </section>
 
-  <section class="py-16 bg-[#fcfcfc] text-left">
+  <section class="py-12 bg-[#fcfcfc]">
     <div class="container">
       <div class="flex flex-wrap lg:flex-nowrap gap-12">
         <article class="w-full lg:w-[68%]">
           {post.data.image && (
-            <div class="mb-12 overflow-hidden rounded-xl shadow-2xl aspect-video relative group bg-gray-100">
-              <Image 
-                src={post.data.image} 
-                width={1200} 
-                height={675} 
-                format="webp" 
-                loading="eager" 
-                fetchpriority="high"
-                class="absolute inset-0 w-full h-full object-cover transition duration-700 group-hover:scale-105" 
-                alt={post.data.title} 
-              />
+            <div class="mb-10 overflow-hidden rounded-xl shadow-2xl aspect-video relative group bg-gray-100">
+              <Image src={post.data.image} width={1200} height={675} format="webp" loading="eager" fetchpriority="high" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-700" alt={post.data.title} />
             </div>
           )}
 
-          <div class="flex items-center gap-3 mb-10 pb-6 border-b border-gray-100">
-             <span class="text-[11px] font-bold text-dark/40 uppercase tracking-widest mr-2 flex items-center"><BiShareAlt className="mr-1 h-4 w-4" /> Share:</span>
+          <div class="flex items-center gap-3 mb-8 pb-5 border-b border-gray-100">
+             <span class="text-[10px] font-bold text-dark/40 uppercase tracking-widest mr-2 flex items-center"><BiShareAlt className="mr-1 h-3 w-3" /> Bagikan:</span>
              {shareLinks.map((item) => (
-                <a href={item.url} target="_blank" rel="noopener noreferrer" class="w-9 h-9 flex items-center justify-center rounded-lg text-white transition hover:scale-110 shadow-sm" style={{ backgroundColor: item.color }}><item.icon className="h-4 w-4" /></a>
+                <a href={item.url} target="_blank" rel="noopener noreferrer" class="w-8 h-8 flex items-center justify-center rounded-lg text-white transition hover:scale-110 shadow-sm" style={{ backgroundColor: item.color }}><item.icon className="h-3 w-3" /></a>
              ))}
           </div>
 
-          <div class="content prose prose-lg md:prose-xl max-w-none text-dark/80 leading-[1.8] first-letter:text-6xl first-letter:font-black first-letter:text-primary first-letter:mr-3 first-letter:float-left" set:html={post.content} />
-          
-          {relatedPosts.length > 0 && (
-            <div class="mt-24 pt-12 border-t border-gray-200">
-              <h2 class="text-2xl font-black mb-10 text-dark flex items-center tracking-tighter"><span class="w-8 h-1 bg-primary mr-4 rounded-full"></span>BACA JUGA</h2>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {relatedPosts.map((rp) => (
-                  <a href={`/blog/${rp.slug}`} class="group">
-                    <div class="aspect-video rounded-lg overflow-hidden mb-4 shadow-md bg-gray-100">
-                      <Image src={rp.data.image} width={400} height={225} format="webp" class="w-full h-full object-cover group-hover:scale-110 transition duration-500" alt={rp.data.title} />
-                    </div>
-                    <h3 class="text-[13px] font-black leading-tight group-hover:text-primary transition line-clamp-2 uppercase">{rp.data.title}</h3>
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
+          <div class="content prose prose-lg md:prose-xl max-w-none text-dark/80 leading-[1.7] first-letter:text-5xl first-letter:font-black first-letter:text-primary first-letter:mr-2 first-letter:float-left" set:html={post.content} />
         </article>
 
         <aside class="w-full lg:w-[32%]">
-          <div class="sticky top-24 space-y-10">
-            
-            <div class="bg-[#0b1c3c] p-8 rounded-xl shadow-2xl border border-white/5 text-white">
-              <h2 class="text-xs font-black mb-8 uppercase tracking-[0.2em] border-b border-white/10 pb-5 flex justify-between items-center">
-                <span class="bg-primary px-3 py-1.5 rounded-sm text-white shadow-[0_0_15px_rgba(var(--color-primary),0.3)]">Kategori</span>
-                <span class="text-[10px] text-primary italic opacity-90 tracking-widest">Insight</span>
+          <div class="sticky top-24 space-y-8">
+            <div class="bg-[#0b1c3c] p-6 rounded-xl shadow-2xl border border-white/5 text-white">
+              <h2 class="text-[10px] font-black mb-6 uppercase tracking-[0.2em] border-b border-white/10 pb-4 flex justify-between items-center">
+                <span class="bg-primary px-2 py-1 rounded-sm text-white">Kategori</span>
+                <span class="text-primary italic opacity-90 tracking-widest uppercase">Insight</span>
               </h2>
-              <ul class="space-y-4">
+              <ul class="space-y-3">
                 {sidebarCategories.map((category) => (
                   <li class="group">
-                    <a href={`/categories/${category.slug}`} class="flex items-center justify-between text-[13px] font-bold text-white/70 hover:text-primary transition">
+                    <a href={`/categories/${category.slug}`} class="flex items-center justify-between text-[12px] font-bold text-white/70 hover:text-primary transition">
                       <span class="group-hover:translate-x-1 transition-transform">{category.name}</span>
-                      <span class="bg-white/5 text-white/30 px-2.5 py-1 rounded text-[9px] group-hover:bg-primary group-hover:text-white transition">{category.count}</span>
+                      <span class="bg-white/5 text-white/30 px-2 py-0.5 rounded text-[8px] group-hover:bg-primary group-hover:text-white transition">{category.count}</span>
                     </a>
                   </li>
                 ))}
@@ -225,37 +221,19 @@ const shareLinks = [
             </div>
 
             {toc.length > 0 && (
-              <div class="bg-white p-8 rounded-xl shadow-[0_15px_50px_rgba(0,0,0,0.03)] border border-gray-100">
-                <h2 class="text-xs font-black mb-6 text-dark flex items-center tracking-[0.2em] uppercase">
-                  <BiListUl className="mr-2 h-5 w-5 text-primary" /> Daftar Isi
+              <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <h2 class="text-[10px] font-black mb-5 text-dark flex items-center tracking-[0.2em] uppercase">
+                  <BiListUl className="mr-2 h-4 w-4 text-primary" /> Daftar Isi
                 </h2>
-                <nav class="space-y-3">
+                <nav class="space-y-2.5 border-l-2 border-gray-50">
                   {toc.map((item) => (
-                    <a 
-                      href={`#${item.id}`} 
-                      class={`block text-[12px] font-bold transition hover:text-primary border-l-2 pl-4 ${item.depth === 3 ? 'ml-4 border-gray-100 font-medium text-dark/50' : 'border-primary/20 text-dark/70'}`}
-                    >
+                    <a href={`#${item.id}`} class={`block text-[11px] font-bold transition hover:text-primary pl-4 border-l-2 -ml-[2px] ${item.depth === 3 ? 'border-transparent font-medium text-dark/40 ml-2' : 'border-primary/20 text-dark/70 hover:border-primary'}`}>
                       {item.text}
                     </a>
                   ))}
                 </nav>
               </div>
             )}
-
-            <div class="bg-white p-8 rounded-xl shadow-[0_15px_50px_rgba(0,0,0,0.03)] border border-gray-100">
-              <h2 class="text-xs font-black mb-8 text-dark flex items-center tracking-[0.2em] uppercase"><span class="w-1.5 h-4 bg-primary mr-3 rounded-full"></span>Terpopuler</h2>
-              <ul class="space-y-8">
-                {popularPosts.map((p) => (
-                  <li class="group">
-                    <a href={`/blog/${p.slug}`} class="flex gap-5 items-center">
-                      <div class="w-20 h-14 shrink-0 overflow-hidden rounded-lg shadow-sm bg-gray-50 relative"><Image src={p.data.image} width={150} height={100} format="webp" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-500" alt={p.data.title} /></div>
-                      <h3 class="flex-1 text-[11px] font-black leading-snug text-dark group-hover:text-primary transition line-clamp-2 uppercase">{p.data.title}</h3>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
           </div>
         </aside>
       </div>
