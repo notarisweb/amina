@@ -8,7 +8,7 @@ import { FaFacebookF, FaWhatsapp, FaTelegramPlane } from "react-icons/fa";
 
 export const prerender = true;
 
-// 1. HELPER ANTI-CRASH: Menghindari error RegExp pada judul dengan karakter spesial
+// HELPER: Menghindari error RegExp pada judul dengan karakter spesial
 function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -61,7 +61,7 @@ const { post, allPosts, sidebarCategories } = Astro.props;
 const currentUrl = Astro.url;
 const siteUrl = "https://amina.or.id"; 
 
-// --- LOGIKA TABLE OF CONTENTS (FIXED) ---
+// --- LOGIKA TABLE OF CONTENTS ---
 const headings = post.content.match(/<h[2-3][^>]*>.*?<\/h[2-3]>/g) || [];
 const toc = headings.map((h) => {
   const text = h.replace(/<[^>]*>/g, '').trim();
@@ -73,7 +73,6 @@ const toc = headings.map((h) => {
 let contentWithIds = post.content;
 toc.forEach((item) => {
   const headingTag = item.depth === 2 ? 'h2' : 'h3';
-  // Menggunakan escapeRegExp agar tanda "?" tidak merusak build
   const searchPattern = new RegExp(`<${headingTag}[^>]*>${escapeRegExp(item.text)}<\/${headingTag}>`, 'g');
   contentWithIds = contentWithIds.replace(searchPattern, `<${headingTag} id="${item.id}">${item.text}</${headingTag}>`);
 });
@@ -113,7 +112,7 @@ const shareLinks = [
   <section class="bg-[#0b1c3c] py-4 md:py-8 text-white w-full border-t border-white/5 relative overflow-hidden">
     <div class="container relative z-10">
       <nav class="flex items-center space-x-2 text-[10px] mb-2 text-white/40 font-bold uppercase tracking-[0.2em]">
-        <a href="/" class="hover:text-primary transition">HOME</a>
+        <a href="/" class="hover:text-primary transition uppercase">Home</a>
         <BiChevronRight className="opacity-20" />
         <a href={`/categories/${post.categories?.nodes[0]?.slug}`} class="hover:text-primary transition uppercase font-black">{primaryCategory}</a>
       </nav>
@@ -134,7 +133,16 @@ const shareLinks = [
         <article class="w-full lg:w-[70%]">
           {post.featuredImage?.node?.sourceUrl && (
             <div class="mb-8 overflow-hidden rounded-xl shadow-2xl aspect-video relative group bg-gray-100">
-              <Image src={post.featuredImage.node.sourceUrl} width={1200} height={675} format="webp" loading="eager" fetchpriority="high" class="absolute inset-0 w-full h-full object-cover" alt={post.title} />
+              <Image 
+                src={post.featuredImage.node.sourceUrl} 
+                width={1200} 
+                height={675} 
+                format="webp" 
+                loading="eager" 
+                fetchpriority="high" 
+                class="absolute inset-0 w-full h-full object-cover" 
+                alt={post.title || "Gambar Artikel Amina Media"} 
+              />
             </div>
           )}
 
@@ -172,7 +180,13 @@ const shareLinks = [
                   <li>
                     <a href={`/blog/${p.slug}`} class="group flex gap-4 items-center">
                       <div class="w-16 h-12 shrink-0 overflow-hidden rounded bg-white/5">
-                        <Image src={p.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} width={100} height={100} class="w-full h-full object-cover group-hover:scale-110 transition" alt={p.title} />
+                        <Image 
+                          src={p.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} 
+                          width={100} 
+                          height={100} 
+                          class="w-full h-full object-cover group-hover:scale-110 transition" 
+                          alt={p.title || "Berita Populer Amina"} 
+                        />
                       </div>
                       <h3 class="text-[11px] font-bold leading-tight group-hover:text-primary transition line-clamp-2 uppercase">{p.title}</h3>
                     </a>
