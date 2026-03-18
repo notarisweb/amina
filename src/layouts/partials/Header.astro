@@ -2,7 +2,7 @@
 import Logo from "@/components/Logo.astro";
 import menu from "@/config/menu.json";
 import { IoSearch } from "react-icons/io5";
-import { BiTimeFive, BiChevronDown } from "react-icons/bi";
+import { BiTimeFive, BiChevronDown, BiMenu, BiX } from "react-icons/bi";
 
 const main = menu.main || [];
 const today = new Date();
@@ -13,35 +13,37 @@ const formattedDate = new Intl.DateTimeFormat('id-ID', {
 
 <header class="header sticky top-0 z-[1000] w-full">
   <div class="bg-[#0b1c3c] py-2 border-b border-white/5 w-full">
-    <div class="container flex items-center">
-      <div class="flex items-center text-white/80 text-[11px] md:text-xs font-medium">
-        <BiTimeFive className="mr-2 h-4 w-4 text-orange-400" />
-        <span class="capitalize">{formattedDate}</span>
+    <div class="container flex items-center justify-between">
+      <div class="flex items-center text-white/80 text-[10px] md:text-xs font-bold uppercase tracking-widest">
+        <BiTimeFive className="mr-2 h-4 w-4 text-primary" />
+        <span>{formattedDate}</span>
+      </div>
+      <div class="hidden md:flex gap-4 text-[10px] font-bold text-white/40 uppercase tracking-widest">
+        <a href="/kontak" class="hover:text-primary transition">Hubungi Kami</a>
       </div>
     </div>
   </div>
 
-  <div class="w-full bg-white/50 backdrop-blur-md shadow-sm border-b border-black/5 transition-all duration-300">
-    <nav class="container flex items-center justify-between py-4">
-      <div class="flex items-center">
+  <div class="w-full bg-white/80 backdrop-blur-xl shadow-sm border-b border-black/5 transition-all duration-300">
+    <nav class="container flex items-center justify-between py-4 relative">
+      <div class="flex items-center z-50">
         <Logo />
       </div>
 
       <div class="flex items-center ml-auto">
-        <ul id="nav-menu" class="navbar-nav hidden md:flex md:items-center md:space-x-10 font-bold">
+        <ul id="nav-menu" class="navbar-nav hidden lg:flex lg:items-center lg:space-x-8">
           {main.map((item) => (
             <li class="nav-item group relative flex items-center h-full">
               {item.hasChildren ? (
-                // Tombol Dropdown (Pages)
                 <>
-                  <button class="nav-link text-dark hover:text-primary transition text-base md:text-lg tracking-tight flex items-center py-2">
+                  <button class="nav-link text-[#0b1c3c] hover:text-primary transition text-sm font-black uppercase tracking-widest flex items-center py-2">
                     {item.name}
-                    <BiChevronDown className="ml-1 h-5 w-5 group-hover:rotate-180 transition-transform" />
+                    <BiChevronDown className="ml-1 h-4 w-4 group-hover:rotate-180 transition-transform" />
                   </button>
-                  <ul class="absolute left-0 top-full hidden group-hover:block w-48 bg-white/95 backdrop-blur-xl shadow-xl rounded-xl border border-gray-100 py-3 mt-0">
+                  <ul class="absolute left-0 top-full hidden group-hover:block w-48 bg-white shadow-2xl rounded-2xl border border-gray-100 py-4 mt-0 animate-fade-in">
                     {item.children.map((child: any) => (
                       <li>
-                        <a href={child.url} class="block px-6 py-2 text-sm text-dark hover:text-primary hover:bg-gray-50 transition font-bold">
+                        <a href={child.url} class="block px-6 py-2.5 text-[12px] text-dark hover:text-primary hover:bg-gray-50 transition font-bold uppercase tracking-wider">
                           {child.name}
                         </a>
                       </li>
@@ -49,8 +51,7 @@ const formattedDate = new Intl.DateTimeFormat('id-ID', {
                   </ul>
                 </>
               ) : (
-                // Menu Biasa (Home, About, dll) - Ditambah flex items-center agar lurus
-                <a href={item.url} class="nav-link text-dark hover:text-primary transition text-base md:text-lg tracking-tight flex items-center py-2">
+                <a href={item.url} class="nav-link text-[#0b1c3c] hover:text-primary transition text-sm font-black uppercase tracking-widest flex items-center py-2">
                   {item.name}
                 </a>
               )}
@@ -58,12 +59,74 @@ const formattedDate = new Intl.DateTimeFormat('id-ID', {
           ))}
         </ul>
 
-        <div class="ml-10 flex items-center border-l border-gray-300/50 pl-6 h-8">
-          <a class="text-dark hover:text-primary transition p-2 flex items-center" href="/search">
-            <IoSearch className="h-6 w-6" />
+        <div class="flex items-center ml-8 gap-4 border-l border-gray-200 pl-6">
+          <a class="text-[#0b1c3c] hover:text-primary transition p-2 flex items-center" href="/search" title="Cari Berita">
+            <IoSearch className="h-5 w-5" />
           </a>
+          
+          <button id="mobile-menu-toggle" class="lg:hidden text-[#0b1c3c] p-2 hover:bg-gray-100 rounded-lg transition" aria-label="Toggle Menu">
+            <BiMenu id="menu-icon" className="h-7 w-7" />
+            <BiX id="close-icon" className="h-7 w-7 hidden" />
+          </button>
         </div>
+      </div>
+
+      <div id="mobile-menu" class="fixed inset-0 top-[110px] bg-white z-40 lg:hidden hidden animate-slide-down">
+        <ul class="flex flex-col p-8 space-y-6">
+          {main.map((item) => (
+            <li>
+              <a href={item.url} class="text-2xl font-black text-[#0b1c3c] uppercase tracking-tighter hover:text-primary">
+                {item.name}
+              </a>
+              {item.hasChildren && (
+                <ul class="mt-4 ml-4 space-y-3 border-l-2 border-primary/20 pl-4">
+                  {item.children.map((child: any) => (
+                    <li>
+                      <a href={child.url} class="text-sm font-bold text-dark/60 uppercase tracking-widest">{child.name}</a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
       </div>
     </nav>
   </div>
 </header>
+
+<script is:inline>
+  const setupNav = () => {
+    const toggle = document.getElementById('mobile-menu-toggle');
+    const menu = document.getElementById('mobile-menu');
+    const menuIcon = document.getElementById('menu-icon');
+    const closeIcon = document.getElementById('close-icon');
+
+    if (toggle && menu) {
+      toggle.addEventListener('click', () => {
+        const isHidden = menu.classList.contains('hidden');
+        if (isHidden) {
+          menu.classList.remove('hidden');
+          menuIcon.classList.add('hidden');
+          closeIcon.classList.remove('hidden');
+          document.body.style.overflow = 'hidden'; // Stop scroll
+        } else {
+          menu.classList.add('hidden');
+          menuIcon.classList.remove('hidden');
+          closeIcon.classList.add('hidden');
+          document.body.style.overflow = 'auto'; // Enable scroll
+        }
+      });
+    }
+  };
+
+  setupNav();
+  document.addEventListener('astro:page-load', setupNav);
+</script>
+
+<style>
+  .animate-fade-in { animation: fadeIn 0.2s ease-out; }
+  .animate-slide-down { animation: slideDown 0.3s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+</style>
