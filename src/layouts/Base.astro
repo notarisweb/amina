@@ -28,7 +28,7 @@ export interface Props {
   image?: string;
   noindex?: boolean;
   canonical?: string;
-  structuredData?: object; 
+  structuredData?: object | object[]; // Bisa menerima satu object atau array object
   articleDate?: string;
   articleAuthor?: string;
 }
@@ -58,7 +58,7 @@ const finalDescription = plainify(
 const currentUrl = Astro.url.href;
 const finalCanonical = canonical || currentUrl.replace('studio.', '');
 
-// 2. FIX GAMBAR WHATSAPP: Pastikan URL Selalu Absolut
+// 2. IMAGE OPTIMIZATION UNTUK SOSIAL MEDIA
 let finalImage = "";
 if (image) {
   finalImage = image.startsWith("http") ? image : `${siteUrl}${image}`;
@@ -113,8 +113,6 @@ const GA_ID = "G-XDX1TKCDP1";
     <meta property="og:title" content={finalTitle} />
     <meta property="og:description" content={finalDescription} />
     <meta property="og:image" content={finalImage} />
-    <meta property="og:image:secure_url" content={finalImage} />
-    <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     {articleDate && <meta property="article:published_time" content={articleDate} />}
@@ -126,37 +124,58 @@ const GA_ID = "G-XDX1TKCDP1";
     <meta name="twitter:image" content={finalImage} />
 
     <link rel="shortcut icon" href={config.site.favicon} />
-    <script type="application/ld+json" is:inline set:html={JSON.stringify(structuredData || {})} />
+    
+    {structuredData && (
+      <script type="application/ld+json" is:inline set:html={JSON.stringify(structuredData)} />
+    )}
 
     <ClientRouter />
 
     <style is:global>
-      /* PROGRESS BAR FIX - TINGKAT DEWA */
+      /* --- GLOBAL WIDTH ADJUSTMENT (REDUCE 10%) --- */
+      /* Memberikan "ruang napas" agar konten tidak terlihat sesak */
+      .container {
+        max-width: 1120px !important; /* Standar biasanya 1280px, kita rampingkan ke 1120px */
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+      }
+
+      /* Progress Bar Tingkat Dewa */
       #progress-container {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
-        height: 5px;
+        height: 4px;
         z-index: 999999;
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
         pointer-events: none;
       }
       #progress-bar {
         height: 100%;
         width: 0%;
         background: #2563eb;
-        box-shadow: 0 0 15px rgba(37, 99, 235, 1);
-        transition: width 0.2s ease-out;
+        box-shadow: 0 0 10px rgba(37, 99, 235, 0.8);
+        transition: width 0.15s ease-out;
       }
 
+      /* Scrollbar Custom */
       ::-webkit-scrollbar { width: 8px; }
       ::-webkit-scrollbar-track { background: #f8fafc; }
       ::-webkit-scrollbar-thumb { background: #0b1c3c; border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: #1e293b; }
+
+      /* Antialiasing Fix */
+      body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
     </style>
   </head>
 
-  <body class="antialiased">
+  <body>
     <div id="progress-container">
       <div id="progress-bar"></div>
     </div>
@@ -166,7 +185,7 @@ const GA_ID = "G-XDX1TKCDP1";
     <TwSizeIndicator />
     <Header />
     
-    <main id="main-content" class="min-h-[70vh]" transition:animate="fade">
+    <main id="main-content" class="min-h-[75vh]" transition:animate="fade">
       <slot />
     </main>
 
@@ -180,6 +199,10 @@ const GA_ID = "G-XDX1TKCDP1";
         const update = () => {
           const scroll = window.scrollY || document.documentElement.scrollTop;
           const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+          if (height <= 0) {
+            bar.style.width = "0%";
+            return;
+          }
           const pct = (scroll / height) * 100;
           bar.style.width = pct + "%";
         };
