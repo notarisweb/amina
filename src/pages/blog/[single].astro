@@ -127,7 +127,16 @@ const shareLinks = [
         <article class="w-full lg:w-[68%]">
           {post.featuredImage?.node?.sourceUrl && (
             <div class="mb-10 overflow-hidden rounded-3xl shadow-2xl aspect-video relative group bg-gray-100 dark:bg-white/5 border border-gray-100 dark:border-white/5">
-              <Image src={post.featuredImage.node.sourceUrl} width={1200} height={675} format="webp" loading="eager" fetchpriority="high" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt={post.title} />
+              <Image 
+                src={post.featuredImage.node.sourceUrl} 
+                width={1200} 
+                height={675} 
+                format="webp" 
+                loading="eager" 
+                fetchpriority="high" 
+                class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                alt={post.title || "Featured Image"} 
+              />
             </div>
           )}
 
@@ -153,7 +162,13 @@ const shareLinks = [
                 {relatedPosts.map((rp) => (
                   <a href={`/blog/${rp.slug}`} class="group flex flex-col bg-white dark:bg-white/5 rounded-2xl overflow-hidden shadow-sm border border-gray-50 dark:border-white/5 hover:shadow-xl transition-all duration-300 h-full">
                     <div class="aspect-video overflow-hidden bg-gray-100 dark:bg-white/5">
-                      <Image src={rp.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} width={400} height={225} class="w-full h-full object-cover group-hover:scale-110 transition duration-500" alt={rp.title} />
+                      <Image 
+                        src={rp.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} 
+                        width={400} 
+                        height={225} 
+                        class="w-full h-full object-cover group-hover:scale-110 transition duration-500" 
+                        alt={rp.title || "Artikel Terkait"} 
+                      />
                     </div>
                     <div class="p-4 flex-1 flex flex-col justify-between">
                       <h3 class="text-[14px] font-black leading-snug text-dark/90 dark:text-white/90 group-hover:text-primary transition line-clamp-2 mb-3 tracking-tight">{rp.title}</h3>
