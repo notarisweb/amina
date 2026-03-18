@@ -61,6 +61,28 @@ const { post, allPosts, sidebarCategories } = Astro.props;
 const currentUrl = Astro.url;
 const siteUrl = "https://amina.or.id"; 
 
+// --- 1. FAQ SCHEMA OTOMATIS: Scan H2/H3 berakhiran "?" ---
+const faqMatches = post.content.match(/<h[2-3][^>]*>(.*?\?)<\/h[2-3]>\s*<p>(.*?)<\/p>/g) || [];
+const faqList = faqMatches.map((match) => {
+  const qMatch = match.match(/<h[2-3][^>]*>(.*?)<\/h[2-3]>/);
+  const aMatch = match.match(/<p>(.*?)<\/p>/);
+  return {
+    question: qMatch ? qMatch[1].replace(/<[^>]*>/g, '') : "",
+    answer: aMatch ? aMatch[1].replace(/<[^>]*>/g, '') : ""
+  };
+}).filter(item => item.question && item.answer);
+
+const faqSchema = faqList.length > 0 ? {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": faqList.map(item => ({
+    "@type": "Question",
+    "name": item.question,
+    "acceptedAnswer": { "@type": "Answer", "text": item.answer }
+  }))
+} : null;
+
+// --- 2. LOGIKA TABLE OF CONTENTS ---
 const headings = post.content.match(/<h[2-3][^>]*>.*?<\/h[2-3]>/g) || [];
 const toc = headings.map((h) => {
   const text = h.replace(/<[^>]*>/g, '').trim();
@@ -80,16 +102,11 @@ const wordsPerMinute = 200;
 const textLength = post.content.split(' ').length;
 const readingTime = Math.ceil(textLength / wordsPerMinute);
 const primaryCategory = post.categories?.nodes[0]?.name || "Berita";
-const popularPosts = allPosts.slice(0, 5);
 
-// Palet warna untuk angka terpopuler
-const rankColors = [
-  "text-blue-200/60",   // Rank 1
-  "text-green-200/60",  // Rank 2
-  "text-red-200/60",    // Rank 3
-  "text-yellow-200/60", // Rank 4
-  "text-purple-200/60"  // Rank 5
-];
+// Filter artikel agar tidak memunculkan dirinya sendiri di sidebar
+const popularPosts = allPosts.filter(p => p.slug !== post.slug).slice(0, 5);
+
+const rankColors = ["text-blue-400/30", "text-green-400/30", "text-red-400/30", "text-yellow-400/30", "text-purple-400/30"];
 
 const breadcrumbSchema = {
   "@context": "https://schema.org",
@@ -100,6 +117,10 @@ const breadcrumbSchema = {
     { "@type": "ListItem", "position": 3, "name": post.title, "item": currentUrl.href }
   ]
 };
+
+// Gabungkan Semua Skema
+const structuredData = [breadcrumbSchema];
+if (faqSchema) structuredData.push(faqSchema);
 
 const shareLinks = [
   { name: 'Facebook', icon: FaFacebookF, color: '#1877F2', url: `https://www.facebook.com/sharer/sharer.php?u=${currentUrl}` },
@@ -112,7 +133,7 @@ const shareLinks = [
   title={post.title} 
   description={post.excerpt} 
   image={post.featuredImage?.node?.sourceUrl}
-  structuredData={breadcrumbSchema}
+  structuredData={structuredData}
   articleDate={post.date}
   articleAuthor={post.author?.node?.name}
 >
