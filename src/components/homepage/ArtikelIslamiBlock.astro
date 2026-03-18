@@ -1,0 +1,116 @@
+---
+// src/components/homepage/ArtikelIslamiBlock.astro
+const { posts = [] } = Astro.props;
+
+const mainPost = posts[0];
+const sidePosts = posts.slice(1, 5);
+
+const formatTimeAgo = (dateStr) => {
+  const postDate = new Date(dateStr);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - postDate.getTime()) / 1000);
+  if (diffInSeconds < 60) return "Baru saja";
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) return `${diffInMinutes} menit lalu`;
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours} jam lalu`;
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) return `${diffInDays} hari lalu`;
+  return postDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+---
+
+<div class="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] bg-[#f8fdfc] dark:bg-[#022c26] py-16 mb-20 border-y border-green-50 dark:border-white/5 overflow-hidden transition-colors duration-300">
+  
+  <div class="max-w-7xl mx-auto px-4 lg:px-8 relative">
+    
+    <div class="flex justify-between items-center mb-10 relative z-10 border-b-2 border-gray-100 dark:border-white/10 pb-4">
+      <div class="flex items-center gap-3">
+        <div class="w-1.5 h-6 bg-orange-600"></div>
+        <h2 class="text-2xl font-black text-[#004d40] dark:text-teal-400 tracking-tight uppercase">Artikel Islami</h2>
+      </div>
+      <a href="/categories/artikel-islami" class="text-[11px] font-black uppercase tracking-widest text-orange-600 hover:text-[#004d40] dark:hover:text-teal-300 transition-colors flex items-center gap-2">
+        Selengkapnya <span class="text-[8px]">▶</span>
+      </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 relative z-10">
+      
+      <div class="lg:col-span-6">
+        {mainPost ? (
+          <a href={`/blog/${mainPost.slug}`} class="group block">
+            <div class="aspect-[16/9] overflow-hidden mb-6 bg-gray-200 dark:bg-white/5 shadow-sm border border-gray-100 dark:border-white/5">
+              <img 
+                src={mainPost.data.image} 
+                class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" 
+                alt={mainPost.data.title} 
+              />
+            </div>
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-[10px] font-black text-orange-600 uppercase tracking-widest bg-orange-50 dark:bg-orange-950/30 px-2 py-0.5">
+                  {mainPost.data.categoryNames?.[0] || "Artikel"}
+                </span>
+                <span class="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
+                  {formatTimeAgo(mainPost.data.date)}
+                </span>
+            </div>
+            <h3 class="text-2xl lg:text-3xl font-black text-[#004d40] dark:text-white leading-tight mb-4 group-hover:text-orange-600 transition-colors tracking-tighter">
+              {mainPost.data.title}
+            </h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2 font-medium">
+              {mainPost.data.excerpt}
+            </p>
+          </a>
+        ) : (
+          <div class="h-64 flex items-center justify-center border-2 border-dashed border-gray-100 dark:border-white/10 italic text-gray-400">
+            Belum ada artikel islami utama.
+          </div>
+        )}
+      </div>
+
+      <div class="lg:col-span-6 flex flex-col gap-8">
+        {sidePosts.length > 0 ? (
+          sidePosts.map((p) => (
+            <a href={`/blog/${p.slug}`} class="group flex gap-5 items-center pb-6 border-b border-gray-100/50 dark:border-white/5 last:border-0 last:pb-0">
+              <div class="w-32 h-20 lg:w-44 lg:h-28 shrink-0 overflow-hidden bg-gray-100 dark:bg-white/5 border border-gray-100 dark:border-white/5 shadow-sm">
+                <img 
+                  src={p.data.image} 
+                  class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                  alt={p.data.title} 
+                />
+              </div>
+              
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-[9px] text-orange-600 font-black uppercase tracking-widest">
+                    {p.data.categoryNames?.[0] || "Islami"}
+                  </span>
+                  <span class="text-[9px] text-gray-300 dark:text-gray-600 font-bold uppercase tracking-widest">
+                    • {formatTimeAgo(p.data.date)}
+                  </span>
+                </div>
+                <h4 class="text-[15px] lg:text-[17px] font-extrabold text-[#0b1c3c] dark:text-gray-100 leading-snug group-hover:text-orange-600 transition-all duration-300 line-clamp-2 tracking-tight group-hover:translate-x-1">
+                  {p.data.title}
+                </h4>
+              </div>
+            </a>
+          ))
+        ) : (
+          <div class="flex-1 flex items-center justify-center border-2 border-dashed border-gray-100 dark:border-white/10 italic text-gray-400">
+            Daftar artikel lainnya belum tersedia.
+          </div>
+        )}
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>

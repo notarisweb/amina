@@ -1,134 +1,114 @@
 ---
-import TwSizeIndicator from "@/components/TwSizeIndicator.astro";
-import config from "@/config/config.json";
-import theme from "@/config/theme.json";
-import { plainify } from "@/lib/utils/textConverter";
-import Footer from "@/partials/Footer.astro";
+// 1. IMPORT CSS UTAMA
+import "@/styles/main.css"; 
+
+// 2. IMPORT KOMPONEN
 import Header from "@/partials/Header.astro";
-import "@/styles/main.css";
-import { GoogleTagmanagerNoscript } from "@digi4care/astro-google-tagmanager";
-import { AstroFont } from "astro-font";
-import { ClientRouter } from "astro:transitions";
+import Footer from "@/partials/Footer.astro";
+import { ViewTransitions } from "astro:transitions";
 
-const pf = theme.fonts.font_family.primary;
-let fontPrimary;
-if (pf) {
-  fontPrimary = pf.replace(/\+/g, " ").replace(/:[ital,]*[ital@]*[wght@]*[0-9,;]+/gi, "");
-}
-
-export interface Props {
-  title?: string;
-  meta_title?: string;
-  description?: string;
-  image?: string;
-  noindex?: boolean;
-  canonical?: string;
-  structuredData?: object | object[];
-  articleDate?: string;
-  articleAuthor?: string;
-}
-
-const { title, meta_title, description, image, noindex, canonical, structuredData, articleDate, articleAuthor } = Astro.props;
-
-const siteTitle = config.site.title;
-const siteUrl = config.site.base_url || "https://amina.or.id";
-const finalTitle = plainify(meta_title || (title ? `${title} | ${siteTitle}` : siteTitle));
-const finalDescription = plainify(description || config.metadata.meta_description);
-const currentUrl = Astro.url.href;
-const finalCanonical = canonical || currentUrl.replace('studio.', '');
-
-let finalImage = image ? (image.startsWith("http") ? image : `${siteUrl}${image}`) : `${siteUrl}${config.metadata.meta_image}`;
-const GA_ID = "G-XDX1TKCDP1";
+const { 
+  title = "Amina Media - Portal Berita Islami", 
+  description = "Portal berita dan dakwah Islam terpercaya", 
+  image = "/images/og.jpg",
+  canonicalURL = new URL(Astro.url.pathname, Astro.site)
+} = Astro.props;
 ---
 
-<!doctype html>
-<html lang="id" class="scroll-smooth">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-    <meta name="generator" content={Astro.generator} />
+<!DOCTYPE html>
+<html lang="id" class="light"> <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonicalURL} />
 
-    <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}></script>
-    <script is:inline define:vars={{ GA_ID }}>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', GA_ID);
-      document.addEventListener('astro:after-swap', () => {
-        gtag('config', GA_ID, { page_path: window.location.pathname });
-      });
-    </script>
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:image" content={new URL(image, Astro.url)} />
+  <meta property="og:url" content={Astro.url} />
+  <meta property="og:type" content="website" />
 
-    <AstroFont config={[{ name: fontPrimary!, src: [], preload: true, display: "swap", fallback: "sans-serif", googleFontsURL: `https://fonts.googleapis.com/css2?family=${pf}&display=swap` }]} />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={new URL(image, Astro.url)} />
 
-    <title>{finalTitle}</title>
-    <meta name="description" content={finalDescription} />
-    <link rel="canonical" href={finalCanonical} />
-    <meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large"} />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+
+  <ViewTransitions />
+
+  <script is:inline>
+    const theme = (() => {
+      if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
+        return localStorage.getItem('theme');
+      }
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+      }
+      return 'light';
+    })();
+  
+    if (theme === 'light') {
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
+    }
+    window.localStorage.setItem('theme', theme);
+  </script>
+</head>
+
+<body class="bg-white dark:bg-[#0b1c3c] text-gray-900 dark:text-gray-100 antialiased selection:bg-primary selection:text-white transition-colors duration-300">
+
+  <Header />
+
+  <main class="min-h-screen" transition:animate="fade">
+    <slot />
+  </main>
+
+  <Footer />
+
+  <style is:global>
+    :root {
+      --color-primary: #009688;
+    }
     
-    <meta property="og:type" content={articleDate ? "article" : "website"} />
-    <meta property="og:title" content={finalTitle} />
-    <meta property="og:image" content={finalImage} />
-    <meta name="twitter:card" content="summary_large_image" />
+    html {
+      scroll-behavior: smooth;
+    }
 
-    <link rel="shortcut icon" href={config.site.favicon} />
-    {structuredData && <script type="application/ld+json" is:inline set:html={JSON.stringify(structuredData)} />}
+    body {
+      font-family: 'Inter', sans-serif;
+    }
 
-    <ClientRouter />
+    /* Pengaman untuk prose/content dari WordPress agar tidak hancur di Dark Mode */
+    .dark .prose {
+      --tw-prose-body: theme('colors.gray.300');
+      --tw-prose-headings: theme('colors.white');
+      --tw-prose-links: theme('colors.primary');
+      --tw-prose-bold: theme('colors.white');
+      --tw-prose-quotes: theme('colors.gray.100');
+    }
 
-    <style is:global>
-      /* --- GLOBAL RESET (PURE CSS - ANTI TAILWIND v4 ERROR) --- */
-      .container {
-        max-width: 1200px !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-        padding-left: 1.5rem !important;
-        padding-right: 1.5rem !important;
-        width: 100% !important;
+    main {
+      display: flex;
+      flex-direction: column;
+    }
+  </style>
+
+  <script is:inline>
+    document.addEventListener('astro:after-swap', () => {
+      if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
       }
-
-      body {
-        background-color: #ffffff;
-        color: #0b1c3c;
-        margin: 0;
-        -webkit-font-smoothing: antialiased;
-        overflow-x: hidden;
-      }
-
-      header, footer, main { width: 100%; display: block; }
-
-      #progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; z-index: 999999; }
-      #progress-bar { height: 100%; width: 0%; background: #2563eb; transition: width 0.1s ease-out; }
-
-      ::-webkit-scrollbar { width: 6px; }
-      ::-webkit-scrollbar-thumb { background: #0b1c3c; border-radius: 10px; }
-    </style>
-  </head>
-
-  <body>
-    <div id="progress-container"><div id="progress-bar"></div></div>
-    {config.google_tag_manager.enable && <GoogleTagmanagerNoscript id={config.google_tag_manager.gtm_id} />}
-    <TwSizeIndicator />
-    <Header />
-    <main id="main-content" class="min-h-[70vh]" transition:animate="fade">
-      <slot />
-    </main>
-    <Footer />
-
-    <script is:inline>
-      const setupProgress = () => {
-        const bar = document.getElementById('progress-bar');
-        if (!bar) return;
-        const update = () => {
-          const scroll = window.scrollY || document.documentElement.scrollTop;
-          const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-          bar.style.width = height > 0 ? (scroll / height) * 100 + "%" : "0%";
-        };
-        window.addEventListener('scroll', update);
-        update(); 
-      };
-      setupProgress();
-      document.addEventListener('astro:page-load', setupProgress);
-    </script>
-  </body>
+    });
+  </script>
+</body>
 </html>

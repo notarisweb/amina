@@ -1,0 +1,80 @@
+---
+// src/components/homepage/Sidebar.astro
+const { popular = [] } = Astro.props;
+
+// Berita pertama jadi Headline Sidebar, sisanya jadi list teks
+const firstPost = popular[0];
+const restPosts = popular.slice(1, 6);
+
+// Fungsi waktu otomatis tetap dipertahankan
+const formatTimeAgo = (dateStr) => {
+  const postDate = new Date(dateStr);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - postDate.getTime()) / 1000);
+  if (diffInSeconds < 60) return "Baru saja";
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) return `${diffInMinutes} menit lalu`;
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours} jam lalu`;
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) return `${diffInDays} hari lalu`;
+  return postDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+---
+
+<aside class="flex flex-col bg-white dark:bg-dark transition-colors duration-300">
+  
+  <div class="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-white/10 pb-3">
+    <span class="w-1.5 h-6 bg-orange-600"></span>
+    <h3 class="font-black text-lg text-[#004d40] dark:text-teal-400 tracking-tight uppercase">
+      Rekomendasi Untuk Anda
+    </h3>
+  </div>
+
+  <div class="flex flex-col">
+    {firstPost && (
+      <a href={`/blog/${firstPost.slug}`} class="group block mb-6 border-b border-gray-100 dark:border-white/10 pb-6">
+        <div class="aspect-video overflow-hidden mb-4 bg-gray-100 dark:bg-white/5 shadow-sm border border-transparent dark:border-white/5">
+          <img 
+            src={firstPost.data.image} 
+            alt={firstPost.data.title}
+            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+          />
+        </div>
+        <h4 class="text-[20px] font-black text-[#0b1c3c] dark:text-white leading-tight group-hover:text-orange-600 transition-colors mb-3 tracking-tighter">
+          {firstPost.data.title}
+        </h4>
+        <span class="text-[11px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
+          {formatTimeAgo(firstPost.data.date)}
+        </span>
+      </a>
+    )}
+
+    <div class="flex flex-col gap-6">
+      {restPosts.map((p) => (
+        <a href={`/blog/${p.slug}`} class="group block border-b border-gray-50 dark:border-white/5 pb-6 last:border-0 last:pb-0">
+          <h4 class="text-[16px] font-extrabold text-[#0b1c3c] dark:text-gray-200 leading-snug group-hover:text-orange-600 group-hover:translate-x-1 transition-all duration-300 mb-2 tracking-tight">
+            {p.data.title}
+          </h4>
+          <span class="text-[10px] text-gray-400 dark:text-gray-600 font-bold uppercase tracking-widest">
+            {formatTimeAgo(p.data.date)}
+          </span>
+        </a>
+      ))}
+    </div>
+  </div>
+
+  <a href="/categories/rekomendasi" class="inline-block mt-8 text-[12px] font-black text-orange-600 uppercase tracking-widest hover:text-[#004d40] dark:hover:text-teal-300 transition-colors group">
+    SELENGKAPNYA REKOMENDASI <span class="inline-block transition-transform group-hover:translate-x-1">▶</span>
+  </a>
+
+</aside>
+
+<style>
+  h4 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>

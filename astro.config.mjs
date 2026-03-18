@@ -1,58 +1,42 @@
 import mdx from "@astrojs/mdx";
 import react from "@astrojs/react";
 import sitemap from "@astrojs/sitemap";
-import tailwindcss from "@tailwindcss/vite";
+import tailwind from "@astrojs/tailwind";
 import AutoImport from "astro-auto-import";
 import { defineConfig } from "astro/config";
 import remarkCollapse from "remark-collapse";
 import remarkToc from "remark-toc";
-import sharp from "sharp";
 import config from "./src/config/config.json";
 
-// 1. IMPORT ADAPTER VERCEL
-import vercel from "@astrojs/vercel/serverless";
+// FIX 1: Import Vercel yang benar (Tanpa /serverless)
+import vercel from "@astrojs/vercel";
 
-// https://astro.build/config
 export default defineConfig({
-  // 2. OUTPUT HYBRID (Sangat direkomendasikan untuk Headless WordPress)
-  // Ini memungkinkan halaman statis (prerender) & dinamis (SSR) berjalan berdampingan
-  output: "server",
-  adapter: vercel(),
+  // FIX 2: Ganti 'hybrid' ke 'static' sesuai instruksi Astro 5
+  // Website tetap kencang, dan fitur dinamis tetap bisa jalan di Vercel
+  output: "static", 
+  
+  adapter: vercel({
+    webAnalytics: { enabled: true },
+  }),
 
-  // 3. KONFIGURASI DOMAIN & URL
   site: "https://amina.or.id",
   base: config.site.base_path ? config.site.base_path : "/",
   trailingSlash: config.site.trailing_slash ? "always" : "never",
 
-  // 4. OPTIMASI GAMBAR TINGKAT LANJUT
   image: {
-    service: { entrypoint: 'astro/assets/services/sharp' },
-    domains: ["studio.amina.or.id"], // Whitelist domain backend Hawkhost
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "studio.amina.or.id",
-      },
-    ],
+    domains: ["studio.amina.or.id"],
+    remotePatterns: [{ protocol: "https", hostname: "studio.amina.or.id" }],
   },
 
-  // 5. PENINGKATAN PERFORMA & VITE
-  prefetch: true, // Memuat halaman di latar belakang saat link di-hover (Perceived Speed)
-  vite: { 
-    plugins: [tailwindcss()],
-    optimizeDeps: {
-      exclude: ['sharp']
-    },
-    build: {
-      cssCodeSplit: true, // Membagi CSS agar loading per halaman lebih ringan
-    }
-  },
+  prefetch: true,
 
-  // 6. INTEGRASI SEO & FITUR
   integrations: [
+    tailwind({
+      applyBaseStyles: false, // Kontrol penuh di CSS utama kita
+    }),
     react(),
     sitemap({
-      // Generate sitemap otomatis agar Google News lebih cepat merayapi Amina
       changefreq: 'daily',
       priority: 0.7,
       lastmod: new Date(),
@@ -72,10 +56,17 @@ export default defineConfig({
     mdx(),
   ],
 
-  // 7. MARKDOWN & SHIKI
   markdown: {
     remarkPlugins: [remarkToc, [remarkCollapse, { test: "Table of contents" }]],
     shikiConfig: { theme: "one-dark-pro", wrap: true },
-    extendDefaultPlugins: true,
+  },
+
+  vite: {
+    optimizeDeps: {
+      exclude: ['sharp']
+    },
+    build: {
+      cssCodeSplit: true,
+    }
   },
 });

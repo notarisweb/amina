@@ -12,10 +12,12 @@
     "incremental": true,
     "allowSyntheticDefaultImports": true,
     "paths": {
-      "@/components/*": ["./src/layouts/components/*"],
+      /* PERBAIKAN: Alias komponen sekarang bisa cari di dua tempat sekaligus */
+      "@/components/*": ["./src/components/*", "./src/layouts/components/*"],
       "@/shortcodes/*": ["./src/layouts/shortcodes/*"],
       "@/helpers/*": ["./src/layouts/helpers/*"],
       "@/partials/*": ["./src/layouts/partials/*"],
+      "@/layouts/*": ["./src/layouts/*"],
       "@/*": ["./src/*"]
     }
   },

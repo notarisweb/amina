@@ -1,163 +1,155 @@
 ---
-import { Image } from "astro:assets";
 import Base from "@/layouts/Base.astro";
-import Posts from "@/components/Posts.astro";
-import Pagination from "@/layouts/components/Pagination.astro";
-import config from "@/config/config.json";
-import dateFormat from "@/lib/utils/dateFormat";
-import { BiTrendingUp, BiTimeFive, BiUserCircle, BiChevronRight } from "react-icons/bi";
+import LatestUpdates from "@/components/homepage/LatestUpdates.astro";
+import MainHeadline from "@/components/homepage/MainHeadline.astro";
+import TrendingNews from "@/components/homepage/TrendingNews.astro";
+import ArtikelIslamiBlock from "@/components/homepage/ArtikelIslamiBlock.astro";
+import KataUstadz from "@/components/homepage/KataUstadz.astro";
+import NationalFeed from "@/components/homepage/NationalFeed.astro";
+import Sidebar from "@/components/homepage/Sidebar.astro";
 
-export const prerender = true; 
+export const prerender = true;
 
-const WP_URL = import.meta.env.PUBLIC_WP_URL;
-const query = {
-  query: `query GetHomepageData {
-    posts(first: 15) {
-      nodes {
-        title slug excerpt date
-        author { node { name } }
-        categories { nodes { name slug } }
-        featuredImage { node { sourceUrl } }
-      }
-    }
-  }`,
+// --- CONFIG ID KATEGORI AMINA ---
+const ID_BERITA = 26;         
+const ID_ARTIKEL_ISLAMI = 29; 
+const ID_KATA_USTADZ = 46;    
+
+const API_BASE = "https://studio.amina.or.id/wp-json/wp/v2/posts?_embed";
+
+// 1. HELPER: Bersihkan HTML & Karakter Aneh
+const cleanText = (str: string) => {
+  if (!str) return "";
+  return str
+    .replace(/<[^>]*>/g, "")
+    .replace("[&hellip;]", "...")
+    .replace("&nbsp;", " ")
+    .replace("&#8217;", "'")
+    .replace("&#8211;", "-");
 };
 
-let currentPosts = [];
-try {
-  const res = await fetch(WP_URL, { 
-    method: "POST", 
-    headers: { "Content-Type": "application/json" }, 
-    body: JSON.stringify(query) 
-  });
-  const result = await res.json();
-  const raw = result.data?.posts?.nodes || [];
-  
-  currentPosts = raw.filter(p => p.slug).map(post => ({
-    slug: post.slug,
+// 2. HELPER: Mapping Data (Konsisten untuk Semua Komponen)
+const mapWPData = (p: any) => {
+  const featuredMedia = p._embedded?.["wp:featuredmedia"]?.[0]?.source_url;
+  return {
+    slug: p.slug,
     data: {
-      title: post.title,
-      date: post.date,
-      image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
-      categories: post.categories?.nodes.map(c => c.name) || ["Berita"],
-      authors: [post.author?.node?.name || "Admin"],
-      excerpt: post.excerpt || ""
-    }
-  }));
-} catch (e) { 
-  console.error("Gagal Fetch Data:", e); 
+      title: p.title.rendered,
+      excerpt: cleanText(p.excerpt.rendered),
+      date: p.date,
+      image: featuredMedia ? featuredMedia : "/images/placeholder.jpg",
+      // Menggunakan categoryNames agar sinkron dengan komponen yang sudah kita fix
+      categoryNames: p._embedded?.["wp:term"]?.[0]?.map((cat: any) => cat.name) || ["Berita"],
+      categoryIds: p.categories || [], 
+    },
+  };
+};
+
+// 3. DEDICATED FETCH: Ambil data spesifik kategori agar tidak ada section yang kosong
+let generalPosts = [];
+let nationalPosts = [];
+let artikelIslamiPosts = [];
+let kataUstadzPosts = [];
+
+try {
+  const [resGen, resBerita, resIslami, resUstadz] = await Promise.all([
+    fetch(`${API_BASE}&per_page=15`),
+    fetch(`${API_BASE}&categories=${ID_BERITA}&per_page=10`),
+    fetch(`${API_BASE}&categories=${ID_ARTIKEL_ISLAMI}&per_page=6`),
+    fetch(`${API_BASE}&categories=${ID_KATA_USTADZ}&per_page=8`) // Ambil 8 untuk 2 baris penuh
+  ]);
+
+  const [dataGen, dataBerita, dataIslami, dataUstadz] = await Promise.all([
+    resGen.json(), resBerita.json(), resIslami.json(), resUstadz.json()
+  ]);
+
+  generalPosts = Array.isArray(dataGen) ? dataGen.map(mapWPData) : [];
+  nationalPosts = Array.isArray(dataBerita) ? dataBerita.map(mapWPData) : [];
+  artikelIslamiPosts = Array.isArray(dataIslami) ? dataIslami.map(mapWPData) : [];
+  kataUstadzPosts = Array.isArray(dataUstadz) ? dataUstadz.map(mapWPData) : [];
+
+} catch (err) {
+  console.error("Gagal Fetching Data WordPress:", err);
 }
 
-const featuredPost = currentPosts[0];
-const secondaryPosts = currentPosts.slice(1, 4);
-const listPosts = currentPosts.slice(4);
-const totalPages = Math.ceil(currentPosts.length / config.settings.pagination);
+// 4. DISTRIBUSI SLOT UI
+const mainHero = generalPosts[0];
+const relatedToMain = generalPosts.slice(1, 3);
+const sideLatest = generalPosts.slice(3, 8); // 5 Post untuk Latest Updates (Kiri)
+const trendingPosts = generalPosts.slice(8, 13); // 5 Post untuk Trending (Kanan)
+const sidebarPopular = nationalPosts.slice(4, 9); // Data untuk sidebar bawah
 ---
 
-<Base title="Portal Berita Islami & Sosial">
-  <div class="bg-white border-b border-gray-100 py-3 w-full">
-    <div class="container flex items-center">
-      <div class="flex items-center gap-2 bg-[#0b1c3c] text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mr-6 shrink-0 shadow-lg shadow-[#0b1c3c]/10">
-        <BiTrendingUp className="h-4 w-4 text-primary" /> Trending
-      </div>
-      <div class="flex-1 overflow-hidden">
-        <div class="flex gap-12 animate-marquee whitespace-nowrap text-[11px] font-bold text-dark/60 uppercase">
-          {currentPosts.map(p => (
-            <a href={`/blog/${p.slug}`} class="hover:text-primary transition shrink-0">
-              {p.data.title} <span class="ml-12 text-gray-200">|</span>
-            </a>
-          ))}
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <section class="py-10 md:py-16 bg-[#fcfcfc] overflow-hidden">
-    <div class="container">
-      {featuredPost && (
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10 items-start">
+<Base title="Amina Media - Berbagi & Peduli">
+  <main class="py-6 bg-white overflow-x-hidden">
+    
+    <div class="max-w-7xl mx-auto px-4 lg:px-8 space-y-14">
+      
+      <section>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-stretch">
           
-          <div class="lg:col-span-2 w-full">
-            <a href={`/blog/${featuredPost.slug}`} class="relative block overflow-hidden rounded-[2.5rem] shadow-xl group bg-[#0b1c3c] aspect-video lg:h-[550px] w-full">
-              <Image 
-                src={featuredPost.data.image} 
-                width={1400} 
-                height={900} 
-                format="webp" 
-                loading="eager" 
-                fetchpriority="high"
-                class="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-105 transition duration-1000 group-hover:opacity-75" 
-                alt={featuredPost.data.title} 
-              />
-              <div class="absolute inset-0 bg-gradient-to-t from-[#0b1c3c] via-[#0b1c3c]/20 to-transparent"></div>
-              
-              <div class="absolute bottom-0 left-0 p-8 md:p-14 w-full z-10">
-                <span class="inline-block bg-primary text-[#0b1c3c] text-[10px] font-black px-4 py-1.5 rounded-full uppercase mb-6 tracking-[0.2em] shadow-lg shadow-primary/20">
-                  {featuredPost.data.categories[0]}
-                </span>
-                <h2 class="text-3xl md:text-5xl lg:text-6xl font-black text-white leading-[1.1] mb-6 uppercase tracking-tighter drop-shadow-sm" set:html={featuredPost.data.title} />
-                <div class="flex items-center gap-6 text-[10px] text-white/50 font-black uppercase tracking-widest">
-                  <span class="flex items-center gap-2"><BiUserCircle className="text-primary h-4 w-4" /> {featuredPost.data.authors[0]}</span>
-                  <span class="flex items-center gap-2"><BiTimeFive className="text-primary h-4 w-4" /> {dateFormat(featuredPost.data.date)}</span>
-                </div>
-              </div>
-            </a>
+          <div class="lg:col-span-3">
+            <LatestUpdates posts={sideLatest} />
           </div>
 
-          <div class="lg:col-span-1 w-full flex flex-col gap-6">
-            {secondaryPosts.map(p => (
-              <a href={`/blog/${p.slug}`} class="flex gap-5 p-4 bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-500 group items-center w-full">
-                <div class="w-24 h-24 lg:w-28 lg:h-28 shrink-0 overflow-hidden rounded-2xl bg-gray-100 shadow-inner">
-                  <Image src={p.data.image} width={300} height={300} format="webp" class="w-full h-full object-cover group-hover:scale-110 transition duration-500" alt={p.data.title} />
-                </div>
-                <div class="flex-1 min-w-0">
-                  <span class="text-[9px] font-black text-primary uppercase mb-2 block tracking-widest">{p.data.categories[0]}</span>
-                  <h3 class="text-sm lg:text-[15px] font-black text-[#0b1c3c] group-hover:text-primary transition line-clamp-2 uppercase tracking-tight leading-snug" set:html={p.data.title} />
-                </div>
-              </a>
-            ))}
+          <div class="lg:col-span-6">
+            {mainHero && <MainHeadline post={mainHero} relatedPosts={relatedToMain} />}
           </div>
 
+          <div class="lg:col-span-3">
+            <TrendingNews posts={trendingPosts} />
+          </div>
+          
         </div>
-      )}
-    </div>
-  </section>
+      </section>
 
-  <section class="py-16">
-    <div class="container">
-      <div class="flex items-end justify-between border-b border-gray-100 pb-8 mb-12">
-        <div>
-          <h2 class="text-[10px] font-black text-primary uppercase tracking-[0.4em] mb-3">Feed Terbaru</h2>
-          <p class="text-4xl font-black text-[#0b1c3c] tracking-tighter uppercase">Kabar Amina Media</p>
+      <section class="relative">
+        <ArtikelIslamiBlock posts={artikelIslamiPosts} />
+      </section>
+
+      <section>
+        <KataUstadz posts={kataUstadzPosts} />
+      </section>
+
+      <section>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+          <div class="lg:col-span-8">
+            <NationalFeed posts={nationalPosts} />
+          </div>
+          
+          <aside class="lg:col-span-4 sticky top-10">
+            <Sidebar popular={sidebarPopular} />
+          </aside>
         </div>
-        <a href="/categories/berita" class="hidden md:flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-dark/30 hover:text-primary transition">
-          Lihat Semua <BiChevronRight className="h-4 w-4" />
-        </a>
-      </div>
-      
-      <Posts posts={listPosts} className="mb-16" />
-      
-      {totalPages > 1 && (
-        <div class="flex justify-center mt-12 pb-20">
-          <Pagination currentPage={1} totalPages={totalPages} />
-        </div>
-      )}
+      </section>
+
     </div>
-  </section>
+  </main>
 </Base>
 
-<style>
-  /* CSS Murni agar aman di Tailwind v4 */
-  @keyframes marquee { 
-    0% { transform: translateX(0); } 
-    100% { transform: translateX(-50%); } 
+<style is:global>
+  /* Global Typography Amina */
+  body { 
+    font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+    -webkit-font-smoothing: antialiased;
+    color: #1a1a1a;
   }
-  .animate-marquee { 
-    display: flex; 
-    animation: marquee 40s linear infinite; 
-    width: max-content; 
+
+  /* Reset Uppercase & Letter Spacing */
+  h1, h2, h3, h4 { 
+    letter-spacing: -0.02em; 
+    text-transform: none; 
+    font-weight: 800;
   }
-  .animate-marquee:hover { 
-    animation-play-state: paused; 
+
+  /* Custom Selection Color Amina */
+  ::selection { 
+    background-color: #004d40; 
+    color: white; 
   }
+
+  /* Global Line Clamping (Pengaman Layout) */
+  .line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 </style>

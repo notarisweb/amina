@@ -1,0 +1,91 @@
+---
+// src/components/homepage/MainHeadline.astro
+const { post, relatedPosts = [] } = Astro.props;
+
+// Fungsi waktu otomatis (Gaya Uppercase)
+const formatTimeAgo = (dateStr) => {
+  const postDate = new Date(dateStr);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - postDate.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return "BARU SAJA";
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) return `${diffInMinutes} MENIT LALU`;
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours} JAM LALU`;
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) return `${diffInDays} HARI LALU`;
+
+  return postDate.toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  }).toUpperCase();
+};
+---
+
+<div class="h-full flex flex-col shadow-lg bg-white dark:bg-dark overflow-hidden border-b-2 border-orange-500/30 dark:border-orange-500/10 transition-colors duration-300">
+
+  <div class="relative h-[200px] lg:h-[260px] overflow-hidden bg-black group/main shrink-0">
+    <a href={`/blog/${post.slug}`} class="block h-full">
+      <img 
+        src={post.data.image} 
+        class="w-full h-full object-cover transition-transform duration-700 group-hover/main:scale-105" 
+        alt="Main" 
+      />
+
+      <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+
+      <div class="absolute bottom-0 left-0 right-0 p-4 lg:p-5 z-10">
+        <div class="max-w-[90%]">
+          <div class="inline-block bg-orange-600 text-white text-[8px] font-black px-2 py-[2px] uppercase mb-2 tracking-tighter">
+            Today's Update
+          </div>
+
+          <h2 class="text-lg lg:text-xl font-black text-white leading-tight tracking-tight mb-1 line-clamp-2 group-hover/main:text-orange-400 transition-colors drop-shadow-md">
+            {post.data.title}
+          </h2>
+
+          <div class="flex items-center gap-2 text-[9px] text-white/60 font-bold uppercase tracking-widest">
+            <span class="text-white">aminaNews</span>
+            <span>|</span>
+            <span>{formatTimeAgo(post.data.date)}</span>
+          </div>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="flex-1 bg-gradient-to-r from-[#004d40] to-[#00796b] dark:from-[#002d26] dark:to-[#004d40] p-4 lg:p-5 text-white flex flex-col justify-center border-t border-white/5 dark:border-white/10 relative overflow-hidden transition-colors duration-300">
+    
+    <div class="absolute top-0 right-0 w-32 h-32 bg-white/5 -rotate-45 translate-x-16 -translate-y-16"></div>
+
+    <div class="flex items-center gap-3 mb-3 border-b border-white/10 pb-2 relative z-10">
+      <h3 class="text-[9px] font-black uppercase tracking-widest text-orange-400">
+        Berita Terkait
+      </h3>
+      <div class="flex-1 h-[1px] bg-white/10"></div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 relative z-10">
+      {relatedPosts.slice(0, 2).map((rp) => (
+        <a href={`/blog/${rp.slug}`} class="group/item flex flex-col">
+          <h4 class="text-[12px] lg:text-[13px] font-bold leading-snug text-white/95 group-hover:text-orange-400 transition-colors line-clamp-2 tracking-tight">
+            {rp.data.title}
+          </h4>
+          <div class="mt-1.5 w-4 h-[1px] bg-orange-500/50 group-hover/item:w-full transition-all duration-500"></div>
+        </a>
+      ))}
+    </div>
+  </div>
+
+</div>
+
+<style>
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>

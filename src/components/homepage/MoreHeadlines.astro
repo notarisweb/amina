@@ -1,0 +1,58 @@
+---
+const { posts } = Astro.props;
+
+// Kita kunci hanya 4-5 artikel supaya pas mengisi tinggi 550px
+const displayPosts = posts.slice(0, 5);
+
+// Fungsi bersihkan excerpt dari tag <p> bawaan WP
+const cleanExcerpt = (text) => {
+  return text ? text.replace(/<[^>]*>/g, '').replace('[&hellip;]', '...') : "";
+};
+---
+
+<div class="h-full flex flex-col bg-white">
+  
+  <div class="flex items-center gap-3 mb-6 shrink-0">
+    <div class="w-1 h-5 bg-[#009688]"></div>
+    <h3 class="font-black text-sm tracking-widest uppercase text-[#0b1c3c]">
+      More Headlines
+    </h3>
+  </div>
+
+  <div class="grid grid-cols-1 flex-1 gap-y-4">
+    {displayPosts.map((p) => (
+      <a 
+        href={`/blog/${p.slug}`} 
+        class="group flex gap-3 w-full items-start overflow-hidden"
+      >
+        <div class="w-20 h-14 shrink-0 bg-gray-100 overflow-hidden">
+          <img 
+            src={p.data.image} 
+            class="w-full h-full object-cover group-hover:scale-110 transition duration-500" 
+            alt="thumb" 
+          />
+        </div>
+
+        <div class="flex-1 min-w-0">
+          <h4 class="text-[12px] font-black text-[#0b1c3c] group-hover:text-primary leading-tight uppercase line-clamp-2 mb-1 tracking-tight">
+            {p.data.title}
+          </h4>
+          
+          <p class="text-[11px] text-gray-500 leading-snug line-clamp-2 font-medium">
+            {cleanExcerpt(p.data.excerpt)}
+          </p>
+        </div>
+      </a>
+    ))}
+  </div>
+</div>
+
+<style>
+  /* Standar Line Clamp agar tulisan tidak berantakan */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>

@@ -1,179 +1,191 @@
 ---
-import Social from "@/components/Social.astro";
 import Logo from "@/components/Logo.astro";
+import Social from "@/components/Social.astro";
+
 import config from "@/config/config.json";
 import menu from "@/config/menu.json";
 import social from "@/config/social.json";
-import { markdownify } from "@/lib/utils/textConverter";
-import { BiMap, BiEnvelope, BiChevronRight, BiPulse } from "react-icons/bi";
 
-// Import fungsi Analytics
+import { BiMap, BiEnvelope } from "react-icons/bi";
+
 import { getVisitorStats } from "@/lib/analytics";
 
-const { copyright } = config.params;
 const footerMenu = menu.footer || [];
 
-// Fetch Data Statistik (Server Side)
-let stats = { online: 0, today: 0, yesterday: 0, total: 0 };
+let stats = {
+  online: 0,
+  today: 0,
+  total: 0
+};
 
 try {
   const data = await getVisitorStats();
   if (data) stats = data;
-} catch (error) {
-  console.log("Analytics data not available:", error.message);
+} catch (e) {
+  console.log("Analytics error:", e.message);
 }
 ---
 
 <footer class="bg-[#0b1c3c] pt-24 pb-12 text-white/70 relative overflow-hidden border-t border-white/5">
-  <div class="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
 
-  <div class="container relative z-10"> 
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-8 text-left">
-      
-      <div class="md:col-span-12 lg:col-span-4">
-        <div class="mb-8 flex justify-start">
-          <Logo />
-        </div>
-        <p class="mb-8 text-sm leading-relaxed text-white/50 max-w-sm">
-          Amina (Amal Insan Abadi) berdedikasi menyebarkan syiar Islam dan aksi nyata sosial. Kami hadir untuk membangun kepedulian dan kemaslahatan ummat melalui informasi yang bermanfaat.
-        </p>
-        <div class="space-y-4 mb-8 text-[13px]">
-          <div class="flex items-start gap-3 group">
-            <BiMap className="text-primary h-5 w-5 shrink-0 transition-colors group-hover:text-white" />
-            <span class="group-hover:text-white transition">Jl. Pahlawan, Purwokerto, Jawa Tengah</span>
-          </div>
-          <div class="flex items-center gap-3 group">
-            <BiEnvelope className="text-primary h-5 w-5 shrink-0 transition-colors group-hover:text-white" />
-            <a href="mailto:admin@amina.or.id" class="group-hover:text-white transition underline-offset-4 hover:underline">admin@amina.or.id</a>
-          </div>
-        </div>
-        <Social source={social.main} className="social-icons-footer" />
-      </div>
+<div class="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
 
-      <div class="md:col-span-6 lg:col-span-2">
-        <h4 class="mb-10 text-xs font-black text-white uppercase tracking-[0.3em] relative inline-block">
-          Kategori
-          <span class="absolute -bottom-3 left-0 w-8 h-1 bg-primary rounded-full shadow-[0_0_8px_rgba(var(--color-primary),0.5)]"></span>
-        </h4>
-        <ul class="space-y-4 text-[13px] font-bold uppercase tracking-tight">
-          <li>
-            <a href="/categories/artikel-islami" class="flex items-center hover:text-primary transition-all group">
-              <BiChevronRight className="mr-1 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all text-primary" /> Artikel Islami
-            </a>
-          </li>
-          <li>
-            <a href="/categories/khazanah" class="flex items-center hover:text-primary transition-all group">
-              <BiChevronRight className="mr-1 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all text-primary" /> Khazanah
-            </a>
-          </li>
-		  <li>
-            <a href="https://onislam.web.id" class="flex items-center hover:text-primary transition-all group">
-              <BiChevronRight className="mr-1 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all text-primary" /> Media Islam
-            </a>
-          </li>
-          <li>
-            <a href="/categories/kegiatan-sosial" class="flex items-center hover:text-primary transition-all group">
-              <BiChevronRight className="mr-1 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all text-primary" /> Kegiatan Sosial
-            </a>
-          </li>
-        </ul>
-      </div>
+<div class="max-w-7xl mx-auto px-4 relative z-10">
 
-      <div class="md:col-span-6 lg:col-span-3">
-        <h4 class="mb-10 text-xs font-black text-white uppercase tracking-[0.3em] relative inline-block">
-          Organisasi
-          <span class="absolute -bottom-3 left-0 w-8 h-1 bg-primary rounded-full shadow-[0_0_8px_rgba(var(--color-primary),0.5)]"></span>
-        </h4>
-        <ul class="space-y-4 text-[13px] font-bold uppercase tracking-tight">
-          {footerMenu.map((item) => (
-            <li>
-              <a href={item.url} class="flex items-center hover:text-primary transition-all group">
-                <BiChevronRight className="mr-1 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all text-primary" /> {item.name}
-              </a>
-            </li>
-          ))}
-          <li>
-            <a href="/contact" class="flex items-center text-primary hover:brightness-125 transition-all group">
-              <BiChevronRight className="mr-1 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" /> Hubungi Kami
-            </a>
-          </li>
-        </ul>
-      </div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-8 text-left">
 
-      <div class="md:col-span-12 lg:col-span-3">
-        <h4 class="mb-10 text-xs font-black text-white uppercase tracking-[0.3em] relative inline-block">
-          Live Traffic
-          <span class="absolute -bottom-3 left-0 w-8 h-1 bg-primary rounded-full shadow-[0_0_8px_rgba(var(--color-primary),0.5)]"></span>
-        </h4>
-        
-        <div class="bg-white/5 rounded-2xl p-6 border border-white/10 backdrop-blur-sm shadow-2xl">
-            <ul class="space-y-5 text-[12px] font-bold tracking-wide">
-                <li class="flex justify-between items-center border-b border-white/5 pb-4">
-                    <span class="text-white/30 uppercase tracking-widest text-[10px]">Status</span>
-                    <span class="text-white bg-green-500/10 px-3 py-1 rounded-full text-[10px] flex items-center gap-2 border border-green-500/20 text-green-400">
-                        <span class="relative flex h-2 w-2">
-                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                          <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                        </span>
-                        {stats.online} Online
-                    </span>
-                </li>
-                <li class="flex justify-between items-center border-b border-white/5 pb-4">
-                    <span class="text-white/30 uppercase tracking-widest text-[10px]">Hari Ini</span>
-                    <span class="text-white">{stats.today.toLocaleString('id-ID')}</span>
-                </li>
-                <li class="flex justify-between items-center">
-                    <span class="text-primary uppercase tracking-widest text-[10px]">Total Hits</span>
-                    <span class="text-white text-base font-black">{stats.total.toLocaleString('id-ID')}</span>
-                </li>
-            </ul>
-        </div>
-      </div>
-    </div>
+<!-- KOLOM 1 -->
 
-    <div class="mt-24 border-t border-white/10 pt-10 flex flex-col md:flex-row justify-between items-center gap-6">
-      <div class="text-[11px] font-bold text-white/20 uppercase tracking-[0.4em] order-2 md:order-1 italic">
-        &copy; {new Date().getFullYear()} {config.site.title}. Semua Hak Dilindungi.
-      </div>
-      <div class="flex items-center gap-4 order-1 md:order-2">
-        <div class="h-px w-8 bg-white/10"></div>
-        <div class="text-[10px] text-primary font-black tracking-[0.3em] uppercase italic opacity-80">
-          Menyebar Kebaikan, Membangun Ummat.
-        </div>
-      </div>
-    </div>
-  </div>
+<div class="md:col-span-12 lg:col-span-4">
+
+<div class="mb-8 flex justify-start">
+<Logo />
+</div>
+
+<p class="mb-8 text-sm leading-relaxed text-white/50 max-w-sm">
+Amina (Amal Insan Abadi) berdedikasi menyebarkan syiar Islam dan aksi nyata sosial.
+Kami hadir untuk membangun kepedulian dan kemaslahatan ummat melalui informasi yang bermanfaat.
+</p>
+
+<div class="space-y-4 mb-8 text-[13px]">
+
+<div class="flex items-start gap-3">
+<BiMap className="text-primary h-5 w-5 shrink-0"/>
+<span>Jl. Pahlawan, Purwokerto, Jawa Tengah</span>
+</div>
+
+<div class="flex items-center gap-3">
+<BiEnvelope className="text-primary h-5 w-5 shrink-0"/>
+<a href="mailto:admin@amina.or.id">admin@amina.or.id</a>
+</div>
+
+</div>
+
+<!-- SOCIAL MEDIA HORIZONTAL -->
+
+<div class="flex items-center gap-4 mt-6">
+<Social source={social.main} className="flex flex-row gap-4 text-xl" />
+</div>
+
+</div>
+
+
+<!-- KOLOM 2 -->
+
+<div class="md:col-span-6 lg:col-span-2">
+
+<h4 class="mb-10 text-xs font-black text-white uppercase tracking-[0.3em]">
+Kategori
+</h4>
+
+<ul class="space-y-4 text-[13px] font-bold uppercase">
+
+<li>
+<a href="/categories/artikel-islami" class="hover:text-primary transition">
+Artikel Islami
+</a>
+</li>
+
+<li>
+<a href="/categories/khazanah" class="hover:text-primary transition">
+Khazanah
+</a>
+</li>
+
+<li>
+<a href="https://onislam.web.id" class="hover:text-primary transition">
+Media Islam
+</a>
+</li>
+
+<li>
+<a href="/categories/kegiatan-sosial" class="hover:text-primary transition">
+Kegiatan Sosial
+</a>
+</li>
+
+</ul>
+
+</div>
+
+
+<!-- KOLOM 3 -->
+
+<div class="md:col-span-6 lg:col-span-3">
+
+<h4 class="mb-10 text-xs font-black text-white uppercase tracking-[0.3em]">
+Organisasi
+</h4>
+
+<ul class="space-y-4 text-[13px] font-bold uppercase">
+
+{footerMenu.map((item) => (
+<li>
+<a href={item.url} class="hover:text-primary transition">
+{item.name}
+</a>
+</li>
+))}
+
+<li>
+<a href="/contact" class="text-primary hover:brightness-125 transition">
+Hubungi Kami
+</a>
+</li>
+
+</ul>
+
+</div>
+
+
+<!-- KOLOM 4 -->
+
+<div class="md:col-span-12 lg:col-span-3">
+
+<h4 class="mb-10 text-xs font-black text-white uppercase tracking-[0.3em]">
+Live Traffic
+</h4>
+
+<div class="bg-white/5 rounded-2xl p-6 border border-white/10">
+
+<ul class="space-y-5 text-[12px] font-bold">
+
+<li class="flex justify-between">
+<span>Status</span>
+<span class="text-green-400">
+{stats.online} Online
+</span>
+</li>
+
+<li class="flex justify-between">
+<span>Hari Ini</span>
+<span>
+{stats.today.toLocaleString('id-ID')}
+</span>
+</li>
+
+<li class="flex justify-between">
+<span>Total Hits</span>
+<span>
+{stats.total.toLocaleString('id-ID')}
+</span>
+</li>
+
+</ul>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- COPYRIGHT -->
+
+<div class="mt-24 border-t border-white/10 pt-10 text-center text-xs text-white/30">
+© {new Date().getFullYear()} {config.site.title}. Semua Hak Dilindungi.
+</div>
+
+</div>
+
 </footer>
-
-<style is:global>
-  .social-icons-footer {
-    display: flex;
-    gap: 0.85rem;
-  }
-  .social-icons-footer li a {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  }
-  .social-icons-footer li a svg {
-    fill: rgba(255, 255, 255, 0.3);
-    width: 18px;
-    height: 18px;
-    transition: all 0.3s ease;
-  }
-  .social-icons-footer li a:hover {
-    background: #2563eb; 
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);
-    border-color: rgba(255, 255, 255, 0.15);
-  }
-  .social-icons-footer li a:hover svg {
-    fill: white;
-  }
-</style>
