@@ -21,7 +21,7 @@ export async function getStaticPaths() {
   const query = {
     query: `
       query GetStaticBuildData {
-        posts(first: 100) {
+        posts(first: 1000) {  /* FIX: Naikkan limit ke 1000 agar tidak 404 */
           nodes {
             slug
             title
@@ -135,7 +135,7 @@ const shareLinks = [
                 loading="eager" 
                 fetchpriority="high" 
                 class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-                alt={post.title || "Featured Image"} 
+                alt={post.title || "Image Utama"} 
               />
             </div>
           )}
@@ -244,6 +244,7 @@ const shareLinks = [
 </Base>
 
 <script is:inline define:vars={{ postUrl: currentUrl.href }}>
+  // Copy Link Logic
   document.getElementById('copy-link-btn')?.addEventListener('click', function() {
     const iconCopy = document.getElementById('icon-copy');
     const iconCheck = document.getElementById('icon-check');
