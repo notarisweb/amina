@@ -3,12 +3,15 @@ import { Image } from "astro:assets";
 import Base from "@/layouts/Base.astro";
 import dateFormat from "@/lib/utils/dateFormat";
 import { slugify } from "@/lib/utils/textConverter";
-import { BiCalendarEdit, BiUserCircle, BiChevronRight, BiShareAlt, BiTimeFive, BiListUl, BiShow } from "react-icons/bi";
+import { 
+  BiCalendarEdit, BiUserCircle, BiChevronRight, BiShareAlt, 
+  BiTimeFive, BiListUl, BiShow, BiCopy, BiCheck, 
+  BiMessageDetail, BiPaperPlane 
+} from "react-icons/bi";
 import { FaFacebookF, FaWhatsapp, FaTelegramPlane } from "react-icons/fa";
 
 export const prerender = true;
 
-// HELPER: Menghindari error RegExp pada judul dengan karakter spesial
 function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -44,7 +47,8 @@ export async function getStaticPaths() {
       body: JSON.stringify(query),
     });
     const result = await response.json();
-    const allPosts = result.data?.posts?.nodes || [];
+    const rawPosts = result.data?.posts?.nodes || [];
+    const allPosts = rawPosts.filter((p: any) => p.slug && p.slug.trim() !== "");
     const sidebarCategories = result.data?.categories?.nodes?.filter((c: any) => c.count > 0) || [];
 
     return allPosts.map((post: any) => ({
@@ -52,7 +56,7 @@ export async function getStaticPaths() {
       props: { post, allPosts, sidebarCategories },
     }));
   } catch (e) {
-    console.error("Gagal ambil data build:", e);
+    console.error("Gagal build paths:", e);
     return [];
   }
 }
@@ -61,7 +65,16 @@ const { post, allPosts, sidebarCategories } = Astro.props;
 const currentUrl = Astro.url;
 const siteUrl = "https://amina.or.id"; 
 
-// --- 1. FAQ SCHEMA OTOMATIS: Scan H2/H3 berakhiran "?" ---
+// --- NOMOR ADMIN AMINA (FIXED FORMAT) ---
+const whatsappAdmin = "6281225774132"; 
+
+// --- 1. RELATED POSTS (KATEGORI SAMA) ---
+const primaryCategory = post.categories?.nodes?.[0]?.name || "Berita";
+const relatedPosts = allPosts
+  .filter(p => p.slug !== post.slug && p.categories?.nodes.some(cat => cat.name === primaryCategory))
+  .slice(0, 3);
+
+// --- 2. FAQ SCHEMA OTOMATIS ---
 const faqMatches = post.content.match(/<h[2-3][^>]*>(.*?\?)<\/h[2-3]>\s*<p>(.*?)<\/p>/g) || [];
 const faqList = faqMatches.map((match) => {
   const qMatch = match.match(/<h[2-3][^>]*>(.*?)<\/h[2-3]>/);
@@ -82,7 +95,7 @@ const faqSchema = faqList.length > 0 ? {
   }))
 } : null;
 
-// --- 2. LOGIKA TABLE OF CONTENTS ---
+// --- 3. TABLE OF CONTENTS ---
 const headings = post.content.match(/<h[2-3][^>]*>.*?<\/h[2-3]>/g) || [];
 const toc = headings.map((h) => {
   const text = h.replace(/<[^>]*>/g, '').trim();
@@ -98,14 +111,8 @@ toc.forEach((item) => {
   contentWithIds = contentWithIds.replace(searchPattern, `<${headingTag} id="${item.id}">${item.text}</${headingTag}>`);
 });
 
-const wordsPerMinute = 200;
-const textLength = post.content.split(' ').length;
-const readingTime = Math.ceil(textLength / wordsPerMinute);
-const primaryCategory = post.categories?.nodes[0]?.name || "Berita";
-
-// Filter artikel agar tidak memunculkan dirinya sendiri di sidebar
+const readingTime = Math.ceil(post.content.split(' ').length / 200);
 const popularPosts = allPosts.filter(p => p.slug !== post.slug).slice(0, 5);
-
 const rankColors = ["text-blue-400/30", "text-green-400/30", "text-red-400/30", "text-yellow-400/30", "text-purple-400/30"];
 
 const breadcrumbSchema = {
@@ -118,7 +125,6 @@ const breadcrumbSchema = {
   ]
 };
 
-// Gabungkan Semua Skema
 const structuredData = [breadcrumbSchema];
 if (faqSchema) structuredData.push(faqSchema);
 
@@ -140,9 +146,9 @@ const shareLinks = [
   <section class="bg-[#0b1c3c] py-4 md:py-8 text-white w-full border-t border-white/5 relative overflow-hidden">
     <div class="container relative z-10">
       <nav class="flex items-center space-x-2 text-[10px] mb-2 text-white/40 font-bold uppercase tracking-[0.2em]">
-        <a href="/" class="hover:text-primary transition uppercase">Home</a>
+        <a href="/" class="hover:text-primary transition uppercase font-black tracking-widest">Home</a>
         <BiChevronRight className="opacity-20" />
-        <a href={`/categories/${post.categories?.nodes[0]?.slug}`} class="hover:text-primary transition uppercase font-black">{primaryCategory}</a>
+        <a href={`/categories/${post.categories?.nodes?.[0]?.slug}`} class="hover:text-primary transition uppercase font-black tracking-widest">{primaryCategory}</a>
       </nav>
       <h1 set:html={post.title} class="text-2xl md:text-4xl lg:text-5xl text-white font-black leading-[1.2] mb-4 max-w-5xl tracking-tighter uppercase" />
       <div class="flex flex-wrap items-center gap-6 text-[10px] font-bold text-white/30 uppercase tracking-widest border-t border-white/5 pt-4">
@@ -166,68 +172,122 @@ const shareLinks = [
           <div class="flex items-center gap-3 mb-8 pb-4 border-b border-gray-100">
              <span class="text-[10px] font-bold text-dark/40 uppercase tracking-widest mr-2 flex items-center"><BiShareAlt className="mr-1 h-3 w-3" /> BAGIKAN:</span>
              {shareLinks.map((item) => (
-                <a href={item.url} target="_blank" rel="noopener noreferrer" class="w-8 h-8 flex items-center justify-center rounded-lg text-white transition hover:scale-110 shadow-sm" style={{ backgroundColor: item.color }}><item.icon className="h-3 w-3" /></a>
+                <a href={item.url} target="_blank" rel="noopener noreferrer" class="w-8 h-8 flex items-center justify-center rounded-lg text-white transition hover:scale-110 shadow-sm" style={{ backgroundColor: item.color }} title={item.name}><item.icon className="h-4 w-4" /></a>
              ))}
+             <button id="copy-link-btn" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-200 text-dark/60 transition hover:bg-primary hover:text-white shadow-sm outline-none group" title="Copy Link">
+                <BiCopy id="icon-copy" className="h-4 w-4 group-active:scale-90 transition" />
+                <BiCheck id="icon-check" className="h-4 w-4 hidden text-white" />
+             </button>
           </div>
 
-          <div class="content prose prose-lg md:prose-xl max-w-none text-dark/80 leading-[1.7] first-letter:text-5xl first-letter:font-black first-letter:text-primary first-letter:mr-2 first-letter:float-left" set:html={post.content} />
+          <div class="content prose prose-lg md:prose-xl max-w-none text-dark/80 leading-[1.7] first-letter:text-5xl first-letter:font-black first-letter:text-primary first-letter:mr-2 first-letter:float-left mb-16" set:html={post.content} />
+
+          {relatedPosts.length > 0 && (
+            <div class="mt-16 pt-10 border-t border-gray-100">
+              <h2 class="text-lg font-black text-dark mb-8 flex items-center uppercase tracking-tight">
+                <span class="w-1.5 h-6 bg-primary mr-3 rounded-full"></span> Artikel Terkait
+              </h2>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {relatedPosts.map((rp) => (
+                  <a href={`/blog/${rp.slug}`} class="group flex flex-col bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-50 hover:shadow-xl transition-all duration-300 h-full">
+                    <div class="aspect-video overflow-hidden bg-gray-100">
+                      <Image src={rp.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} width={400} height={225} class="w-full h-full object-cover group-hover:scale-110 transition duration-500" alt={rp.title} />
+                    </div>
+                    <div class="p-4 flex-1 flex flex-col justify-between">
+                      <h3 class="text-[13px] font-black leading-snug group-hover:text-primary transition line-clamp-2 uppercase mb-3">{rp.title}</h3>
+                      <div class="text-[10px] font-bold text-dark/30 uppercase tracking-widest flex items-center"><BiTimeFive className="mr-1 h-3 w-3" /> {dateFormat(rp.date)}</div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div class="mt-16 bg-[#0b1c3c] p-8 md:p-12 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden">
+            <div class="relative z-10">
+               <h2 class="text-2xl font-black mb-2 flex items-center uppercase tracking-tight">
+                 <BiMessageDetail className="mr-3 h-6 w-6 text-primary" /> Diskusi & Komentar
+               </h2>
+               <p class="text-white/50 text-xs font-bold uppercase tracking-widest mb-8">Punya pertanyaan terkait artikel ini? Mari mengobrol langsung.</p>
+               
+               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input type="text" id="wa-name" placeholder="Nama Anda" class="bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm outline-none focus:border-primary transition" />
+                  <button id="wa-submit-btn" class="bg-primary hover:bg-white text-[#0b1c3c] font-black uppercase tracking-widest py-4 px-8 rounded-xl text-xs flex items-center justify-center transition group">
+                    Kirim ke WhatsApp <BiPaperPlane className="ml-2 h-4 w-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition" />
+                  </button>
+               </div>
+            </div>
+            <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl"></div>
+          </div>
+
         </article>
 
         <aside class="w-full lg:w-[32%]">
           <div class="sticky top-24 space-y-10">
-            
             {toc.length > 0 && (
               <div class="bg-white p-10 rounded-[2rem] shadow-[0_20px_60px_rgba(0,0,0,0.04)] border border-gray-50">
-                <h2 class="text-[11px] font-black mb-8 text-dark flex items-center tracking-[0.25em] uppercase">
-                  <BiListUl className="mr-3 h-5 w-5 text-primary" /> DAFTAR ISI
-                </h2>
+                <h2 class="text-[11px] font-black mb-8 text-dark flex items-center tracking-[0.25em] uppercase"><BiListUl className="mr-3 h-5 w-5 text-primary" /> DAFTAR ISI</h2>
                 <nav class="space-y-4">
                   {toc.map((item) => (
-                    <a href={`#${item.id}`} class={`block text-[13px] transition hover:text-primary leading-relaxed ${item.depth === 3 ? 'ml-6 text-dark/40 font-medium' : 'text-dark/60 font-bold'}`}>
-                      {item.text}
-                    </a>
+                    <a href={`#${item.id}`} class={`block text-[13px] transition hover:text-primary leading-relaxed ${item.depth === 3 ? 'ml-6 text-dark/40 font-medium' : 'text-dark/60 font-bold'}`}>{item.text}</a>
                   ))}
                 </nav>
               </div>
             )}
             
             <div class="bg-white p-8 md:p-10 rounded-[2rem] shadow-[0_20px_60px_rgba(0,0,0,0.03)] border border-gray-50">
-              <h2 class="text-xl font-black text-[#0b1c3c] flex items-center mb-10 uppercase tracking-tight">
-                <span class="w-1.5 h-7 bg-primary mr-4 rounded-full"></span>
-                Terpopuler
-              </h2>
-              
+              <h2 class="text-xl font-black text-[#0b1c3c] flex items-center mb-10 uppercase tracking-tight"><span class="w-1.5 h-7 bg-primary mr-4 rounded-full"></span>Terpopuler</h2>
               <ul class="space-y-10">
                 {popularPosts.map((p: any, index: number) => (
                   <li class="group relative flex gap-6">
-                    <span class={`text-5xl md:text-6xl font-black italic transition duration-500 select-none shrink-0 leading-none ${rankColors[index % rankColors.length]}`}>
-                      {(index + 1).toString().padStart(2, '0')}
-                    </span>
-                    
+                    <span class={`text-5xl md:text-6xl font-black italic transition duration-500 select-none shrink-0 leading-none ${rankColors[index % rankColors.length]}`}>{(index + 1).toString().padStart(2, '0')}</span>
                     <div class="flex-1">
-                      <a href={`/blog/${p.slug}`} class="block group">
-                        <h3 class="text-[15px] font-black text-dark/90 group-hover:text-primary transition duration-300 leading-tight mb-2 uppercase tracking-tight line-clamp-2">
-                          {p.title}
-                        </h3>
-                      </a>
-                      
-                      <div class="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest">
-                         <span class="text-primary">{p.categories?.nodes[0]?.name || "BERITA"}</span>
+                      <a href={`/blog/${p.slug}`} class="block group"><h3 class="text-[15px] font-black text-dark/90 group-hover:text-primary transition duration-300 leading-tight mb-2 uppercase tracking-tight line-clamp-2">{p.title}</h3></a>
+                      <div class="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-primary">
+                         <span>{p.categories?.nodes?.[0]?.name || "BERITA"}</span>
                          <span class="text-dark/10">•</span>
-                         <span class="flex items-center gap-1.5 text-dark/30">
-                           <BiShow className="h-3.5 w-3.5" /> 
-                           {Math.floor(Math.random() * 4000) + 500}
-                         </span>
+                         <span class="flex items-center gap-1.5 text-dark/30"><BiShow className="h-3.5 w-3.5" /> {Math.floor(Math.random() * 4000) + 500}</span>
                       </div>
                     </div>
                   </li>
                 ))}
               </ul>
             </div>
-
           </div>
         </aside>
       </div>
     </div>
   </section>
 </Base>
+
+<script is:inline define:vars={{ whatsappAdmin, postTitle: post.title, postUrl: currentUrl.href }}>
+  // 1. COPY LINK LOGIC
+  document.getElementById('copy-link-btn')?.addEventListener('click', function() {
+    const iconCopy = document.getElementById('icon-copy');
+    const iconCheck = document.getElementById('icon-check');
+    const btn = this;
+    navigator.clipboard.writeText(postUrl).then(() => {
+      iconCopy.classList.add('hidden');
+      iconCheck.classList.remove('hidden');
+      btn.classList.add('bg-green-500');
+      btn.classList.remove('bg-gray-200');
+      setTimeout(() => {
+        iconCopy.classList.remove('hidden');
+        iconCheck.classList.add('hidden');
+        btn.classList.remove('bg-green-500');
+        btn.classList.add('bg-gray-200');
+      }, 2000);
+    });
+  });
+
+  // 2. WHATSAPP DISCUSSION LOGIC
+  document.getElementById('wa-submit-btn')?.addEventListener('click', function() {
+    const name = document.getElementById('wa-name').value;
+    if (!name) {
+      alert("Masukkan nama Anda terlebih dahulu ya.");
+      return;
+    }
+    const message = `Halo Admin Amina, saya *${name}* ingin berdiskusi mengenai artikel: *${postTitle}* (%0A%0A Link: ${postUrl})`;
+    window.open(`https://api.whatsapp.com/send?phone=${whatsappAdmin}&text=${message}`, '_blank');
+  });
+</script>
