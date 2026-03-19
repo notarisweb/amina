@@ -21,7 +21,7 @@ export async function getStaticPaths() {
   const query = {
     query: `
       query GetStaticBuildData {
-        posts(first: 1000) {  /* FIX: Naikkan limit ke 1000 agar tidak 404 */
+        posts(first: 1000) {  /* FIX: Limit 1000 agar artikel lama tidak 404 */
           nodes {
             slug
             title
@@ -135,7 +135,7 @@ const shareLinks = [
                 loading="eager" 
                 fetchpriority="high" 
                 class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-                alt={post.title || "Image Utama"} 
+                alt={post.title || "Gambar Utama"} 
               />
             </div>
           )}
@@ -167,7 +167,7 @@ const shareLinks = [
                         width={400} 
                         height={225} 
                         class="w-full h-full object-cover group-hover:scale-110 transition duration-500" 
-                        alt={rp.title || "Artikel Terkait"} 
+                        alt={rp.title || "Thumbnail Terkait"} 
                       />
                     </div>
                     <div class="p-4 flex-1 flex flex-col justify-between">
@@ -224,7 +224,11 @@ const shareLinks = [
                   <li class="group relative flex gap-5">
                     <span class={`text-4xl font-black italic transition duration-500 leading-none ${rankColors[index % rankColors.length]}`}>0{index + 1}</span>
                     <div class="flex-1 min-w-0">
-                      <a href={`/blog/${p.slug}`} class="block"><h3 class="text-[15px] font-black text-dark/90 dark:text-white/90 group-hover:text-primary transition leading-snug mb-2 tracking-tight line-clamp-2">{p.title}</h3></a>
+                      <a href={`/blog/${p.slug}`} class="block">
+                        <h3 class="text-[15px] font-black text-dark/90 dark:text-white/90 group-hover:text-primary transition leading-snug mb-2 tracking-tight line-clamp-2">
+                          {p.title}
+                        </h3>
+                      </a>
                       <div class="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-primary">
                          <span>{p.categories?.nodes?.[0]?.name || "BERITA"}</span>
                          <span class="text-dark/10 dark:text-white/10">•</span>
@@ -244,7 +248,7 @@ const shareLinks = [
 </Base>
 
 <script is:inline define:vars={{ postUrl: currentUrl.href }}>
-  // Copy Link Logic
+  // Copy Link Script
   document.getElementById('copy-link-btn')?.addEventListener('click', function() {
     const iconCopy = document.getElementById('icon-copy');
     const iconCheck = document.getElementById('icon-check');

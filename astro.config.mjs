@@ -8,12 +8,11 @@ import remarkCollapse from "remark-collapse";
 import remarkToc from "remark-toc";
 import config from "./src/config/config.json";
 
-// FIX 1: Import Vercel yang benar (Tanpa /serverless)
+// FIX: Import Vercel adapter terbaru
 import vercel from "@astrojs/vercel";
 
 export default defineConfig({
-  // FIX 2: Ganti 'hybrid' ke 'static' sesuai instruksi Astro 5
-  // Website tetap kencang, dan fitur dinamis tetap bisa jalan di Vercel
+  // FIX: Gunakan 'static' untuk kecepatan maksimal di Vercel (SSG)
   output: "static", 
   
   adapter: vercel({
@@ -22,7 +21,10 @@ export default defineConfig({
 
   site: "https://amina.or.id",
   base: config.site.base_path ? config.site.base_path : "/",
-  trailingSlash: config.site.trailing_slash ? "always" : "never",
+
+  // FIX 404: Set ke 'ignore' supaya URL pake/tanpa slash di akhir tetep jalan
+  // Ini obat paling manjur buat drama 404 di Astro + Vercel
+  trailingSlash: "ignore",
 
   image: {
     domains: ["studio.amina.or.id"],
@@ -33,7 +35,7 @@ export default defineConfig({
 
   integrations: [
     tailwind({
-      applyBaseStyles: false, // Kontrol penuh di CSS utama kita
+      applyBaseStyles: false, // Kontrol penuh ada di CSS utama kita
     }),
     react(),
     sitemap({
@@ -59,6 +61,11 @@ export default defineConfig({
   markdown: {
     remarkPlugins: [remarkToc, [remarkCollapse, { test: "Table of contents" }]],
     shikiConfig: { theme: "one-dark-pro", wrap: true },
+  },
+
+  build: {
+    // FIX: Pastikan format output adalah directory (clean URL)
+    format: 'directory'
   },
 
   vite: {
