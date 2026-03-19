@@ -3,7 +3,7 @@ import Authors from "@/components/Authors.astro";
 import config from "@/config/config.json";
 import Base from "@/layouts/Base.astro";
 import Pagination from "@/layouts/components/Pagination.astro";
-import TrendingTicker from "@/components/TrendingTicker.astro";
+import TrendingTicker from "@/components/homepage/TrendingTicker.astro";
 
 export async function getStaticPaths() {
   const WP_URL = import.meta.env.PUBLIC_WP_URL;

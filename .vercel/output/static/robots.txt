@@ -1,8 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /api/
-Disallow: /search
-Disallow: /404
-
-# Arahkan Google ke peta jalan website Anda
-Sitemap: https://amina.or.id/sitemap-index.xml

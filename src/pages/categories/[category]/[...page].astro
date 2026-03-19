@@ -1,10 +1,11 @@
 ---
-import Posts from "@/components/Posts.astro";
+import { Image } from "astro:assets";
 import Base from "@/layouts/Base.astro";
 import Pagination from "@/layouts/components/Pagination.astro";
+import dateFormat from "@/lib/utils/dateFormat"; // Pastikan import ini ada
 import { humanize } from "@/lib/utils/textConverter";
 import TrendingTicker from "@/components/homepage/TrendingTicker.astro";
-import { BiHash, BiChevronRight } from "react-icons/bi";
+import { BiChevronRight, BiLayer, BiTimeFive } from "react-icons/bi";
 
 export const prerender = false;
 
@@ -12,11 +13,11 @@ export const prerender = false;
 const { category } = Astro.params;
 const url = new URL(Astro.request.url);
 const currentPage = parseInt(url.searchParams.get("page") || "1");
-const pageSize = 12; // Gunakan angka genap (12) agar grid 3/4 kolom selalu penuh
+const pageSize = 9; // Grid 3 kolom lebih pas dengan angka 9
 
 const WP_URL = import.meta.env.PUBLIC_WP_URL;
 
-// 2. Query WordPress: Ambil data kategori + Postingan + Recent Posts untuk Ticker
+// 2. Query WordPress
 const query = {
   query: `
     query GetCategoryPosts($catSlug: ID!) {
@@ -59,7 +60,6 @@ try {
   const result = await response.json();
   categoryData = result.data?.category;
   
-  // Data untuk Ticker
   const wpRecent = result.data?.recentPosts?.nodes || [];
   tickerPosts = wpRecent.map((p: any) => ({
     slug: p.slug,
@@ -69,16 +69,14 @@ try {
   if (categoryData) {
     const wpPosts = categoryData.posts?.nodes || [];
     allFormattedPosts = wpPosts.map((post: any) => ({
-      id: post.slug,
       slug: post.slug,
-      body: post.excerpt || "",
       data: {
         title: post.title || "Judul Tidak Tersedia",
         description: post.excerpt || "",
         date: post.date,
         image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
         categories: post.categories?.nodes.map((c: any) => c.name) || [categoryData.name],
-        authors: [post.author?.node?.name || "Admin"],
+        author: post.author?.node?.name || "Admin",
       },
     }));
   }
@@ -88,7 +86,6 @@ try {
 
 if (!categoryData) return Astro.redirect("/404");
 
-// 3. Logika Pagination Manual
 const totalPosts = allFormattedPosts.length;
 const totalPages = Math.ceil(totalPosts / pageSize);
 const startIdx = (currentPage - 1) * pageSize;
@@ -107,41 +104,93 @@ const title = humanize(categoryData.name || "");
 
   <header class="bg-[#0b1c3c] py-16 md:py-24 text-white w-full border-t border-white/5 relative overflow-hidden">
     <div class="container relative z-10">
-      <nav class="flex items-center space-x-2 text-[10px] md:text-[11px] mb-8 text-white/40 font-bold uppercase tracking-[0.2em]">
-        <a href="/" class="hover:text-primary transition">BERANDA</a>
+      <nav class="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.4em] mb-10 text-white/40">
+        <a href="/" class="hover:text-primary transition">Beranda</a>
         <BiChevronRight className="opacity-20" />
-        <a href="/categories" class="hover:text-primary transition">KATEGORI</a>
+        <a href="/categories" class="hover:text-primary transition">Kategori</a>
         <BiChevronRight className="opacity-20" />
-        <span class="text-primary italic normal-case font-medium opacity-80">{title}</span>
+        <span class="text-primary normal-case font-bold">{title}</span>
       </nav>
 
-      <div class="max-w-4xl">
-        <div class="inline-flex items-center gap-2 bg-primary/20 text-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-6 border border-primary/20">
-          <BiHash className="text-sm" /> Arsip Kategori
+      <div class="max-w-5xl">
+        <div class="flex items-center gap-4 mb-6">
+            <span class="w-12 h-[2px] bg-primary"></span>
+            <span class="text-[11px] font-black uppercase tracking-[0.5em] text-primary">Arsip Konten</span>
         </div>
-        <h1 class="text-4xl md:text-7xl font-black text-white leading-[1.1] mb-8 tracking-tighter uppercase">
-          Kategori: <span class="text-primary italic">{title}</span>
+        
+        <h1 class="text-5xl md:text-7xl font-black text-white leading-none mb-10 tracking-tighter uppercase">
+          Kategori<br/>
+          <span class="text-primary">{title}</span>
         </h1>
+
         {categoryData.description && (
-          <p class="text-white/50 text-base md:text-xl leading-relaxed font-medium max-w-2xl italic">
-            "{categoryData.description}"
-          </p>
+          <div class="border-l-4 border-orange-600 pl-8 mt-12">
+            <p class="text-white/60 text-lg md:text-xl leading-relaxed font-medium max-w-3xl">
+              {categoryData.description}
+            </p>
+          </div>
         )}
       </div>
     </div>
-    <div class="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-primary/5 to-transparent pointer-events-none"></div>
+    <div class="absolute -bottom-20 -right-20 opacity-5 pointer-events-none">
+        <BiLayer className="w-[500px] h-[500px]" />
+    </div>
   </header>
 
-  <main class="py-20 bg-white dark:bg-dark transition-colors duration-300 min-h-[60vh]">
+  <main class="py-20 bg-[#fcfcfc] dark:bg-dark transition-colors duration-300 min-h-[60vh]">
     <div class="container">
       
       {paginatedPosts.length > 0 ? (
         <>
-          <div class="min-h-[50vh]">
-            <Posts posts={paginatedPosts} className="mb-16" />
+          <div class="mb-12 flex items-center justify-between border-b border-gray-200 dark:border-white/5 pb-6">
+              <div class="text-[10px] font-black uppercase tracking-[0.3em] text-dark/40 dark:text-white/20">
+                  DATABASE: {paginatedPosts.length} ARTIKEL TERMUAT
+              </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            {paginatedPosts.map((post) => (
+              <article class="group flex flex-col bg-white dark:bg-dark/50 border border-gray-100 dark:border-white/5 transition-all duration-500 hover:shadow-2xl hover:-translate-y-1">
+                <a href={`/blog/${post.slug}`} class="overflow-hidden block aspect-video bg-gray-100 dark:bg-white/5">
+                  <Image 
+                    src={post.data.image} 
+                    alt={post.data.title} 
+                    width={600} 
+                    height={338} 
+                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  />
+                </a>
+                
+                <div class="p-8 flex flex-col flex-1">
+                  <div class="flex items-center gap-3 mb-4">
+                    <span class="text-[9px] font-black uppercase tracking-widest text-primary border-b-2 border-primary pb-0.5">
+                      {post.data.categories[0]}
+                    </span>
+                  </div>
+                  
+                  <a href={`/blog/${post.slug}`}>
+                    <h2 class="text-xl font-black text-[#0b1c3c] dark:text-white leading-snug group-hover:text-primary transition-colors not-italic normal-case mb-4 line-clamp-2">
+                      {post.data.title}
+                    </h2>
+                  </a>
+
+                  <p class="text-dark/50 dark:text-white/40 text-sm line-clamp-3 mb-6 font-medium leading-relaxed" set:html={post.data.description.slice(0, 120) + '...'} />
+                  
+                  <div class="mt-auto pt-6 border-t border-gray-50 dark:border-white/5 flex items-center justify-between">
+                    <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                       <BiTimeFive className="text-primary" />
+                       {dateFormat(post.data.date)}
+                    </div>
+                    <span class="text-primary group-hover:translate-x-1 transition-transform">
+                      <BiChevronRight className="text-2xl" />
+                    </span>
+                  </div>
+                </div>
+              </article>
+            ))}
           </div>
           
-          <div class="mt-20 py-10 border-t border-gray-100 dark:border-white/5 flex justify-center">
+          <div class="mt-24 py-12 border-t-2 border-dark dark:border-white/10 flex justify-center">
             <Pagination 
               section={`categories/${category}`} 
               currentPage={currentPage} 
@@ -150,17 +199,19 @@ const title = humanize(categoryData.name || "");
           </div>
         </>
       ) : (
-        <div class="text-center py-24 bg-gray-50 dark:bg-white/5 rounded-3xl border-2 border-dashed border-gray-100 dark:border-white/10">
-          <p class="text-gray-400 dark:text-gray-600 italic font-medium mb-6">Oppss! Belum ada artikel di halaman ini, Bos.</p>
-          <a href={`/categories/${category}`} class="inline-flex items-center gap-2 bg-primary text-white px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:scale-105 transition shadow-lg shadow-primary/20">
-            Kembali ke Halaman 1
+        <div class="text-center py-32 border border-gray-100 dark:border-white/5 bg-white dark:bg-transparent">
+          <p class="text-gray-400 italic font-bold text-2xl mb-8 uppercase tracking-tighter">
+            Belum ada jejak artikel di sini, Bos.
+          </p>
+          <a href="/categories" class="inline-flex items-center gap-3 bg-[#0b1c3c] text-white px-10 py-4 font-black text-xs uppercase tracking-[0.2em] hover:bg-primary transition-all">
+            <BiChevronRight className="rotate-180" /> Kembali ke Indeks
           </a>
         </div>
       )}
 
-      <div class="mt-20 pt-10 text-center opacity-30">
-        <p class="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.4em]">
-          Halaman {currentPage} dari {totalPages} • Amina Media
+      <div class="mt-24 pt-10 text-center opacity-20 border-t border-gray-100 dark:border-white/5">
+        <p class="text-[9px] font-black text-dark dark:text-white uppercase tracking-[0.5em]">
+          Amina Media Editorial Archive • Page {currentPage} of {totalPages}
         </p>
       </div>
 
@@ -169,8 +220,21 @@ const title = humanize(categoryData.name || "");
 </Base>
 
 <style is:global>
-  /* Menghancurkan padding kaku dari class .section bawaan tema */
-  .section {
-    padding: 0 !important;
+  .section { padding: 0 !important; }
+
+  /* FORCE SHARP EDGES */
+  * {
+    border-radius: 0 !important;
+  }
+
+  /* Reset Judul agar tidak ada miring dan tidak uppercase paksa */
+  h1, h2, h3 {
+    text-transform: none !important;
+    font-style: normal !important;
+  }
+  
+  /* Khusus label kecil tetap uppercase biar gahar */
+  .tracking-widest, nav, .text-[10px], .text-[9px] {
+    text-transform: uppercase !important;
   }
 </style>
