@@ -65,7 +65,7 @@ const { post, allPosts, sidebarCategories } = Astro.props;
 const currentUrl = Astro.url;
 const donationUrl = "https://bdp.amina.or.id/#donasi"; 
 
-// --- RELATED POSTS LOGIC ---
+// RELATED POSTS LOGIC
 const primaryCategory = post.categories?.nodes?.[0]?.name || "Berita";
 const relatedPosts = allPosts
   .filter(p => p.slug !== post.slug && p.categories?.nodes.some(cat => cat.name === primaryCategory))
@@ -73,7 +73,7 @@ const relatedPosts = allPosts
 
 const popularPosts = allPosts.filter(p => p.slug !== post.slug).slice(0, 8);
 
-// --- TOC LOGIC ---
+// TOC LOGIC
 const headings = post.content.match(/<h[2-3][^>]*>.*?<\/h[2-3]>/g) || [];
 const toc = headings.map((h) => {
   const text = h.replace(/<[^>]*>/g, '').trim();
@@ -136,19 +136,14 @@ const shareLinks = [
           {post.featuredImage?.node?.sourceUrl && (
             <figure class="mb-8">
               <div class="overflow-hidden bg-gray-50 border border-gray-100 dark:border-white/5 shadow-lg">
-                <Image 
-                  src={post.featuredImage.node.sourceUrl} 
-                  width={1200} height={675} format="webp" loading="eager" 
-                  class="w-full h-auto object-cover rounded-none" 
-                  alt={post.title || "Gambar Utama Amina Media"} 
-                />
+                <Image src={post.featuredImage.node.sourceUrl} width={1200} height={675} format="webp" loading="eager" class="w-full h-auto object-cover rounded-none" alt={post.title || "Featured Image Amina Media"} />
               </div>
             </figure>
           )}
 
           {toc.length > 0 && (
             <div class="mb-12 bg-gray-50/50 dark:bg-white/5 border-l-4 border-primary p-6 shadow-sm">
-              <h2 class="text-[10px] font-black mb-4 text-dark/50 dark:text-white/40 flex items-center tracking-[0.3em] uppercase">
+              <h2 class="text-[10px] font-black mb-4 text-dark/50 dark:text-white/40 flex items-center tracking-[0.3em] uppercase border-none">
                 <BiListUl className="mr-2 h-4 w-4 text-primary" /> Daftar Isi
               </h2>
               <nav class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
@@ -163,36 +158,43 @@ const shareLinks = [
 
           <article class="content prose prose-lg md:prose-xl max-w-none text-dark/90 dark:text-white/80 leading-[1.9] mb-16" set:html={contentWithIds} />
 
-          <div class="bg-[#0b1c3c] dark:bg-[#06142e] border-l-8 border-primary p-6 md:p-8 rounded-lg shadow-xl relative overflow-hidden mb-24 text-white">
-            <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-               <div class="flex-1">
-                  <h2 class="text-xl font-black mb-1 leading-tight uppercase tracking-tight text-teal-400 italic">Investasi Abadi</h2>
-                  <p class="text-white/60 text-xs font-medium">
-                    Jadikan harta Anda wasilah kebaikan bagi syiar Islam dan kemanusiaan. Satu langkah kecil, berjuta manfaat bagi sesama.
+          <div class="bg-gradient-to-r from-orange-50 to-white dark:from-white/5 dark:to-dark border border-orange-100 dark:border-white/10 p-6 md:p-10 rounded-xl shadow-xl relative overflow-hidden mb-24 transition-all">
+            <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+               <div class="flex-1 text-center md:text-left">
+                  <div class="inline-flex items-center gap-2 mb-3">
+                     <BiHeart className="text-orange-600 h-4 w-4 animate-pulse" />
+                     <span class="text-[10px] font-black uppercase tracking-[0.3em] text-orange-600">Infaq & Sedekah</span>
+                  </div>
+                  <h2 class="text-2xl font-black mb-2 leading-tight uppercase tracking-tight text-[#0b1c3c] dark:text-orange-400 border-none">Jadilah Wasilah Kebaikan</h2>
+                  <p class="text-dark/60 dark:text-white/50 text-sm font-medium leading-relaxed italic">
+                    Dukungan Anda menggerakkan misi kemanusiaan dan dakwah Amina Media. Jadikan harta Anda saksi abadi di akhirat kelak.
                   </p>
                </div>
                <div class="shrink-0">
-                  <a href={donationUrl} target="_blank" class="inline-flex items-center bg-primary hover:bg-orange-600 text-white font-black uppercase tracking-widest py-2.5 px-6 rounded-full text-[10px] transition-all shadow-lg hover:scale-105 group">
+                  <a href={donationUrl} target="_blank" class="inline-flex items-center bg-orange-600 hover:bg-[#0b1c3c] text-white font-black uppercase tracking-widest py-3 px-8 rounded-full text-[11px] transition-all shadow-lg hover:scale-105 group">
                     Donasi Sekarang <BiRightArrowAlt className="ml-2 h-4 w-4 group-hover:translate-x-1 transition" />
                   </a>
                </div>
+            </div>
+            <div class="absolute -right-4 -bottom-4 opacity-5 pointer-events-none">
+                <BiHeart className="w-32 h-32 text-orange-600" />
             </div>
           </div>
 
           {relatedPosts.length > 0 && (
             <div class="mb-20 pt-10 border-t border-gray-100 dark:border-white/5">
               <h2 class="text-[11px] font-black text-primary mb-12 flex items-center uppercase tracking-[0.4em]">
-                <span class="w-8 h-[2px] bg-primary mr-4"></span> Artikel Terkait
+                <span class="w-8 h-[2px] bg-primary mr-4"></span> ARTIKEL TERKAIT
               </h2>
               <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
                 {relatedPosts.map((rp) => (
                   <a href={`/blog/${rp.slug}`} class="group flex flex-col h-full">
-                    <div class="aspect-[4/3] overflow-hidden bg-gray-50 border border-gray-100 dark:border-white/5 mb-4 shadow-sm">
+                    <div class="aspect-[4/3] overflow-hidden bg-gray-50 border border-gray-100 dark:border-white/5 mb-4">
                       <Image 
                         src={rp.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} 
                         width={400} height={300} 
-                        class="w-full h-full object-cover group-hover:scale-110 transition duration-700 rounded-none" 
-                        alt={rp.title || "Thumbnail Terkait"} 
+                        class="w-full h-full object-cover group-hover:scale-110 transition duration-700 rounded-none shadow-md" 
+                        alt={rp.title || "Related Image"} 
                       />
                     </div>
                     <h3 class="text-[14px] font-black leading-snug text-dark dark:text-white group-hover:text-primary transition line-clamp-3 tracking-tight">{rp.title}</h3>
@@ -210,9 +212,12 @@ const shareLinks = [
                <div class="absolute inset-0 opacity-10" style="background-image: url('data:image/svg+xml,%3Csvg width=\"40\" height=\"40\" viewBox=\"0 0 40 40\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M20 0l2 8 8 2-8 2-2 8-2-8-8-2 8-2z\" fill=\"%23ffffff\" fill-opacity=\"1\" fill-rule=\"evenodd\"/%3E%3C/svg%3E');"></div>
                
                <div class="relative z-10 flex flex-col items-center">
-                  <span class="text-sm font-bold uppercase tracking-[0.3em] mb-2 opacity-80">Waktu Shalat</span>
+                  <span class="text-lg font-medium mb-3">Waktu Shalat</span>
                   <div class="text-4xl font-black tracking-tighter mb-4 drop-shadow-md" id="real-time-clock">--:--:--</div>
-                  <div class="inline-flex items-center gap-2 border border-white/30 px-4 py-1.5 rounded-lg text-[10px] font-bold mb-8 bg-black/10 uppercase tracking-widest">Banyumas ▼</div>
+                  
+                  <div class="inline-flex items-center gap-2 border border-white/30 px-4 py-1.5 rounded-lg text-[10px] font-bold mb-8 bg-black/10 uppercase tracking-widest">
+                    Banyumas ▼
+                  </div>
                   
                   <div class="grid grid-cols-5 gap-1 w-full text-[9px] font-bold text-center">
                      <div class="flex flex-col gap-1"><span>Subuh</span><span class="text-white/60" id="sholat-subuh">--:--</span></div>
@@ -230,7 +235,7 @@ const shareLinks = [
                 {popularPosts.map((p: any) => (
                   <li class="py-5 first:pt-0 group border-none">
                     <a href={`/blog/${p.slug}`} class="flex gap-4 items-start">
-                      <div class="w-20 h-14 shrink-0 overflow-hidden bg-gray-50 border border-gray-100 dark:border-white/5">
+                      <div class="w-20 h-14 shrink-0 overflow-hidden bg-gray-50 border border-gray-100 dark:border-white/5 shadow-sm">
                         <img src={p.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} class="w-full h-full object-cover group-hover:scale-110 transition duration-500" alt={p.title} />
                       </div>
                       <div class="flex-1">
@@ -251,11 +256,9 @@ const shareLinks = [
 </Base>
 
 <script is:inline>
-  // 1. Fetch Waktu Sholat Banyumas (ID 1402)
   async function fetchPrayTimes() {
-    const now = new Date();
     try {
-      const res = await fetch(`https://api.myquran.com/v2/sholat/jadwal/1402/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`);
+      const res = await fetch(`https://api.myquran.com/v2/sholat/jadwal/1402/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${String(new Date().getDate()).padStart(2, '0')}`);
       const json = await res.json();
       const j = json.data.jadwal;
       document.getElementById('sholat-subuh').innerText = j.subuh;
@@ -263,19 +266,19 @@ const shareLinks = [
       document.getElementById('sholat-ashar').innerText = j.ashar;
       document.getElementById('sholat-maghrib').innerText = j.maghrib;
       document.getElementById('sholat-isya').innerText = j.isya;
-    } catch (e) { console.error("Prayer API error"); }
+    } catch (e) {}
   }
 
-  // 2. Real-time Clock
   function updateClock() {
-    document.getElementById('real-time-clock').innerText = new Date().toLocaleTimeString('id-ID', { hour12: false });
+    if (document.getElementById('real-time-clock')) {
+        document.getElementById('real-time-clock').innerText = new Date().toLocaleTimeString('id-ID', { hour12: false });
+    }
   }
 
   setInterval(updateClock, 1000);
   updateClock();
   fetchPrayTimes();
 
-  // 3. Share & Copy Logic
   document.getElementById('copy-link-btn')?.addEventListener('click', function() {
     navigator.clipboard.writeText(window.location.href);
     const iconCopy = document.getElementById('icon-copy');
@@ -284,12 +287,11 @@ const shareLinks = [
     setTimeout(() => { iconCopy.classList.remove('hidden'); iconCheck.classList.add('hidden'); }, 2000);
   });
 
-  // 4. Smooth Scroll TOC
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
       e.preventDefault();
       const target = document.querySelector(this.getAttribute('href'));
-      if (target) window.scrollTo({ top: target.offsetTop - 100, behavior: 'smooth' });
+      if (target) window.scrollTo({ top: target.offsetTop - 120, behavior: 'smooth' });
     });
   });
 </script>
@@ -298,7 +300,6 @@ const shareLinks = [
   .section { padding: 0 !important; }
   .content p { @apply mb-8 text-lg leading-[1.8] text-dark/80 dark:text-white/70 font-sans; }
   
-  /* FIX: Mencegah judul sub-bab menerjang sidebar */
   .content h2 { 
     @apply text-2xl md:text-3xl font-black uppercase mt-16 mb-8 text-[#0b1c3c] dark:text-teal-400 tracking-tight leading-tight border-b-4 border-primary pb-2 max-w-full block break-words; 
   }

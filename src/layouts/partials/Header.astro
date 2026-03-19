@@ -7,37 +7,55 @@ import { HiOutlineMoon, HiOutlineSun } from "react-icons/hi";
 const main = menu.main || [];
 ---
 
-<header class="w-full bg-white dark:bg-[#0b1c3c] border-b border-gray-200 dark:border-white/10 sticky top-0 z-50 transition-colors duration-300">
-  
-  <div class="container flex items-center justify-between py-4">
-    <div class="flex items-center">
-      <Logo />
-    </div>
-
-    <div class="flex items-center gap-4">
-      <div class="relative hidden md:block">
-        <input
-          type="text"
-          placeholder="Cari..."
-          class="w-64 pl-10 pr-4 py-2 rounded-full border border-gray-100 dark:border-white/10 text-sm focus:outline-none bg-gray-50/50 dark:bg-white/5 dark:text-white"
-        />
-        <IoSearch className="absolute left-3 top-2.5 text-gray-400 h-4 w-4"/>
+<header 
+  id="main-header" 
+  class="w-full bg-white dark:bg-[#0b1c3c] border-b border-gray-200 dark:border-white/10 sticky top-0 z-50 transition-all duration-500 ease-in-out"
+>
+  <div class="container">
+    <div class="flex items-center justify-between transition-all duration-500" id="header-wrapper">
+      
+      <div class="flex items-center py-4 transition-all duration-500" id="logo-container">
+        <Logo />
       </div>
 
-      <button 
-        id="theme-toggle" 
-        type="button"
-        class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-all duration-300 text-gray-600 dark:text-yellow-400 focus:outline-none"
-      >
-        <HiOutlineMoon id="icon-moon" class="h-5 w-5 pointer-events-none" />
-        <HiOutlineSun id="icon-sun" class="h-5 w-5 hidden pointer-events-none" />
-      </button>
+      <nav id="nav-menu" class="hidden lg:block transition-all duration-500 opacity-0 translate-x-10 pointer-events-none sticky-nav-links">
+        <ul class="flex items-center gap-6 whitespace-nowrap">
+          {main.map((item) => (
+            <li class="relative group h-full">
+              <a href={item.url} class="text-[12px] font-black uppercase tracking-widest text-dark dark:text-white hover:text-primary transition py-1">
+                {item.name}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <div id="header-tools" class="flex items-center gap-4 transition-all duration-500 opacity-100 scale-100">
+        <div class="relative hidden md:block">
+          <input
+            type="text"
+            placeholder="Cari..."
+            class="w-48 lg:w-64 pl-10 pr-4 py-2 rounded-none border border-gray-100 dark:border-white/10 text-sm focus:outline-none bg-gray-50/50 dark:bg-white/5 dark:text-white transition-all focus:w-80"
+          />
+          <IoSearch className="absolute left-3 top-2.5 text-gray-400 h-4 w-4"/>
+        </div>
+
+        <button 
+          id="theme-toggle" 
+          type="button"
+          class="p-2 rounded-none hover:bg-gray-100 dark:hover:bg-white/10 transition-all duration-300 text-gray-600 dark:text-yellow-400 focus:outline-none"
+        >
+          <HiOutlineMoon id="icon-moon" class="h-5 w-5 pointer-events-none" />
+          <HiOutlineSun id="icon-sun" class="h-5 w-5 hidden pointer-events-none" />
+        </button>
+      </div>
+
     </div>
   </div>
 
-  <nav class="border-t border-gray-100 dark:border-white/5 bg-white dark:bg-[#0b1c3c] transition-colors">
+  <nav id="main-nav-row" class="border-t border-gray-100 dark:border-white/5 bg-white dark:bg-[#0b1c3c] transition-all duration-500 h-auto overflow-hidden">
     <div class="container">
-      <ul class="flex items-center gap-8 py-3 overflow-visible whitespace-nowrap">
+      <ul class="flex items-center gap-8 py-4 overflow-visible whitespace-nowrap">
         {main.map((item) => (
           <li class="relative group h-full">
             {item.hasChildren ? (
@@ -48,7 +66,7 @@ const main = menu.main || [];
                 <IoChevronDown className="h-3 w-3 text-[#009688] group-hover:text-orange-600 transition group-hover:rotate-180 duration-300" />
                 
                 <div class="absolute top-full left-0 pt-3 hidden group-hover:block z-[60] min-w-[200px]">
-                  <div class="bg-white dark:bg-[#0b1c3c] shadow-2xl border border-gray-100 dark:border-white/10 py-4">
+                  <div class="bg-white dark:bg-[#0b1c3c] shadow-2xl border border-gray-100 dark:border-white/10 py-4 rounded-none">
                     <ul class="flex flex-col">
                       {item.children?.map((child) => (
                         <li>
@@ -73,7 +91,59 @@ const main = menu.main || [];
   </nav>
 </header>
 
+<style is:global>
+  /* Menghilangkan semua rounded di Header sesuai gaya Amina Media */
+  #main-header input, 
+  #main-header button, 
+  #main-header div {
+    border-radius: 0 !important;
+  }
+
+  /* State saat header sedang mengecil (Scrolled) */
+  .header-scrolled {
+    @apply shadow-xl py-0;
+  }
+
+  .header-scrolled #main-nav-row {
+    height: 0;
+    opacity: 0;
+    padding: 0;
+    border: none;
+    pointer-events: none;
+  }
+
+  .header-scrolled #header-tools {
+    opacity: 0;
+    transform: translateX(20px);
+    pointer-events: none;
+    width: 0;
+    overflow: hidden;
+  }
+
+  .header-scrolled #nav-menu {
+    @apply opacity-100 translate-x-0 pointer-events-auto flex;
+  }
+
+  .header-scrolled #logo-container {
+    @apply py-2 scale-90;
+  }
+</style>
+
 <script is:inline>
+  // 1. Script Scroll Effect
+  function initScrollHeader() {
+    const header = document.getElementById('main-header');
+    
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 100) {
+        header.classList.add('header-scrolled');
+      } else {
+        header.classList.remove('header-scrolled');
+      }
+    });
+  }
+
+  // 2. Script Theme Toggle (Amina Style)
   function applyTheme() {
     const moon = document.getElementById('icon-moon');
     const sun = document.getElementById('icon-sun');
@@ -100,8 +170,11 @@ const main = menu.main || [];
     };
   }
 
+  // Jalankan fungsi
+  initScrollHeader();
   initTheme();
 
+  // Dukungan untuk Astro View Transitions
   document.addEventListener('astro:after-swap', () => {
     if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       document.documentElement.classList.add('dark');
@@ -109,5 +182,6 @@ const main = menu.main || [];
       document.documentElement.classList.remove('dark');
     }
     initTheme();
+    initScrollHeader();
   });
 </script>
