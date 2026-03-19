@@ -3,55 +3,45 @@ import Authors from "@/components/Authors.astro";
 import config from "@/config/config.json";
 import Base from "@/layouts/Base.astro";
 import Pagination from "@/layouts/components/Pagination.astro";
-import TrendingTicker from "@/components/TrendingTicker.astro";
+// FIX: Import ini yang tadi hilang/lupa dimasukin
+import TrendingTicker from "@/components/homepage/TrendingTicker.astro";
 
-// 1. Environment Variable
-const WP_URL = import.meta.env.PUBLIC_WP_URL;
+export const prerender = false;
 
-// 2. Query GraphQL Penulis
-const query = {
-  query: `
-    query GetAuthors {
-      users {
-        nodes {
-          name
-          slug
-          description
-          avatar {
-            url
-          }
-        }
-      }
-    }
-  `,
-};
+const API_BASE = "https://studio.amina.or.id/wp-json/wp/v2";
 
 let authors = [];
 let tickerPosts = [];
 let totalPages = 1;
 
 try {
-  const response = await fetch(WP_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(query),
-  });
-  
-  const result = await response.json();
-  const wpAuthors = result.data?.users?.nodes || [];
+  // Ambil data Penulis & Postingan (untuk Ticker) secara pararel
+  const [resUsers, resPosts] = await Promise.all([
+    fetch(`${API_BASE}/users?per_page=100`),
+    fetch(`${API_BASE}/posts?per_page=10`)
+  ]);
 
-  // 3. Pemetaan data (Mapping)
-  authors = wpAuthors.map((user: any) => ({
+  const wpAuthors = await resUsers.json();
+  const wpPosts = await resPosts.json();
+
+  // Mapping Penulis
+  authors = Array.isArray(wpAuthors) ? wpAuthors.map((user: any) => ({
     id: user.slug,
     slug: user.slug,
-    body: user.description || "", 
+    body: user.description || "",
     data: {
       title: user.name || "Penulis",
-      image: user.avatar?.url || "/images/author-placeholder.png",
-      description: user.description || "Kontributor resmi di amina.or.id",
-      social: [], 
+      image: user.avatar_urls?.["96"] || "/images/author-placeholder.png",
+      description: user.description || "Kontributor resmi Amina Media",
+      social: [],
     }
-  }));
+  })) : [];
+
+  // Mapping Ticker
+  tickerPosts = Array.isArray(wpPosts) ? wpPosts.map((p: any) => ({
+    slug: p.slug,
+    data: { title: p.title.rendered }
+  })) : [];
 
   totalPages = Math.ceil(authors.length / config.settings.pagination);
 } catch (e) {
@@ -68,7 +58,7 @@ const currentAuthors = authors.slice(0, config.settings.pagination);
   <main class="py-16 bg-white dark:bg-dark transition-colors duration-300 min-h-[70vh]">
     <div class="container">
       
-      <div class="mb-16 border-b-2 border-gray-100 dark:border-white/10 pb-8 text-center md:text-left">
+      <div class="mb-16 border-b-2 border-gray-100 dark:border-white/10 pb-8">
         <div class="inline-block bg-orange-600 text-white text-[10px] font-black px-3 py-1 uppercase mb-4 tracking-widest">
           The Team
         </div>
@@ -76,7 +66,7 @@ const currentAuthors = authors.slice(0, config.settings.pagination);
           Para Penulis
         </h1>
         <p class="text-gray-500 dark:text-gray-400 max-w-2xl font-medium leading-relaxed">
-          Mengenal sosok di balik layar yang mendedikasikan ilmunya untuk syiar Islam dan berita kemanusiaan di <span class="text-primary font-bold">amina.or.id</span>.
+          Mengenal sosok di balik layar yang mendedikasikan ilmunya untuk syiar Islam di <span class="text-primary font-bold">amina.or.id</span>.
         </p>
       </div>
 
@@ -85,7 +75,6 @@ const currentAuthors = authors.slice(0, config.settings.pagination);
           <>
             <Authors authors={currentAuthors} />
             
-            {/* PAGINATION SECTION */}
             {totalPages > 1 && (
               <div class="mt-20 py-10 border-t border-gray-50 dark:border-white/5 flex justify-center">
                 <Pagination section={"authors"} currentPage={1} totalPages={totalPages} />
@@ -95,9 +84,6 @@ const currentAuthors = authors.slice(0, config.settings.pagination);
         ) : (
           <div class="py-20 text-center bg-gray-50 dark:bg-white/5 rounded-3xl border-2 border-dashed border-gray-100 dark:border-white/10">
             <p class="text-xl font-bold text-[#0b1c3c] dark:text-white mb-2">Belum ada penulis ditemukan.</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400 italic">
-              Pastikan profil penulis di CMS WordPress sudah dilengkapi.
-            </p>
           </div>
         )}
       </div>
@@ -107,13 +93,8 @@ const currentAuthors = authors.slice(0, config.settings.pagination);
 </Base>
 
 <style is:global>
-  /* Override padding section bawaan tema jika ada */
+  /* Menghancurkan padding kaku yang bikin offside */
   .section {
     padding: 0 !important;
-  }
-  
-  /* Styling tambahan untuk list authors agar lebih boxy & modern */
-  .authors-list {
-    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8;
   }
 </style>

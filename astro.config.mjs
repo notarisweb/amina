@@ -8,11 +8,11 @@ import remarkCollapse from "remark-collapse";
 import remarkToc from "remark-toc";
 import config from "./src/config/config.json";
 
-// FIX: Import Vercel adapter terbaru
-import vercel from "@astrojs/vercel";
+// Gunakan adapter vercel standar untuk static
+import vercel from "@astrojs/vercel/static";
 
 export default defineConfig({
-  // FIX: Gunakan 'static' untuk kecepatan maksimal di Vercel (SSG)
+  // SSG Mode untuk kecepatan maksimal
   output: "static", 
   
   adapter: vercel({
@@ -22,8 +22,7 @@ export default defineConfig({
   site: "https://amina.or.id",
   base: config.site.base_path ? config.site.base_path : "/",
 
-  // FIX 404: Set ke 'ignore' supaya URL pake/tanpa slash di akhir tetep jalan
-  // Ini obat paling manjur buat drama 404 di Astro + Vercel
+  // OBAT 404: Sangat penting untuk Vercel
   trailingSlash: "ignore",
 
   image: {
@@ -35,14 +34,14 @@ export default defineConfig({
 
   integrations: [
     tailwind({
-      applyBaseStyles: false, // Kontrol penuh ada di CSS utama kita
+      applyBaseStyles: false, 
     }),
     react(),
     sitemap({
       changefreq: 'daily',
       priority: 0.7,
       lastmod: new Date(),
-      filter: (page) => !page.includes('/studio') && !page.includes('/404')
+      filter: (page) => !page.includes('/404')
     }),
     AutoImport({
       imports: [
@@ -64,8 +63,7 @@ export default defineConfig({
   },
 
   build: {
-    // FIX: Pastikan format output adalah directory (clean URL)
-    format: 'directory'
+    format: 'directory' // Bikin URL bersih tanpa .html
   },
 
   vite: {

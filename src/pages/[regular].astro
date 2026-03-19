@@ -3,65 +3,145 @@ import Base from "@/layouts/Base.astro";
 import { getSinglePage } from "@/lib/contentParser.astro";
 import { markdownify } from "@/lib/utils/textConverter";
 import { render } from "astro:content";
-import TrendingTicker from "@/components/TrendingTicker.astro";
+import TrendingTicker from "@/components/homepage/TrendingTicker.astro";
+
+// 1. WAJIB UNTUK SSG: Pastikan halaman di-generate saat build
+export const prerender = true;
 
 export async function getStaticPaths() {
-  const pages = await getSinglePage("pages");
-
-  const paths = pages.map((page) => ({
-    params: {
-      regular: page.slug,
-    },
-    props: { page },
+  const WP_URL = import.meta.env.PUBLIC_WP_URL;
+  
+  // 1. Ambil Halaman Lokal (About, Contact, dll)
+  const localPages = await getSinglePage("pages");
+  const localPaths = localPages.map((page) => ({
+    params: { regular: page.slug },
+    props: { page, isWordPress: false },
   }));
-  return paths;
+
+  // 2. Query GraphQL: Ambil Posts & Pages dari WordPress
+  const query = {
+    query: `
+      query GetAllStaticPaths {
+        posts(first: 100) {
+          nodes {
+            slug
+            title
+            content
+            date
+            excerpt
+            featuredImage {
+              node {
+                sourceUrl
+              }
+            }
+          }
+        }
+        pages(first: 50) {
+          nodes {
+            slug
+            title
+            content
+          }
+        }
+      }
+    `,
+  };
+
+  let wpPaths = [];
+  try {
+    const res = await fetch(WP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(query),
+    });
+    
+    const result = await res.json();
+    const wpPosts = result.data?.posts?.nodes || [];
+    const wpPages = result.data?.pages?.nodes || [];
+    const allWP = [...wpPosts, ...wpPages];
+
+    wpPaths = allWP.map((node: any) => ({
+      params: { regular: node.slug },
+      props: { 
+        isWordPress: true, 
+        wpData: {
+          title: node.title,
+          content: node.content,
+          image: node.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
+          date: node.date,
+          description: node.excerpt?.replace(/<[^>]*>/g, '').slice(0, 160) || ""
+        } 
+      },
+    }));
+  } catch (e) {
+    console.error("❌ Gagal fetch GraphQL di [regular]:", e.message);
+  }
+
+  // Gabungkan semua jalan
+  return [...localPaths, ...wpPaths];
 }
 
-const { page } = Astro.props;
+const { page, isWordPress, wpData } = Astro.props;
 
-// 1. PROTEKSI: Cek apakah page ada untuk menghindari server crash
-if (!page || !page.data) {
-  return Astro.redirect("/404");
-}
-
-const { title, meta_title, description, image } = page.data;
-
-// 2. RENDER KONTEN: Try-catch agar build tidak gagal jika ada Markdown rusak
+// Render konten Markdown jika lokal
 let Content;
-try {
+if (!isWordPress && page) {
   const rendered = await render(page);
   Content = rendered.Content;
-} catch (e) {
-  console.error("Render error di halaman [regular]:", e.message);
-  return Astro.redirect("/404");
 }
 
-// Data kosong untuk Ticker (bisa Bos isi dengan fetch Berita terbaru jika mau)
-const tickerPosts = []; 
+// Fetch Ticker (Static)
+const WP_URL = import.meta.env.PUBLIC_WP_URL;
+let tickerPosts = [];
+try {
+  const tRes = await fetch(WP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query: "{ posts(first: 10) { nodes { slug title } } }" }),
+  });
+  const tResult = await tRes.json();
+  tickerPosts = (tResult.data?.posts?.nodes || []).map((p: any) => ({
+    slug: p.slug,
+    data: { title: p.title }
+  }));
+} catch (e) {}
+
+const title = isWordPress ? wpData.title : page.data.title;
 ---
 
-<Base
-  title={title}
-  meta_title={meta_title}
-  description={description}
-  image={image}
+<Base 
+  title={title} 
+  description={isWordPress ? wpData.description : page.data.description}
+  image={isWordPress ? wpData.image : page.data.image}
 >
   <TrendingTicker posts={tickerPosts} />
 
   <main class="py-16 bg-white dark:bg-dark transition-colors duration-300 min-h-[70vh]">
     <div class="container">
       
-      <div class="mb-12 border-b-2 border-gray-100 dark:border-white/10 pb-8">
+      <div class="mb-12 border-b-2 border-gray-100 dark:border-white/10 pb-10">
         <h1 
-          set:html={markdownify(title)} 
-          class="text-4xl md:text-5xl font-black text-[#004d40] dark:text-teal-400 tracking-tighter uppercase mb-4" 
+          set:html={isWordPress ? title : markdownify(title)} 
+          class="text-4xl md:text-6xl font-black text-[#0b1c3c] dark:text-teal-400 tracking-tighter uppercase mb-6 leading-tight" 
         />
-        <div class="w-20 h-1.5 bg-orange-600"></div>
+        
+        {isWordPress && wpData.date && (
+          <div class="flex items-center gap-2 text-[11px] font-black text-gray-400 uppercase tracking-widest italic">
+            <span class="w-8 h-[1px] bg-primary"></span>
+            Amina News Update • {new Date(wpData.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </div>
+        )}
+        
+        <div class="w-20 h-2 bg-orange-600 rounded-full mt-8"></div>
       </div>
 
       <div class="max-w-4xl">
-        <article class="content prose prose-lg md:prose-xl dark:prose-invert max-w-none text-dark/80 dark:text-gray-400 leading-[1.8]">
-          {Content ? <Content /> : <p class="italic text-gray-400">Konten sedang dalam proses pemuatan...</p>}
+        <article class="content prose prose-lg md:prose-xl dark:prose-invert max-w-none text-dark/80 dark:text-gray-300 leading-[1.8] font-medium transition-colors">
+          {isWordPress ? (
+            <div set:html={wpData.content} />
+          ) : (
+            Content && <Content />
+          )}
         </article>
       </div>
 
@@ -70,22 +150,29 @@ const tickerPosts = [];
 </Base>
 
 <style is:global>
-  /* FIX TYPOGRAPHY: 
-    Memastikan link, bold, dan heading di dalam konten Markdown 
-    otomatis ganti warna saat Dark Mode aktif.
-  */
-  .dark .prose h1, .dark .prose h2, .dark .prose h3, .dark .prose h4 {
-    @apply text-white !important;
-  }
-  .dark .prose strong {
-    @apply text-white !important;
-  }
-  .dark .prose a {
-    @apply text-primary hover:text-teal-400 !important;
+  /* Alignment Shield: Hapus padding bawaan yang bikin offside */
+  .section { 
+    padding: 0 !important; 
   }
   
-  /* Hilangkan padding default section yang kaku */
-  .section {
-    padding: 0 !important;
+  /* WordPress Content Styling: Bikin tampilan artikel Gahar */
+  .content img { 
+    @apply rounded-[2rem] my-12 shadow-2xl mx-auto h-auto border-4 border-white dark:border-white/5; 
+  }
+  
+  .content h2, .content h3 { 
+    @apply text-[#0b1c3c] dark:text-white font-black uppercase mt-16 mb-6 tracking-tighter leading-tight; 
+  }
+  
+  .content p { 
+    @apply mb-8; 
+  }
+
+  .content a {
+    @apply text-primary font-bold underline decoration-2 underline-offset-4 hover:text-orange-600 transition-all;
+  }
+
+  .content blockquote {
+    @apply border-l-8 border-primary pl-8 py-6 italic text-2xl font-black text-[#0b1c3c] dark:text-white my-12 bg-gray-50 dark:bg-white/5 rounded-r-3xl pr-6 shadow-sm;
   }
 </style>

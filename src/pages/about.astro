@@ -2,19 +2,14 @@
 import Base from "@/layouts/Base.astro";
 import { Image } from "astro:assets";
 import { BiChevronRight, BiHeart, BiBookOpen, BiWorld, BiCheckShield } from "react-icons/bi";
-import TrendingTicker from "@/components/TrendingTicker.astro";
 
-// Import gambar secara lokal untuk optimasi Astro Assets
-// Pastikan file ada di src/assets atau public sesuai struktur Bos
+// Import gambar secara lokal
 import aboutImage from "../../public/images/about.webp";
 
 export const prerender = true;
 
 const title = "Tentang Amina";
 const description = "Mengenal Amal Insan Abadi (Amina), platform syiar Islam dan aksi nyata untuk kemaslahatan ummat.";
-
-// Mock data untuk Ticker (Bisa diganti fetch asli jika perlu)
-const tickerPosts = []; // Kosongkan atau isi jika ingin ambil dari WordPress
 
 const what_i_do = {
   title: "Pilar Pergerakan Kami",
@@ -40,10 +35,8 @@ const what_i_do = {
 
 <Base title={`${title} | Amina Media`} description={description}>
   
-  <TrendingTicker posts={tickerPosts} />
-
   <section class="bg-[#0b1c3c] py-16 md:py-24 text-white w-full border-t border-white/5 relative overflow-hidden">
-    <div class="container relative z-10">
+    <div class="container relative z-10 mx-auto px-4 lg:px-8">
       <nav class="flex items-center space-x-2 text-[10px] md:text-[11px] mb-8 text-white/40 font-bold uppercase tracking-[0.2em]">
         <a href="/" class="hover:text-primary transition">BERANDA</a>
         <BiChevronRight className="opacity-20" />
@@ -64,7 +57,7 @@ const what_i_do = {
   </section>
 
   <section class="py-24 bg-white dark:bg-dark transition-colors duration-300">
-    <div class="container">
+    <div class="container mx-auto px-4 lg:px-8">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
         
         <div class="lg:col-span-5">
@@ -119,7 +112,7 @@ const what_i_do = {
   </section>
 
   <section class="py-24 bg-[#fcfcfc] dark:bg-[#06142e] border-y border-gray-100 dark:border-white/5 transition-colors">
-    <div class="container">
+    <div class="container mx-auto px-4 lg:px-8">
       <div class="text-center max-w-2xl mx-auto mb-20">
         <h2 class="text-xs font-black text-primary uppercase tracking-[0.4em] mb-4">{what_i_do.title}</h2>
         <p class="text-3xl font-black text-dark dark:text-white uppercase tracking-tighter">Komitmen Nyata Kami Untuk Ummat</p>
@@ -142,7 +135,7 @@ const what_i_do = {
   </section>
 
   <section class="py-24 bg-dark relative overflow-hidden">
-    <div class="container relative z-10 text-center">
+    <div class="container mx-auto px-4 lg:px-8 relative z-10 text-center">
       <div class="max-w-3xl mx-auto">
         <div class="text-primary text-6xl font-black mb-8 italic opacity-20">"</div>
         <blockquote class="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter leading-tight mb-8 italic">

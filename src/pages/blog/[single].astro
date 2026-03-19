@@ -6,7 +6,7 @@ import { slugify } from "@/lib/utils/textConverter";
 import { 
   BiCalendarEdit, BiUserCircle, BiChevronRight, BiShareAlt, 
   BiTimeFive, BiListUl, BiShow, BiCopy, BiCheck, 
-  BiHeart, BiRightArrowAlt 
+  BiHeart, BiRightArrowAlt
 } from "react-icons/bi";
 import { FaFacebookF, FaWhatsapp, FaTelegramPlane } from "react-icons/fa";
 
@@ -21,7 +21,7 @@ export async function getStaticPaths() {
   const query = {
     query: `
       query GetStaticBuildData {
-        posts(first: 1000) {  /* FIX: Limit 1000 agar artikel lama tidak 404 */
+        posts(first: 1000) { 
           nodes {
             slug
             title
@@ -65,12 +65,10 @@ const { post, allPosts, sidebarCategories } = Astro.props;
 const currentUrl = Astro.url;
 const donationUrl = "https://bdp.amina.or.id/#donasi"; 
 
-const primaryCategory = post.categories?.nodes?.[0]?.name || "Berita";
-const relatedPosts = allPosts
-  .filter(p => p.slug !== post.slug && p.categories?.nodes.some(cat => cat.name === primaryCategory))
-  .slice(0, 3);
+const primaryCategory = post.categories?.nodes?.[0]?.name || "Internasional";
+const popularPosts = allPosts.filter(p => p.slug !== post.slug).slice(0, 8);
 
-// --- TABLE OF CONTENTS ---
+// --- TOC LOGIC ---
 const headings = post.content.match(/<h[2-3][^>]*>.*?<\/h[2-3]>/g) || [];
 const toc = headings.map((h) => {
   const text = h.replace(/<[^>]*>/g, '').trim();
@@ -86,10 +84,6 @@ toc.forEach((item) => {
   contentWithIds = contentWithIds.replace(searchPattern, `<${headingTag} id="${item.id}">${item.text}</${headingTag}>`);
 });
 
-const readingTime = Math.ceil(post.content.split(' ').length / 200);
-const popularPosts = allPosts.filter(p => p.slug !== post.slug).slice(0, 5);
-const rankColors = ["text-blue-400/30", "text-green-400/30", "text-red-400/30", "text-yellow-400/30", "text-purple-400/30"];
-
 const shareLinks = [
   { name: 'Facebook', icon: FaFacebookF, color: '#1877F2', url: `https://www.facebook.com/sharer/sharer.php?u=${currentUrl}` },
   { name: 'WhatsApp', icon: FaWhatsapp, color: '#25D366', url: `https://api.whatsapp.com/send?text=${post.title} ${currentUrl}` },
@@ -104,137 +98,130 @@ const shareLinks = [
   articleDate={post.date}
   articleAuthor={post.author?.node?.name}
 >
-  <section class="bg-[#0b1c3c] py-8 md:py-12 text-white w-full border-t border-white/5 relative overflow-hidden transition-colors duration-300">
-    <div class="max-w-7xl mx-auto px-4 lg:px-8 relative z-10">
-      <nav class="flex items-center space-x-2 text-[10px] mb-4 text-white/40 font-bold uppercase tracking-[0.2em]">
+  <div class="bg-white dark:bg-dark border-b border-gray-100 dark:border-white/5 py-4">
+    <div class="container">
+      <nav class="flex items-center space-x-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
         <a href="/" class="hover:text-primary transition">Home</a>
-        <BiChevronRight className="opacity-20" />
-        <a href={`/categories/${post.categories?.nodes?.[0]?.slug}`} class="hover:text-primary transition">{primaryCategory}</a>
+        <BiChevronRight className="opacity-40" />
+        <a href={`/categories/${post.categories?.nodes?.[0]?.slug}`} class="text-primary">{primaryCategory}</a>
       </nav>
-      <h1 set:html={post.title} class="text-3xl md:text-5xl lg:text-6xl text-white font-black leading-[1.1] mb-6 max-w-5xl tracking-tighter drop-shadow-sm" />
-      <div class="flex flex-wrap items-center gap-6 text-[10px] font-bold text-white/30 uppercase tracking-widest border-t border-white/5 pt-6">
-        <span class="flex items-center"><BiUserCircle className="mr-1.5 h-4 w-4 text-primary" /> {post.author?.node?.name}</span>
-        <span class="flex items-center"><BiCalendarEdit className="mr-1.5 h-4 w-4 text-primary" /> {dateFormat(post.date)}</span>
-        <span class="flex items-center bg-white/5 px-2.5 py-1 rounded-full"><BiTimeFive className="mr-1.5 h-3.5 w-3.5 text-primary" /> {readingTime} MIN BACA</span>
-      </div>
     </div>
-  </section>
+  </div>
 
-  <section class="py-12 bg-[#fcfcfc] dark:bg-dark transition-colors duration-300">
-    <div class="max-w-7xl mx-auto px-4 lg:px-8">
-      <div class="flex flex-wrap lg:flex-nowrap gap-12">
+  <main class="py-12 bg-white dark:bg-dark transition-colors duration-300">
+    <div class="container">
+      <div class="flex flex-wrap lg:flex-nowrap gap-16">
         
-        <article class="w-full lg:w-[68%]">
-          {post.featuredImage?.node?.sourceUrl && (
-            <div class="mb-10 overflow-hidden rounded-3xl shadow-2xl aspect-video relative group bg-gray-100 dark:bg-white/5 border border-gray-100 dark:border-white/5">
-              <Image 
-                src={post.featuredImage.node.sourceUrl} 
-                width={1200} 
-                height={675} 
-                format="webp" 
-                loading="eager" 
-                fetchpriority="high" 
-                class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-                alt={post.title || "Gambar Utama"} 
-              />
+        <div class="w-full lg:w-[65%]">
+          <header class="mb-10">
+            <h1 set:html={post.title} class="text-4xl md:text-5xl lg:text-6xl font-black leading-[1.15] mb-8 text-[#0b1c3c] dark:text-white tracking-tight" />
+            
+            <div class="flex flex-col gap-4 border-l-4 border-primary pl-6 py-2 mb-8">
+               <span class="text-sm font-bold text-dark/80 dark:text-gray-300 italic">Oleh: {post.author?.node?.name}</span>
+               <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">{dateFormat(post.date)}</span>
             </div>
+
+            <div class="flex items-center gap-3 py-6 border-y border-gray-100 dark:border-white/5">
+               <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mr-4">Bagikan:</span>
+               {shareLinks.map((item) => (
+                  <a href={item.url} target="_blank" class="w-10 h-10 flex items-center justify-center text-white transition rounded-full shadow-md hover:scale-110" style={{ backgroundColor: item.color }} title={item.name}><item.icon className="h-4 w-4" /></a>
+               ))}
+               <button id="copy-link-btn" class="w-10 h-10 flex items-center justify-center bg-gray-100 dark:bg-white/10 text-dark dark:text-white transition shadow-sm rounded-full hover:bg-primary hover:text-white">
+                  <BiCopy id="icon-copy" className="h-4 w-4" />
+                  <BiCheck id="icon-check" className="h-4 w-4 hidden" />
+               </button>
+            </div>
+          </header>
+
+          {post.featuredImage?.node?.sourceUrl && (
+            <figure class="mb-12">
+              <div class="overflow-hidden bg-gray-100 dark:bg-white/5 border border-gray-100 dark:border-white/5 shadow-xl">
+                <Image src={post.featuredImage.node.sourceUrl} width={1200} height={675} format="webp" loading="eager" class="w-full h-auto object-cover" alt={post.title} />
+              </div>
+            </figure>
           )}
 
-          <div class="flex items-center gap-3 mb-10 pb-6 border-b border-gray-100 dark:border-white/5">
-             <span class="text-[10px] font-black text-dark/40 dark:text-white/40 uppercase tracking-widest mr-2 flex items-center"><BiShareAlt className="mr-1 h-3 w-3" /> BAGIKAN:</span>
-             {shareLinks.map((item) => (
-                <a href={item.url} target="_blank" rel="noopener noreferrer" class="w-9 h-9 flex items-center justify-center rounded-xl text-white transition hover:scale-110 shadow-sm" style={{ backgroundColor: item.color }} title={item.name}><item.icon className="h-4 w-4" /></a>
-             ))}
-             <button id="copy-link-btn" class="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-200 dark:bg-white/10 text-dark/60 dark:text-white/60 transition hover:bg-primary dark:hover:bg-primary hover:text-white dark:hover:text-white shadow-sm group" title="Copy Link">
-                <BiCopy id="icon-copy" className="h-4 w-4" />
-                <BiCheck id="icon-check" className="h-4 w-4 hidden text-white" />
-             </button>
-          </div>
-
-          <div class="content prose prose-lg md:prose-xl max-w-none text-dark/80 dark:text-white/80 leading-[1.8] mb-16" set:html={post.content} />
-
-          {relatedPosts.length > 0 && (
-            <div class="mb-16 pt-10 border-t border-gray-100 dark:border-white/10">
-              <h2 class="text-lg font-black text-dark dark:text-white mb-8 flex items-center uppercase tracking-tight">
-                <span class="w-1.5 h-6 bg-primary mr-3 rounded-full"></span> Artikel Terkait
+          {toc.length > 0 && (
+            <div class="mb-12 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 p-8 shadow-sm">
+              <h2 class="text-[11px] font-black mb-6 text-dark/50 dark:text-white/40 flex items-center tracking-[0.3em] uppercase">
+                <BiListUl className="mr-3 h-5 w-5 text-primary" /> DAFTAR ISI
               </h2>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {relatedPosts.map((rp) => (
-                  <a href={`/blog/${rp.slug}`} class="group flex flex-col bg-white dark:bg-white/5 rounded-2xl overflow-hidden shadow-sm border border-gray-50 dark:border-white/5 hover:shadow-xl transition-all duration-300 h-full">
-                    <div class="aspect-video overflow-hidden bg-gray-100 dark:bg-white/5">
-                      <Image 
-                        src={rp.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} 
-                        width={400} 
-                        height={225} 
-                        class="w-full h-full object-cover group-hover:scale-110 transition duration-500" 
-                        alt={rp.title || "Thumbnail Terkait"} 
-                      />
-                    </div>
-                    <div class="p-4 flex-1 flex flex-col justify-between">
-                      <h3 class="text-[14px] font-black leading-snug text-dark/90 dark:text-white/90 group-hover:text-primary transition line-clamp-2 mb-3 tracking-tight">{rp.title}</h3>
-                      <div class="text-[10px] font-bold text-dark/30 dark:text-white/30 uppercase tracking-widest flex items-center"><BiTimeFive className="mr-1 h-3 w-3" /> {dateFormat(rp.date)}</div>
-                    </div>
+              <nav class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
+                {toc.map((item) => (
+                  <a href={`#${item.id}`} class={`text-[13px] transition hover:text-primary leading-tight flex items-start gap-2 ${item.depth === 3 ? 'ml-6 opacity-60' : 'font-black'}`}>
+                    <span class="text-primary mt-1">▹</span> {item.text}
                   </a>
                 ))}
-              </div>
+              </nav>
             </div>
           )}
 
-          <div class="bg-gradient-to-br from-orange-50 via-white to-green-50 dark:from-[#004d40]/20 dark:via-dark dark:to-orange-600/10 p-8 md:p-12 rounded-[2.5rem] shadow-xl border border-orange-100 dark:border-white/5 relative overflow-hidden transition-all">
-            <div class="relative z-10 flex flex-col md:flex-row items-center gap-8">
+          <article class="content prose prose-lg md:prose-xl max-w-none text-dark/90 dark:text-white/80 leading-[1.9] mb-20" set:html={contentWithIds} />
+
+          <div class="bg-gradient-to-br from-[#0b1c3c] to-[#004d40] p-8 md:p-12 rounded-2xl shadow-2xl relative overflow-hidden mb-24 text-white">
+            <div class="relative z-10 flex flex-col md:flex-row items-center gap-10">
                <div class="flex-1 text-center md:text-left">
-                  <div class="inline-flex items-center gap-2 px-3 py-1 bg-orange-600/10 dark:bg-orange-600/20 rounded-full mb-4">
-                     <BiHeart className="text-orange-600 h-4 w-4 animate-pulse" />
-                     <span class="text-[10px] font-black uppercase tracking-widest text-orange-700 dark:text-orange-400">Mari Berbagi</span>
+                  <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full mb-6 border border-white/10">
+                     <BiHeart className="text-orange-400 h-4 w-4 animate-pulse" />
+                     <span class="text-[10px] font-bold uppercase tracking-widest">Wasilah Jariyah</span>
                   </div>
-                  <h2 class="text-2xl md:text-3xl font-black mb-3 leading-tight tracking-tight uppercase text-[#004d40] dark:text-teal-400">
-                    Sedekah Anda, Harapan Mereka
+                  <h2 class="text-2xl md:text-3xl font-black mb-4 leading-tight tracking-tighter uppercase text-teal-400">
+                    Dukungan Anda Adalah <br/> Energi Dakwah Kami
                   </h2>
-                  <p class="text-slate-600 dark:text-gray-400 text-xs md:text-sm font-bold leading-relaxed uppercase tracking-wider">
-                    Setiap bantuan Anda sangat berarti untuk kemanusiaan melalui program Amina. Salurkan donasi terbaik Anda hari ini.
+                  <p class="text-white/70 text-sm md:text-base font-medium leading-relaxed italic">
+                    Mari menjadi bagian dari mata rantai kebaikan yang tak terputus. Setiap kontribusi Anda sangat berarti bagi keberlanjutan syiar Islam dan kemanusiaan.
                   </p>
                </div>
-
                <div class="shrink-0 w-full md:w-auto">
-                  <a href={donationUrl} target="_blank" class="w-full bg-orange-600 hover:bg-[#004d40] text-white font-black uppercase tracking-widest py-5 px-10 rounded-2xl text-[13px] flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-orange-200 dark:hover:shadow-none hover:scale-105 group">
-                    Donasi Sekarang <BiRightArrowAlt className="ml-2 h-5 w-5 group-hover:translate-x-1 transition" />
+                  <a href={donationUrl} target="_blank" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-black uppercase tracking-widest py-3 px-8 rounded-xl text-[12px] flex items-center justify-center transition-all shadow-xl hover:scale-105 group">
+                    Kontribusi Sekarang <BiRightArrowAlt className="ml-2 h-5 w-5 group-hover:translate-x-1.5 transition" />
                   </a>
                </div>
             </div>
           </div>
-        </article>
+        </div>
 
         <aside class="w-full lg:w-[32%]">
-          <div class="sticky top-24 space-y-12">
-            {toc.length > 0 && (
-              <div class="bg-white dark:bg-white/5 p-8 rounded-[2rem] shadow-sm border border-gray-100 dark:border-white/5">
-                <h2 class="text-[11px] font-black mb-6 text-dark dark:text-white flex items-center tracking-[0.2em] uppercase"><BiListUl className="mr-3 h-5 w-5 text-primary" /> DAFTAR ISI</h2>
-                <nav class="space-y-4">
-                  {toc.map((item) => (
-                    <a href={`#${item.id}`} class={`block text-[13px] transition hover:text-primary leading-tight ${item.depth === 3 ? 'ml-6 text-dark/40 dark:text-white/30 font-medium' : 'text-dark/70 dark:text-white/70 font-bold'}`}>{item.text}</a>
-                  ))}
-                </nav>
-              </div>
-            )}
+          <div class="sticky top-28 space-y-20">
             
-            <div class="bg-white dark:bg-white/5 p-8 rounded-[2rem] shadow-sm border border-gray-100 dark:border-white/5 transition-colors">
-              <h2 class="text-lg font-black text-[#0b1c3c] dark:text-teal-400 flex items-center mb-8 uppercase tracking-tight"><span class="w-1.5 h-6 bg-primary mr-3 rounded-full"></span>Terpopuler</h2>
-              <ul class="space-y-8">
-                {popularPosts.map((p: any, index: number) => (
-                  <li class="group relative flex gap-5">
-                    <span class={`text-4xl font-black italic transition duration-500 leading-none ${rankColors[index % rankColors.length]}`}>0{index + 1}</span>
-                    <div class="flex-1 min-w-0">
-                      <a href={`/blog/${p.slug}`} class="block">
-                        <h3 class="text-[15px] font-black text-dark/90 dark:text-white/90 group-hover:text-primary transition leading-snug mb-2 tracking-tight line-clamp-2">
-                          {p.title}
-                        </h3>
-                      </a>
-                      <div class="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-primary">
-                         <span>{p.categories?.nodes?.[0]?.name || "BERITA"}</span>
-                         <span class="text-dark/10 dark:text-white/10">•</span>
-                         <span class="flex items-center gap-1 text-dark/30 dark:text-white/30"><BiShow className="h-3 w-3" /> {Math.floor(Math.random() * 4000) + 500}</span>
+            <div class="prayer-widget rounded-xl p-8 text-white relative overflow-hidden shadow-2xl bg-[#008800]">
+               <div class="absolute inset-0 opacity-10" style="background-image: url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M30 0l2.5 12.5L45 15l-12.5 2.5L30 30l-2.5-12.5L15 15l12.5-2.5z\" fill=\"%23ffffff\" fill-opacity=\"1\" fill-rule=\"evenodd\"/%3E%3C/svg%3E');"></div>
+               
+               <div class="relative z-10 flex flex-col items-center text-center">
+                  <span class="text-xl font-medium mb-4">Waktu Shalat</span>
+                  <div class="text-6xl font-normal tracking-tight mb-4 drop-shadow-md" id="real-time-clock">00:00:00</div>
+                  
+                  <div class="inline-flex items-center gap-2 border border-white/40 px-4 py-1.5 rounded-lg text-sm font-medium mb-10 bg-black/10">
+                    Jakarta <span class="text-[10px]">▼</span>
+                  </div>
+                  
+                  <div class="grid grid-cols-5 gap-1 w-full text-[11px]">
+                     <div class="flex flex-col gap-2"><span>Subuh</span><span id="sholat-subuh">04:41</span></div>
+                     <div class="flex flex-col gap-2"><span>Zhuhur</span><span id="sholat-dzuhur">12:02</span></div>
+                     <div class="flex flex-col gap-2"><span>Ashar</span><span id="sholat-ashar">15:12</span></div>
+                     <div class="flex flex-col gap-2"><span>Maghrib</span><span id="sholat-maghrib">18:05</span></div>
+                     <div class="flex flex-col gap-2"><span>Isya'</span><span id="sholat-isya">19:14</span></div>
+                  </div>
+               </div>
+            </div>
+
+            <div>
+              <h2 class="text-xs font-black text-dark dark:text-white mb-10 flex items-center uppercase tracking-[0.4em] border-l-4 border-orange-600 pl-4">BERITA TERBARU</h2>
+              <ul class="divide-y divide-gray-100 dark:divide-white/5">
+                {popularPosts.map((p: any) => (
+                  <li class="py-6 first:pt-0 group">
+                    <a href={`/blog/${p.slug}`} class="flex gap-5 items-start">
+                      <div class="w-24 h-16 shrink-0 overflow-hidden bg-gray-50 border border-gray-100 dark:border-white/5 shadow-sm">
+                        <img src={p.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} class="w-full h-full object-cover group-hover:scale-110 transition duration-500" alt={p.title} />
                       </div>
-                    </div>
+                      <div class="flex-1">
+                        <h3 class="text-[13px] font-black text-dark dark:text-white group-hover:text-primary transition leading-snug line-clamp-2 tracking-tight">{p.title}</h3>
+                        <div class="flex items-center gap-3 mt-2 text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                           <span class="text-primary">{p.categories?.nodes?.[0]?.name || "UPDATE"}</span>
+                           <span>{dateFormat(p.date)}</span>
+                        </div>
+                      </div>
+                    </a>
                   </li>
                 ))}
               </ul>
@@ -244,24 +231,62 @@ const shareLinks = [
 
       </div>
     </div>
-  </section>
+  </main>
 </Base>
 
-<script is:inline define:vars={{ postUrl: currentUrl.href }}>
-  // Copy Link Script
+<script is:inline>
+  async function fetchPrayTimes() {
+    const now = new Date();
+    try {
+      const res = await fetch(`https://api.myquran.com/v2/sholat/jadwal/1402/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`);
+      const json = await res.json();
+      const j = json.data.jadwal;
+      document.getElementById('sholat-subuh').innerText = j.subuh;
+      document.getElementById('sholat-dzuhur').innerText = j.dzuhur;
+      document.getElementById('sholat-ashar').innerText = j.ashar;
+      document.getElementById('sholat-maghrib').innerText = j.maghrib;
+      document.getElementById('sholat-isya').innerText = j.isya;
+    } catch (e) {}
+  }
+
+  function updateClock() {
+    const now = new Date();
+    const clock = document.getElementById('real-time-clock');
+    if (clock) clock.innerText = now.toLocaleTimeString('id-ID', { hour12: false });
+  }
+
+  setInterval(updateClock, 1000);
+  updateClock();
+  fetchPrayTimes();
+
   document.getElementById('copy-link-btn')?.addEventListener('click', function() {
     const iconCopy = document.getElementById('icon-copy');
     const iconCheck = document.getElementById('icon-check');
-    const btn = this;
-    navigator.clipboard.writeText(postUrl).then(() => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
       iconCopy.classList.add('hidden');
       iconCheck.classList.remove('hidden');
-      btn.classList.add('bg-green-500', 'text-white');
       setTimeout(() => {
         iconCopy.classList.remove('hidden');
         iconCheck.classList.add('hidden');
-        btn.classList.remove('bg-green-500', 'text-white');
-      }, 2000);
+      }, 2500);
+    });
+  });
+
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) window.scrollTo({ top: target.offsetTop - 120, behavior: 'smooth' });
     });
   });
 </script>
+
+<style is:global>
+  .section { padding: 0 !important; }
+  .content p { @apply mb-8 text-lg md:text-xl leading-[1.9] text-dark/80 dark:text-white/70 font-sans; }
+  .content h2 { @apply text-2xl md:text-3xl font-black uppercase mt-16 mb-8 text-[#0b1c3c] dark:text-teal-400 tracking-tight leading-tight border-b-4 border-primary w-max pb-2; }
+  .content h3 { @apply text-xl md:text-2xl font-black uppercase mt-12 mb-6 text-dark dark:text-white tracking-tight; }
+  .content blockquote { @apply border-l-8 border-primary pl-8 py-4 italic text-2xl font-black text-[#0b1c3c] dark:text-white my-14 bg-gray-50 dark:bg-white/5 rounded-none pr-6; }
+  .content img { @apply rounded-none my-12 shadow-2xl mx-auto h-auto border-4 border-white dark:border-white/5; }
+  .content a { @apply text-primary font-bold underline decoration-2 underline-offset-4 hover:text-orange-600 transition; }
+</style>

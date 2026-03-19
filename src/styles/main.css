@@ -1,11 +1,18 @@
-/* 1. SELF-HOSTED FONTS (Local First) */
-/* Pastikan nama file di folder public/fonts/ sama persis dengan yang di bawah ini */
+/* 1. SEMUA @IMPORT HARUS DI BARIS PALING ATAS (WAJIB) */
+@import "./safe.css";
+@import "./utilities.css";
 
+/* 2. TAILWIND CORE */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 3. SELF-HOSTED FONTS (Local Performance) */
 @font-face {
   font-family: 'Inter';
   font-style: normal;
   font-weight: 400;
-  font-display: swap; /* Bikin teks langsung muncul tanpa nunggu font selesai download */
+  font-display: swap;
   src: url('/fonts/inter-v12-latin-regular.woff2') format('woff2');
 }
 
@@ -25,91 +32,60 @@
   src: url('/fonts/inter-v12-latin-900.woff2') format('woff2');
 }
 
-/* 2. TAILWIND CORE */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* 3. CUSTOM IMPORTS */
-@import "./safe.css";
-@import "./utilities.css";
-
+/* 4. BASE LAYER */
 @layer base {
   @import "./base.css";
 
-  /* FIX: Container Lega & Standar Portal Berita */
+  /* KUNCI MATI CONTAINER (VICTORY ALIGNMENT 1280px) */
   .container {
     @apply mx-auto px-4 lg:px-8;
-    max-width: 1350px !important;
+    max-width: 1280px !important; 
+    width: 100% !important;
   }
 
-  @media (min-width: 1536px) {
-    .container {
-      max-width: 1420px !important; 
-    }
-  }
-
-  /* FIX BODY: Support Dark Mode, Transisi Halus, & Local Font */
   body {
     @apply antialiased text-dark dark:text-gray-100 bg-[#fcfcfc] dark:bg-dark transition-colors duration-300;
-    font-family: 'Inter', sans-serif; /* Panggil font lokal kita */
+    font-family: 'Inter', sans-serif;
     text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
 
-  /* GLOBAL OVERRIDE: Menghancurkan "Tembok Putih" di Mode Gelap */
-  .dark .bg-white {
-    @apply bg-dark !important;
-  }
-
-  .dark .text-dark {
-    @apply text-gray-100 !important;
-  }
-
-  .dark .border-gray-100, 
-  .dark .border-gray-50 {
-    @apply border-white/10 !important;
-  }
+  /* Dark Mode Overrides */
+  .dark .bg-white { @apply bg-dark !important; }
+  .dark .text-dark { @apply text-gray-100 !important; }
+  .dark .border-gray-100, .dark .border-gray-50 { @apply border-white/10 !important; }
 }
 
+/* 5. COMPONENTS LAYER */
 @layer components {
   @import "./components.css";
   @import "./navigation.css";
   @import "./buttons.css";
 
-  /* STYLE PROGRESS BAR (Loading Bar atas) */
+  /* Style Progress Bar */
   #progress-container {
     @apply fixed top-0 left-0 w-full bg-transparent pointer-events-none;
-    height: 5px;
+    height: 4px;
     z-index: 999999;
   }
   #progress-bar {
     @apply h-full bg-primary transition-all duration-200 ease-out;
     width: 0%;
-    box-shadow: 0 0 15px rgba(0, 146, 136, 0.8); 
+    box-shadow: 0 0 10px rgba(0, 146, 136, 0.5);
   }
 
-  /* CUSTOM SCROLLBAR PROFESIONAL (Support Dark Mode) */
+  /* Custom Scrollbar */
   ::-webkit-scrollbar { width: 8px; }
-  
-  ::-webkit-scrollbar-track { 
-    @apply bg-[#f8fafc] dark:bg-[#06142e]; 
-  }
-  
+  ::-webkit-scrollbar-track { @apply bg-[#f8fafc] dark:bg-[#06142e]; }
   ::-webkit-scrollbar-thumb { 
     @apply bg-[#0b1c3c] dark:bg-primary rounded-full; 
-    border: 2px solid #f8fafc;
+    border: 2px solid #f8fafc; 
   }
-  
-  .dark ::-webkit-scrollbar-thumb {
-    border-color: #06142e;
-  }
-
-  ::-webkit-scrollbar-thumb:hover { @apply bg-primary dark:bg-teal-400; }
+  .dark ::-webkit-scrollbar-thumb { border-color: #06142e; }
 }
 
+/* 6. UTILITIES LAYER */
 @layer utilities {
-  /* ANIMASI MARQUEE UNTUK TRENDING TICKER */
   @keyframes marquee {
     0% { transform: translateX(0); }
     100% { transform: translateX(-50%); }
@@ -119,16 +95,8 @@
     animation: marquee 40s linear infinite;
     width: max-content;
   }
-  .animate-marquee:hover {
-    animation-play-state: paused;
-  }
+  .animate-marquee:hover { animation-play-state: paused; }
 
-  /* EFEK GLASSMORPHISM */
-  .glass-card {
-    @apply bg-white/5 backdrop-blur-md border border-white/10 shadow-2xl;
-  }
-
-  /* Utility tambahan untuk line-clamp (untuk Astro 5) */
   .line-clamp-2 {
     overflow: hidden;
     display: -webkit-box;
