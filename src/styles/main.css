@@ -1,9 +1,36 @@
-/* 1. TAILWIND CORE */
+/* 1. SELF-HOSTED FONTS (Local First) */
+/* Pastikan nama file di folder public/fonts/ sama persis dengan yang di bawah ini */
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap; /* Bikin teks langsung muncul tanpa nunggu font selesai download */
+  src: url('/fonts/inter-v12-latin-regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/inter-v12-latin-700.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url('/fonts/inter-v12-latin-900.woff2') format('woff2');
+}
+
+/* 2. TAILWIND CORE */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* 2. CUSTOM IMPORTS */
+/* 3. CUSTOM IMPORTS */
 @import "./safe.css";
 @import "./utilities.css";
 
@@ -22,15 +49,15 @@
     }
   }
 
-  /* FIX BODY: Sekarang support Dark Mode & Transisi Halus */
+  /* FIX BODY: Support Dark Mode, Transisi Halus, & Local Font */
   body {
     @apply antialiased text-dark dark:text-gray-100 bg-[#fcfcfc] dark:bg-dark transition-colors duration-300;
+    font-family: 'Inter', sans-serif; /* Panggil font lokal kita */
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
   }
 
   /* GLOBAL OVERRIDE: Menghancurkan "Tembok Putih" di Mode Gelap */
-  /* Kode ini memaksa elemen bg-white jadi gelap saat class .dark aktif di html */
   .dark .bg-white {
     @apply bg-dark !important;
   }
@@ -50,7 +77,7 @@
   @import "./navigation.css";
   @import "./buttons.css";
 
-  /* STYLE PROGRESS BAR */
+  /* STYLE PROGRESS BAR (Loading Bar atas) */
   #progress-container {
     @apply fixed top-0 left-0 w-full bg-transparent pointer-events-none;
     height: 5px;
@@ -59,7 +86,7 @@
   #progress-bar {
     @apply h-full bg-primary transition-all duration-200 ease-out;
     width: 0%;
-    box-shadow: 0 0 15px rgba(0, 105, 92, 0.8); 
+    box-shadow: 0 0 15px rgba(0, 146, 136, 0.8); 
   }
 
   /* CUSTOM SCROLLBAR PROFESIONAL (Support Dark Mode) */
@@ -99,5 +126,13 @@
   /* EFEK GLASSMORPHISM */
   .glass-card {
     @apply bg-white/5 backdrop-blur-md border border-white/10 shadow-2xl;
+  }
+
+  /* Utility tambahan untuk line-clamp (untuk Astro 5) */
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 }

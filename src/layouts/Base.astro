@@ -16,7 +16,8 @@ const {
 ---
 
 <!DOCTYPE html>
-<html lang="id" class="light"> <head>
+<html lang="id">
+<head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   
@@ -37,6 +38,9 @@ const {
 
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
+  <link rel="preconnect" href="https://studio.amina.or.id" crossorigin />
+  <link rel="dns-prefetch" href="https://studio.amina.or.id" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
@@ -54,10 +58,10 @@ const {
       return 'light';
     })();
   
-    if (theme === 'light') {
-      document.documentElement.classList.remove('dark');
-    } else {
+    if (theme === 'dark') {
       document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
     }
     window.localStorage.setItem('theme', theme);
   </script>
@@ -67,7 +71,7 @@ const {
 
   <Header />
 
-  <main class="min-h-screen" transition:animate="fade">
+  <main class="min-h-screen flex flex-col" transition:animate="fade">
     <slot />
   </main>
 
@@ -86,7 +90,7 @@ const {
       font-family: 'Inter', sans-serif;
     }
 
-    /* Pengaman untuk prose/content dari WordPress agar tidak hancur di Dark Mode */
+    /* Support Dark Mode untuk Prose (Content WordPress) */
     .dark .prose {
       --tw-prose-body: theme('colors.gray.300');
       --tw-prose-headings: theme('colors.white');
@@ -94,20 +98,12 @@ const {
       --tw-prose-bold: theme('colors.white');
       --tw-prose-quotes: theme('colors.gray.100');
     }
-
-    main {
-      display: flex;
-      flex-direction: column;
-    }
   </style>
 
   <script is:inline>
     document.addEventListener('astro:after-swap', () => {
-      if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
+      const isDark = localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.classList.toggle('dark', isDark);
     });
   </script>
 </body>

@@ -1,8 +1,10 @@
 ---
-// src/components/homepage/MainHeadline.astro
+// Import komponen Image bawaan Astro untuk optimasi LCP
+import { Image } from "astro:assets";
+
 const { post, relatedPosts = [] } = Astro.props;
 
-// Fungsi waktu otomatis (Gaya Uppercase)
+// Fungsi waktu otomatis
 const formatTimeAgo = (dateStr) => {
   const postDate = new Date(dateStr);
   const now = new Date();
@@ -28,10 +30,15 @@ const formatTimeAgo = (dateStr) => {
 
   <div class="relative h-[200px] lg:h-[260px] overflow-hidden bg-black group/main shrink-0">
     <a href={`/blog/${post.slug}`} class="block h-full">
-      <img 
+      <Image 
         src={post.data.image} 
+        width={800} 
+        height={450}
+        format="webp"
+        loading="eager"
+        fetchpriority="high"
         class="w-full h-full object-cover transition-transform duration-700 group-hover/main:scale-105" 
-        alt="Main" 
+        alt={post.data.title} 
       />
 
       <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
