@@ -2,14 +2,19 @@
 import Posts from "@/components/Posts.astro";
 import Base from "@/layouts/Base.astro";
 import { humanize } from "@/lib/utils/textConverter";
+import TrendingTicker from "@/components/TrendingTicker.astro";
+import { BiHash, BiChevronRight } from "react-icons/bi";
 
 export async function getStaticPaths() {
-  // 1. Mengambil URL API dari Environment Variable
+  // 1. Mengambil URL API
   const WP_URL = import.meta.env.PUBLIC_WP_URL;
   
-  // 2. Query untuk mengambil semua daftar Tag yang ada di WordPress
+  // 2. Query untuk mengambil semua daftar Tag
   const tagQuery = {
-    query: `query { tags(first: 100) { nodes { name slug } } }`,
+    query: `query { 
+      tags(first: 100) { nodes { name slug } } 
+      recentPosts: posts(first: 10) { nodes { title slug } }
+    }`,
   };
 
   const tagRes = await fetch(WP_URL, {
@@ -19,6 +24,13 @@ export async function getStaticPaths() {
   });
   const tagData = await tagRes.json();
   const allTags = tagData.data?.tags?.nodes || [];
+  const wpRecent = tagData.data?.recentPosts?.nodes || [];
+
+  // Mapping untuk Ticker
+  const tickerPosts = wpRecent.map((p: any) => ({
+    slug: p.slug,
+    data: { title: p.title }
+  }));
 
   // 3. Untuk setiap Tag, ambil daftar artikel terkait
   const allPaths = await Promise.all(
@@ -50,18 +62,18 @@ export async function getStaticPaths() {
       const postData = await postRes.json();
       const wpPosts = postData.data?.posts?.nodes || [];
 
-      // 4. Mapping data WordPress dengan pengaman (fallback)
+      // 4. Mapping data dengan pengaman
       const formattedPosts = wpPosts.map((post: any) => ({
         id: post.slug,
         slug: post.slug,
-        body: post.excerpt || "", // Mencegah error marked()
+        body: post.excerpt || "", 
         data: {
-          title: post.title || "Judul Tidak Tersedia", // Mencegah error ImageMissingAlt
+          title: post.title || "Judul Tidak Tersedia", 
           description: post.excerpt || "",
           date: post.date,
           image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
           categories: post.categories?.nodes.map((c: any) => c.name) || [],
-          authors: [post.author?.node?.name || "Admin"], // Pastikan berupa array
+          authors: [post.author?.node?.name || "Admin"],
           tags: [tag.name],
         },
       }));
@@ -70,7 +82,8 @@ export async function getStaticPaths() {
         params: { tag: tag.slug },
         props: { 
           tagName: tag.name,
-          posts: formattedPosts 
+          posts: formattedPosts,
+          tickerPosts: tickerPosts
         },
       };
     })
@@ -80,29 +93,71 @@ export async function getStaticPaths() {
 }
 
 const { tag } = Astro.params;
-const { tagName, posts } = Astro.props;
+const { tagName, posts, tickerPosts } = Astro.props;
 const title = humanize(tagName || "");
 ---
 
-<Base title={title || "Tag"}>
-  <div class="section">
-    <div class="container">
-      <div class="text-center mb-16">
-        <p class="text-text text-xl mb-2 text-dark">Menampilkan Artikel dengan Tag:</p>
-        <h1 class="h2 text-primary font-bold">#{title}</h1>
-      </div>
+<Base title={`Topik: #${title} | Amina Media`} description={`Kumpulan artikel terbaru dengan topik #${title} di Amina Media.`}>
+  
+  <TrendingTicker posts={tickerPosts} />
 
+  <header class="bg-[#0b1c3c] py-16 md:py-24 text-white w-full border-t border-white/5 relative overflow-hidden">
+    <div class="container relative z-10">
+      <nav class="flex items-center space-x-2 text-[10px] md:text-[11px] mb-8 text-white/40 font-bold uppercase tracking-[0.2em]">
+        <a href="/" class="hover:text-primary transition">BERANDA</a>
+        <BiChevronRight className="opacity-20" />
+        <a href="/tags" class="hover:text-primary transition">TAGS</a>
+        <BiChevronRight className="opacity-20" />
+        <span class="text-primary italic normal-case font-medium opacity-80">#{title}</span>
+      </nav>
+
+      <div class="max-w-4xl">
+        <div class="inline-flex items-center gap-2 bg-primary/20 text-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-6 border border-primary/20">
+          <BiHash className="text-sm" /> Arsip Topik
+        </div>
+        <h1 class="text-4xl md:text-7xl font-black text-white leading-[1.1] mb-6 tracking-tighter uppercase">
+          Topik: <span class="text-primary">#{title}</span>
+        </h1>
+        <p class="text-white/50 text-base md:text-xl leading-relaxed font-medium max-w-2xl italic">
+          Menampilkan seluruh artikel dan berita yang berkaitan dengan kata kunci <span class="text-white">#{title}</span>.
+        </p>
+      </div>
+    </div>
+    <div class="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-primary/5 to-transparent pointer-events-none"></div>
+  </header>
+
+  <main class="py-20 bg-white dark:bg-dark transition-colors duration-300 min-h-[60vh]">
+    <div class="container">
+      
       {posts.length > 0 ? (
-        /* Menggunakan komponen Posts dengan tampilan persegi panjang */
-        <Posts posts={posts} fluid={false} />
+        <div class="min-h-[50vh]">
+          <Posts posts={posts} className="mb-16" />
+        </div>
       ) : (
-        <div class="text-center py-20">
-          <p class="text-lg">Belum ada artikel untuk tag ini.</p>
-          <p class="text-sm text-gray-400 mt-2">
-            Periksa kembali postingan di studio.amina.or.id
-          </p>
+        <div class="text-center py-24 bg-gray-50 dark:bg-white/5 rounded-3xl border-2 border-dashed border-gray-100 dark:border-white/10">
+          <div class="w-20 h-20 bg-gray-100 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+            <BiHash className="text-gray-300 dark:text-gray-700 text-4xl" />
+          </div>
+          <p class="text-gray-400 dark:text-gray-600 italic font-medium mb-6">Afwan, belum ada artikel untuk topik ini, Bos.</p>
+          <a href="/tags" class="inline-flex items-center gap-2 bg-[#0b1c3c] dark:bg-primary text-white px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:scale-105 transition shadow-lg shadow-primary/20">
+            Lihat Topik Lainnya
+          </a>
         </div>
       )}
+
+      <div class="mt-24 pt-10 border-t border-gray-50 dark:border-white/5 text-center">
+        <p class="text-[10px] font-black text-gray-300 dark:text-gray-700 uppercase tracking-[0.4em]">
+          Eksplorasi Topik Amina Media - Amal Insan Abadi
+        </p>
+      </div>
+
     </div>
-  </div>
+  </main>
 </Base>
+
+<style is:global>
+  /* Menghancurkan padding kaku dari class .section bawaan tema */
+  .section {
+    padding: 0 !important;
+  }
+</style>

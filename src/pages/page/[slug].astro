@@ -5,6 +5,7 @@ import Base from "@/layouts/Base.astro";
 import Pagination from "@/layouts/components/Pagination.astro";
 import { getSinglePage } from "@/lib/contentParser.astro";
 import { sortByDate } from "@/lib/utils/sortFunctions";
+import TrendingTicker from "@/components/TrendingTicker.astro";
 
 export async function getStaticPaths() {
   const posts = await getSinglePage("posts");
@@ -29,13 +30,42 @@ const currentPage = slug && !isNaN(Number(slug)) ? Number(slug) : 1;
 const indexOfLastPost = currentPage * config.settings.pagination;
 const indexOfFirstPost = indexOfLastPost - config.settings.pagination;
 const currentPosts = sortedPosts.slice(indexOfFirstPost, indexOfLastPost);
+
+// Kita ambil data untuk Ticker juga biar konsisten dengan Home
+const tickerPosts = sortedPosts.slice(0, 10);
 ---
 
-<Base>
-  <section class="section">
+<Base title={`Berita Halaman ${currentPage} - Amina Media`}>
+  
+  <TrendingTicker posts={tickerPosts} />
+
+  <main class="py-10 bg-white dark:bg-dark transition-colors duration-300">
     <div class="container">
-      <Posts className="mb-16" posts={currentPosts} />
-      <Pagination totalPages={totalPages} currentPage={currentPage} />
+      
+      <div class="mb-12 border-b-2 border-gray-100 dark:border-white/10 pb-6">
+        <h1 class="text-3xl lg:text-4xl font-black text-[#004d40] dark:text-teal-400 tracking-tighter uppercase">
+          Indeks Berita
+        </h1>
+        <p class="text-gray-500 dark:text-gray-400 font-medium mt-2">
+          Menampilkan halaman {currentPage} dari {totalPages}
+        </p>
+      </div>
+
+      <div class="min-h-[60vh]">
+        <Posts className="mb-16" posts={currentPosts} />
+      </div>
+
+      <div class="mt-10 py-10 border-t border-gray-100 dark:border-white/5">
+        <Pagination totalPages={totalPages} currentPage={currentPage} />
+      </div>
+
     </div>
-  </section>
+  </main>
 </Base>
+
+<style is:global>
+  /* Memastikan komponen Posts tidak membatasi lebar sendiri */
+  .container > .mb-16 {
+    width: 100%;
+  }
+</style>

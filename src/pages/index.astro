@@ -1,5 +1,6 @@
 ---
 import Base from "@/layouts/Base.astro";
+import TrendingTicker from "@/components/TrendingTicker.astro";
 import LatestUpdates from "@/components/homepage/LatestUpdates.astro";
 import MainHeadline from "@/components/homepage/MainHeadline.astro";
 import TrendingNews from "@/components/homepage/TrendingNews.astro";
@@ -11,7 +12,7 @@ import Sidebar from "@/components/homepage/Sidebar.astro";
 export const prerender = true;
 
 // --- CONFIG ID KATEGORI AMINA ---
-const ID_BERITA = 26;         
+const ID_BERITA = 26;          
 const ID_ARTIKEL_ISLAMI = 29; 
 const ID_KATA_USTADZ = 46;    
 
@@ -28,7 +29,7 @@ const cleanText = (str: string) => {
     .replace("&#8211;", "-");
 };
 
-// 2. HELPER: Mapping Data (Konsisten untuk Semua Komponen)
+// 2. HELPER: Mapping Data (Konsisten untuk Grade A)
 const mapWPData = (p: any) => {
   const featuredMedia = p._embedded?.["wp:featuredmedia"]?.[0]?.source_url;
   return {
@@ -38,14 +39,13 @@ const mapWPData = (p: any) => {
       excerpt: cleanText(p.excerpt.rendered),
       date: p.date,
       image: featuredMedia ? featuredMedia : "/images/placeholder.jpg",
-      // Menggunakan categoryNames agar sinkron dengan komponen yang sudah kita fix
       categoryNames: p._embedded?.["wp:term"]?.[0]?.map((cat: any) => cat.name) || ["Berita"],
       categoryIds: p.categories || [], 
     },
   };
 };
 
-// 3. DEDICATED FETCH: Ambil data spesifik kategori agar tidak ada section yang kosong
+// 3. DEDICATED FETCH: Kecepatan Tinggi (Promise.all)
 let generalPosts = [];
 let nationalPosts = [];
 let artikelIslamiPosts = [];
@@ -53,10 +53,10 @@ let kataUstadzPosts = [];
 
 try {
   const [resGen, resBerita, resIslami, resUstadz] = await Promise.all([
-    fetch(`${API_BASE}&per_page=15`),
+    fetch(`${API_BASE}&per_page=20`), // Ambil lebih banyak untuk Ticker + Hero
     fetch(`${API_BASE}&categories=${ID_BERITA}&per_page=10`),
     fetch(`${API_BASE}&categories=${ID_ARTIKEL_ISLAMI}&per_page=6`),
-    fetch(`${API_BASE}&categories=${ID_KATA_USTADZ}&per_page=8`) // Ambil 8 untuk 2 baris penuh
+    fetch(`${API_BASE}&categories=${ID_KATA_USTADZ}&per_page=8`)
   ]);
 
   const [dataGen, dataBerita, dataIslami, dataUstadz] = await Promise.all([
@@ -72,16 +72,20 @@ try {
   console.error("Gagal Fetching Data WordPress:", err);
 }
 
-// 4. DISTRIBUSI SLOT UI
+// 4. DISTRIBUSI SLOT UI (Grade A Strategy)
+const tickerPosts = generalPosts.slice(0, 10); // Berita untuk Running Text
 const mainHero = generalPosts[0];
 const relatedToMain = generalPosts.slice(1, 3);
-const sideLatest = generalPosts.slice(3, 8); // 5 Post untuk Latest Updates (Kiri)
-const trendingPosts = generalPosts.slice(8, 13); // 5 Post untuk Trending (Kanan)
-const sidebarPopular = nationalPosts.slice(4, 9); // Data untuk sidebar bawah
+const sideLatest = generalPosts.slice(3, 8); 
+const trendingPosts = generalPosts.slice(8, 13);
+const sidebarPopular = nationalPosts.slice(4, 9);
 ---
 
 <Base title="Amina Media - Berbagi & Peduli">
-  <main class="py-6 bg-white overflow-x-hidden">
+  
+  <TrendingTicker posts={tickerPosts} />
+
+  <main class="py-6 bg-white dark:bg-dark overflow-x-hidden transition-colors duration-300">
     
     <div class="max-w-7xl mx-auto px-4 lg:px-8 space-y-14">
       
@@ -128,28 +132,20 @@ const sidebarPopular = nationalPosts.slice(4, 9); // Data untuk sidebar bawah
 </Base>
 
 <style is:global>
-  /* Global Typography Amina */
+  /* Global Typography Amina (Target Grade A) */
   body { 
     font-family: 'Inter', system-ui, -apple-system, sans-serif; 
     -webkit-font-smoothing: antialiased;
-    color: #1a1a1a;
   }
 
-  /* Reset Uppercase & Letter Spacing */
+  /* Reset Font Weights & Letter Spacing */
   h1, h2, h3, h4 { 
     letter-spacing: -0.02em; 
     text-transform: none; 
     font-weight: 800;
   }
 
-  /* Custom Selection Color Amina */
-  ::selection { 
-    background-color: #004d40; 
-    color: white; 
-  }
-
-  /* Global Line Clamping (Pengaman Layout) */
+  /* Global Line Clamping (Layout Shield) */
   .line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
   .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 </style>

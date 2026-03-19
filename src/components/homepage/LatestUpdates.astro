@@ -1,8 +1,9 @@
 ---
-// src/components/homepage/LatestUpdates.astro
+// Import komponen Image untuk optimasi byte & structure score
+import { Image } from "astro:assets";
+
 const { posts = [] } = Astro.props;
 
-// Fungsi penghitung waktu tetap dipertahankan
 const formatTime = (dateStr) => {
   const postDate = new Date(dateStr);
   const now = new Date();
@@ -27,11 +28,16 @@ const formatTime = (dateStr) => {
     {posts.slice(0, 5).map((p) => (
       <a href={`/blog/${p.slug}`} class="group flex gap-3 items-center py-2 border-b border-gray-50 dark:border-white/5 last:border-0 transition-colors">
         
-        <div class="w-16 h-11 shrink-0 bg-gray-100 dark:bg-white/5 overflow-hidden shadow-sm border border-transparent dark:border-white/5">
-          <img 
+        <div class="w-16 h-11 shrink-0 bg-gray-100 dark:bg-white/5 overflow-hidden shadow-sm border border-transparent dark:border-white/5 relative">
+          <Image 
             src={p.data.image} 
+            width={120} 
+            height={80}
+            format="webp"
+            loading="lazy"
+            decoding="async"
             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-            alt="thumb" 
+            alt={p.data.title} 
           />
         </div>
 

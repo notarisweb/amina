@@ -1,0 +1,64 @@
+---
+// src/components/TrendingTicker.astro
+const { posts = [] } = Astro.props;
+
+// Kita ambil 10 berita terbaru untuk ditampilkan di running text
+const tickerPosts = posts.slice(0, 10);
+---
+
+<div class="w-full bg-white dark:bg-[#022c26] border-b border-gray-100 dark:border-white/5 h-10 lg:h-11 flex items-center overflow-hidden relative z-40 transition-colors duration-300">
+  <div class="max-w-7xl mx-auto px-4 lg:px-8 w-full flex items-center h-full">
+    
+    <div class="bg-orange-600 text-white text-[10px] font-black uppercase tracking-widest px-3 h-full flex items-center shrink-0 relative z-10 shadow-[10px_0_15px_rgba(0,0,0,0.1)]">
+      <span class="flex items-center gap-2">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+        </span>
+        Terkini
+      </span>
+    </div>
+
+    <div class="flex-1 overflow-hidden h-full flex items-center relative group">
+      <div class="animate-marquee whitespace-nowrap flex items-center">
+        {tickerPosts.map((p) => (
+          <a href={`/blog/${p.slug}`} class="text-[12px] font-bold text-[#004d40] dark:text-teal-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors mx-6 flex items-center gap-3">
+            <span class="text-gray-300 dark:text-white/10">•</span>
+            {p.data.title}
+          </a>
+        ))}
+        
+        {tickerPosts.map((p) => (
+          <a href={`/blog/${p.slug}`} class="text-[12px] font-bold text-[#004d40] dark:text-teal-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors mx-6 flex items-center gap-3">
+            <span class="text-gray-300 dark:text-white/10">•</span>
+            {p.data.title}
+          </a>
+        ))}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Animasi Marquee Pure CSS - Anti Lag & Ramah Performa */
+  .animate-marquee {
+    display: inline-flex;
+    animation: marquee 60s linear infinite;
+    width: max-content;
+  }
+
+  .group:hover .animate-marquee {
+    animation-play-state: paused;
+  }
+
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* Hilangkan efek blur di font saat bergerak */
+  .animate-marquee a {
+    backface-visibility: hidden;
+    -webkit-font-smoothing: subpixel-antialiased;
+  }
+</style>

@@ -5,14 +5,19 @@ import { markdownify } from "@/lib/utils/textConverter";
 import type { CollectionEntry } from "astro:content";
 import { getEntry } from "astro:content";
 import { FaAddressCard, FaEnvelope, FaPhoneAlt } from "react-icons/fa";
+import TrendingTicker from "@/components/TrendingTicker.astro";
 
 const entry = (await getEntry(
   "contact",
   "-index"
 )) as CollectionEntry<"contact">;
+
 const { contact_form_action } = config.params;
 const { address, email, phone } = config.contactinfo;
 const { title, description, meta_title, image } = entry.data;
+
+// Ticker data (bisa dikosongkan atau fetch dari posts jika ingin)
+const tickerPosts = []; 
 ---
 
 <Base
@@ -21,83 +26,125 @@ const { title, description, meta_title, image } = entry.data;
   description={description}
   image={image}
 >
-  <section class="section">
+  <TrendingTicker posts={tickerPosts} />
+
+  <main class="py-16 bg-white dark:bg-dark transition-colors duration-300">
     <div class="container">
-      <h1 set:html={markdownify(title)} class="h2 page-heading" />
-      <div class="row md:gx-5 gy-5">
-        <div class="sm:col-5 md:col-4">
-          <p class="mb-8 text-2xl font-bold text-text-dark">Contact Info</p>
-          <ul class="flex flex-col space-y-8">
-            <li>
-              <div class="flex text-text-dark items-center text-xl">
-                <FaAddressCard className="mr-3 text-primary" />
-                <p class="font-semibold">Address</p>
+      
+      <div class="mb-12 border-b-2 border-gray-100 dark:border-white/10 pb-8">
+        <h1 set:html={markdownify(title)} class="text-4xl md:text-5xl font-black text-[#004d40] dark:text-teal-400 tracking-tighter uppercase mb-4" />
+        <p class="text-gray-500 dark:text-gray-400 max-w-2xl font-medium leading-relaxed">
+          Punya pertanyaan, saran, atau ingin menjalin silaturahmi? Tim Amina Media siap mendengar kabar dari Anda.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-16">
+        
+        <div class="lg:col-span-4">
+          <p class="mb-10 text-xs font-black text-orange-600 uppercase tracking-[0.3em]">Hubungi Kami</p>
+          
+          <ul class="flex flex-col space-y-10">
+            <li class="group">
+              <div class="flex text-[#0b1c3c] dark:text-white items-center text-lg mb-3 transition-colors">
+                <div class="w-10 h-10 rounded-lg bg-gray-50 dark:bg-white/5 flex items-center justify-center mr-4 group-hover:bg-primary/10 transition-colors">
+                  <FaAddressCard className="text-primary" />
+                </div>
+                <p class="font-black uppercase tracking-tight text-sm">Alamat Kantor</p>
               </div>
-              <p set:html={markdownify(address)} class="mt-2 leading-5 pl-8" />
+              <div set:html={markdownify(address)} class="text-gray-500 dark:text-gray-400 leading-relaxed pl-14 text-sm font-medium" />
             </li>
-            <li>
-              <div class="flex text-text-dark items-center text-xl">
-                <FaEnvelope className="mr-3 text-primary" />
-                <p class="font-semibold">Email</p>
+
+            <li class="group">
+              <div class="flex text-[#0b1c3c] dark:text-white items-center text-lg mb-3">
+                <div class="w-10 h-10 rounded-lg bg-gray-50 dark:bg-white/5 flex items-center justify-center mr-4 group-hover:bg-primary/10 transition-colors">
+                  <FaEnvelope className="text-primary" />
+                </div>
+                <p class="font-black uppercase tracking-tight text-sm">Email Resmi</p>
               </div>
-              <p
+              <div
                 set:html={markdownify(email)}
-                class="mt-2 leading-5 pl-8 content"
+                class="text-gray-500 dark:text-gray-400 leading-relaxed pl-14 text-sm font-medium hover:text-primary transition-colors"
               />
             </li>
-            <li>
-              <div class="flex text-text-dark items-center text-xl">
-                <FaPhoneAlt className="mr-3 text-primary" />
-                <p class="font-semibold">Phone</p>
+
+            <li class="group">
+              <div class="flex text-[#0b1c3c] dark:text-white items-center text-lg mb-3">
+                <div class="w-10 h-10 rounded-lg bg-gray-50 dark:bg-white/5 flex items-center justify-center mr-4 group-hover:bg-primary/10 transition-colors">
+                  <FaPhoneAlt className="text-primary" />
+                </div>
+                <p class="font-black uppercase tracking-tight text-sm">Telepon / WA</p>
               </div>
-              <p set:html={markdownify(phone)} class="mt-2 leading-5 pl-8" />
+              <div set:html={markdownify(phone)} class="text-gray-500 dark:text-gray-400 leading-relaxed pl-14 text-sm font-medium" />
             </li>
           </ul>
         </div>
-        <div class="sm:col-7 md:col-8">
+
+        <div class="lg:col-span-8 bg-gray-50 dark:bg-[#06142e] p-8 md:p-12 rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm transition-colors">
           <form
-            class="contact-form row gy-2 justify-center"
+            class="grid grid-cols-1 md:grid-cols-2 gap-6"
             method="POST"
             action={contact_form_action}
           >
-            <div class="lg:col-6">
-              <label class="mb-2 block" for="name"
-                >Name <span class="text-red-600">*</span></label
-              >
+            <div>
+              <label class="mb-2 block text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500" for="name">
+                Nama Lengkap <span class="text-red-500">*</span>
+              </label>
               <input
-                class="form-input w-full"
+                class="form-input w-full bg-white dark:bg-dark border-gray-200 dark:border-white/10 rounded-xl focus:border-primary focus:ring-primary dark:text-white transition-all"
                 name="name"
+                placeholder="Masukkan nama Anda..."
                 type="text"
                 required
               />
             </div>
-            <div class="lg:col-6">
-              <label class="mb-2 block" for="email"
-                >Email <span class="text-red-600">*</span></label
-              >
+            <div>
+              <label class="mb-2 block text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500" for="email">
+                Alamat Email <span class="text-red-500">*</span>
+              </label>
               <input
-                class="form-input w-full"
+                class="form-input w-full bg-white dark:bg-dark border-gray-200 dark:border-white/10 rounded-xl focus:border-primary focus:ring-primary dark:text-white transition-all"
                 name="email"
+                placeholder="email@contoh.com"
                 type="email"
                 required
               />
             </div>
-            <div class="col-12">
-              <label class="mb-2 block" for="subject">Subject</label>
-              <input class="form-input w-full" name="subject" type="text" />
+            <div class="md:col-span-2">
+              <label class="mb-2 block text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500" for="subject">Subjek Pesan</label>
+              <input 
+                class="form-input w-full bg-white dark:bg-dark border-gray-200 dark:border-white/10 rounded-xl focus:border-primary focus:ring-primary dark:text-white transition-all" 
+                name="subject" 
+                placeholder="Apa yang ingin Anda bicarakan?"
+                type="text" 
+              />
             </div>
-            <div class="col-12">
-              <label class="mb-2 block" for="message"
-                >Message <span class="text-red-600">*</span></label
-              >
-              <textarea class="form-textarea w-full" rows="4"></textarea>
+            <div class="md:col-span-2">
+              <label class="mb-2 block text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500" for="message">
+                Pesan Anda <span class="text-red-500">*</span>
+              </label>
+              <textarea 
+                name="message"
+                class="form-textarea w-full bg-white dark:bg-dark border-gray-200 dark:border-white/10 rounded-xl focus:border-primary focus:ring-primary dark:text-white transition-all" 
+                rows="5"
+                placeholder="Tuliskan pesan Anda di sini..."
+                required
+              ></textarea>
             </div>
-            <div class="col-12">
-              <button class="btn btn-primary mt-2">Submit Now</button>
+            <div class="md:col-span-2">
+              <button class="bg-primary hover:bg-[#00796b] text-white px-10 py-4 rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95">
+                Kirim Pesan Sekarang
+              </button>
             </div>
           </form>
         </div>
       </div>
     </div>
-  </section>
+  </main>
 </Base>
+
+<style is:global>
+  /* Menyesuaikan input styling agar konsisten dengan theme Amina */
+  .form-input, .form-textarea {
+    @apply py-4 px-6 text-sm font-medium outline-none border;
+  }
+</style>

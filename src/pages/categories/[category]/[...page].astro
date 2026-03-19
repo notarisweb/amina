@@ -3,18 +3,20 @@ import Posts from "@/components/Posts.astro";
 import Base from "@/layouts/Base.astro";
 import Pagination from "@/layouts/components/Pagination.astro";
 import { humanize } from "@/lib/utils/textConverter";
+import TrendingTicker from "@/components/TrendingTicker.astro";
+import { BiHash, BiChevronRight } from "react-icons/bi";
 
 export const prerender = false;
 
-// 1. Ambil Parameter: category (slug) dan page (nomor halaman dari query)
+// 1. Ambil Parameter
 const { category } = Astro.params;
 const url = new URL(Astro.request.url);
 const currentPage = parseInt(url.searchParams.get("page") || "1");
-const pageSize = 10; // 10 card per halaman
+const pageSize = 12; // Gunakan angka genap (12) agar grid 3/4 kolom selalu penuh
 
 const WP_URL = import.meta.env.PUBLIC_WP_URL;
 
-// 2. Query WordPress: Mengambil data kategori dan daftar artikel
+// 2. Query WordPress: Ambil data kategori + Postingan + Recent Posts untuk Ticker
 const query = {
   query: `
     query GetCategoryPosts($catSlug: ID!) {
@@ -33,6 +35,12 @@ const query = {
           }
         }
       }
+      recentPosts: posts(first: 10) {
+        nodes {
+          title
+          slug
+        }
+      }
     }
   `,
   variables: { catSlug: category },
@@ -40,6 +48,7 @@ const query = {
 
 let categoryData = null;
 let allFormattedPosts = [];
+let tickerPosts = [];
 
 try {
   const response = await fetch(WP_URL, {
@@ -49,6 +58,13 @@ try {
   });
   const result = await response.json();
   categoryData = result.data?.category;
+  
+  // Data untuk Ticker
+  const wpRecent = result.data?.recentPosts?.nodes || [];
+  tickerPosts = wpRecent.map((p: any) => ({
+    slug: p.slug,
+    data: { title: p.title }
+  }));
 
   if (categoryData) {
     const wpPosts = categoryData.posts?.nodes || [];
@@ -82,22 +98,50 @@ const paginatedPosts = allFormattedPosts.slice(startIdx, endIdx);
 const title = humanize(categoryData.name || "");
 ---
 
-<Base title={`${title} - Halaman ${currentPage}`} description={categoryData.description}>
-  <section class="bg-[#0b1c3c] py-16 text-white w-full border-t border-white/5">
-    <div class="container text-center">
-      <p class="text-white/50 text-[11px] font-bold uppercase tracking-[0.2em] mb-4">ARSIP KATEGORI</p>
-      <h1 class="text-3xl md:text-5xl font-black text-primary uppercase italic">{title}</h1>
-      <p class="mt-4 text-white/60 text-sm italic">Halaman {currentPage} dari {totalPages}</p>
-    </div>
-  </section>
+<Base 
+  title={`${title} - Halaman ${currentPage} | Amina Media`} 
+  description={categoryData.description || `Kumpulan artikel islami dan berita terbaru kategori ${title}.`}
+>
+  
+  <TrendingTicker posts={tickerPosts} />
 
-  <section class="section py-16 bg-white">
+  <header class="bg-[#0b1c3c] py-16 md:py-24 text-white w-full border-t border-white/5 relative overflow-hidden">
+    <div class="container relative z-10">
+      <nav class="flex items-center space-x-2 text-[10px] md:text-[11px] mb-8 text-white/40 font-bold uppercase tracking-[0.2em]">
+        <a href="/" class="hover:text-primary transition">BERANDA</a>
+        <BiChevronRight className="opacity-20" />
+        <a href="/categories" class="hover:text-primary transition">KATEGORI</a>
+        <BiChevronRight className="opacity-20" />
+        <span class="text-primary italic normal-case font-medium opacity-80">{title}</span>
+      </nav>
+
+      <div class="max-w-4xl">
+        <div class="inline-flex items-center gap-2 bg-primary/20 text-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-6 border border-primary/20">
+          <BiHash className="text-sm" /> Arsip Kategori
+        </div>
+        <h1 class="text-4xl md:text-7xl font-black text-white leading-[1.1] mb-8 tracking-tighter uppercase">
+          Kategori: <span class="text-primary italic">{title}</span>
+        </h1>
+        {categoryData.description && (
+          <p class="text-white/50 text-base md:text-xl leading-relaxed font-medium max-w-2xl italic">
+            "{categoryData.description}"
+          </p>
+        )}
+      </div>
+    </div>
+    <div class="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-primary/5 to-transparent pointer-events-none"></div>
+  </header>
+
+  <main class="py-20 bg-white dark:bg-dark transition-colors duration-300 min-h-[60vh]">
     <div class="container">
+      
       {paginatedPosts.length > 0 ? (
         <>
-          <Posts posts={paginatedPosts} fluid={false} />
+          <div class="min-h-[50vh]">
+            <Posts posts={paginatedPosts} className="mb-16" />
+          </div>
           
-          <div class="mt-16 flex justify-center">
+          <div class="mt-20 py-10 border-t border-gray-100 dark:border-white/5 flex justify-center">
             <Pagination 
               section={`categories/${category}`} 
               currentPage={currentPage} 
@@ -106,11 +150,27 @@ const title = humanize(categoryData.name || "");
           </div>
         </>
       ) : (
-        <div class="text-center py-24 border-2 border-dashed border-gray-100 rounded-3xl">
-          <p class="text-dark/40 italic">Tidak ada artikel di halaman ini.</p>
-          <a href={`/categories/${category}`} class="mt-4 inline-block text-primary font-bold">Kembali ke Halaman 1</a>
+        <div class="text-center py-24 bg-gray-50 dark:bg-white/5 rounded-3xl border-2 border-dashed border-gray-100 dark:border-white/10">
+          <p class="text-gray-400 dark:text-gray-600 italic font-medium mb-6">Oppss! Belum ada artikel di halaman ini, Bos.</p>
+          <a href={`/categories/${category}`} class="inline-flex items-center gap-2 bg-primary text-white px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:scale-105 transition shadow-lg shadow-primary/20">
+            Kembali ke Halaman 1
+          </a>
         </div>
       )}
+
+      <div class="mt-20 pt-10 text-center opacity-30">
+        <p class="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.4em]">
+          Halaman {currentPage} dari {totalPages} • Amina Media
+        </p>
+      </div>
+
     </div>
-  </section>
+  </main>
 </Base>
+
+<style is:global>
+  /* Menghancurkan padding kaku dari class .section bawaan tema */
+  .section {
+    padding: 0 !important;
+  }
+</style>

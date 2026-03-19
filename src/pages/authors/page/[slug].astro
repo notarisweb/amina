@@ -3,12 +3,11 @@ import Authors from "@/components/Authors.astro";
 import config from "@/config/config.json";
 import Base from "@/layouts/Base.astro";
 import Pagination from "@/layouts/components/Pagination.astro";
+import TrendingTicker from "@/components/TrendingTicker.astro";
 
 export async function getStaticPaths() {
-  // 1. Menggunakan Environment Variable untuk fleksibilitas API
   const WP_URL = import.meta.env.PUBLIC_WP_URL;
   
-  // 2. Query untuk mengambil semua penulis dari WordPress
   const query = {
     query: `query { users { nodes { name slug description avatar { url } } } }`,
   };
@@ -25,7 +24,6 @@ export async function getStaticPaths() {
   const totalPages = Math.ceil(authors.length / config.settings.pagination);
   const paths = [];
 
-  // Menghasilkan path untuk halaman 2 dan seterusnya
   for (let i = 1; i < totalPages; i++) {
     paths.push({
       params: {
@@ -39,7 +37,6 @@ export async function getStaticPaths() {
 const { slug } = Astro.params;
 const WP_URL = import.meta.env.PUBLIC_WP_URL;
 
-// 3. Ambil data penulis kembali untuk perankingan/pembagian halaman
 const query = {
   query: `query { users { nodes { name slug description avatar { url } } } }`,
 };
@@ -53,15 +50,15 @@ const response = await fetch(WP_URL, {
 const result = await response.json();
 const wpAuthors = result.data?.users?.nodes || [];
 
-// 4. Mapping data dengan pengaman (fallback) untuk mencegah error build
+// Mapping data dengan pengaman ekstra
 const allAuthors = wpAuthors.map((user: any) => ({
   id: user.slug,
   slug: user.slug,
-  body: user.description || "", // Mencegah error marked() jika deskripsi kosong
+  body: user.description || "", 
   data: {
     title: user.name || "Penulis",
     image: user.avatar?.url || "/images/author-placeholder.png",
-    description: user.description || "",
+    description: user.description || "Kontributor resmi Amina Media",
     social: [],
   }
 }));
@@ -71,27 +68,59 @@ const currentPage = slug && !isNaN(Number(slug)) ? Number(slug) : 1;
 const indexOfLastPost = currentPage * config.settings.pagination;
 const indexOfFirstPost = indexOfLastPost - config.settings.pagination;
 const currentAuthors = allAuthors.slice(indexOfFirstPost, indexOfLastPost);
+
+// Ticker data (Kosongkan atau isi dengan fetch posts terbaru)
+const tickerPosts = []; 
 ---
 
-<Base title={`Penulis - Halaman ${currentPage}`}>
-  <section class="section">
-    <div class="container text-center">
-      <h1 class="page-heading h2 mb-16">Para Penulis</h1>
+<Base title={`Penulis Amina Media - Halaman ${currentPage}`}>
+  
+  <TrendingTicker posts={tickerPosts} />
+
+  <main class="py-16 bg-white dark:bg-dark transition-colors duration-300 min-h-[70vh]">
+    <div class="container">
       
-      {currentAuthors.length > 0 ? (
-        <>
-          <Authors authors={currentAuthors} />
-          <div class="mt-16 flex justify-center">
-            <Pagination
-              section={"authors"}
-              currentPage={currentPage}
-              totalPages={totalPages}
-            />
+      <div class="mb-16 border-b-2 border-gray-100 dark:border-white/10 pb-8 text-center md:text-left">
+        <div class="inline-block bg-orange-600 text-white text-[10px] font-black px-3 py-1 uppercase mb-4 tracking-widest">
+          The Team - Page {currentPage}
+        </div>
+        <h1 class="text-4xl md:text-5xl font-black text-[#004d40] dark:text-teal-400 tracking-tighter uppercase mb-2">
+          Para Penulis
+        </h1>
+        <p class="text-gray-500 dark:text-gray-400 font-medium leading-relaxed">
+          Menampilkan daftar kontributor resmi <span class="text-primary font-bold">amina.or.id</span> halaman {currentPage}.
+        </p>
+      </div>
+
+      <div class="min-h-[40vh]">
+        {currentAuthors.length > 0 ? (
+          <>
+            <Authors authors={currentAuthors} />
+            
+            {/* PAGINATION NAVIGATION */}
+            <div class="mt-20 py-10 border-t border-gray-50 dark:border-white/5 flex justify-center">
+              <Pagination
+                section={"authors"}
+                currentPage={currentPage}
+                totalPages={totalPages}
+              />
+            </div>
+          </>
+        ) : (
+          <div class="py-20 text-center bg-gray-50 dark:bg-white/5 rounded-3xl border-2 border-dashed border-gray-100 dark:border-white/10">
+            <p class="text-xl font-bold text-[#0b1c3c] dark:text-white mb-2">Data penulis tidak ditemukan.</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 italic">Halaman ini mungkin sudah tidak tersedia.</p>
           </div>
-        </>
-      ) : (
-        <p class="py-20">Data penulis tidak ditemukan.</p>
-      )}
+        )}
+      </div>
+
     </div>
-  </section>
+  </main>
 </Base>
+
+<style is:global>
+  /* Menghancurkan padding kaku dari tema bawaan */
+  .section {
+    padding: 0 !important;
+  }
+</style>

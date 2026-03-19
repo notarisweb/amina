@@ -5,6 +5,7 @@ import { Image } from "astro:assets";
 import { humanize, slugify } from "@/lib/utils/textConverter";
 import { BiCalendarEdit, BiCategoryAlt } from "react-icons/bi";
 import AuthorSingle from "@/layouts/partials/AuthorSingle.astro";
+import TrendingTicker from "@/components/TrendingTicker.astro";
 
 export const prerender = true;
 
@@ -96,12 +97,15 @@ export async function getStaticPaths() {
 
 const { author, posts } = Astro.props;
 
-// PENGAMAN: Jika author tidak ada, jangan render sisa kodenya (Mencegah Error 'data' of undefined)
+// PENGAMAN: Jika author tidak ada, jangan render
 if (!author) {
   return Astro.redirect('/404');
 }
 
 const { title, meta_title, description, image } = author.data;
+
+// Data untuk Ticker (bisa Bos ambil dari fetch berita terbaru jika ingin)
+const tickerPosts = []; 
 ---
 
 <Base
@@ -110,57 +114,78 @@ const { title, meta_title, description, image } = author.data;
   description={description}
   image={image}
 >
-  <AuthorSingle author={author} />
-  
-  {posts && posts.length > 0 && (
-    <section class="section pt-0">
-      <div class="container">
-        <h2 class="mb-12 text-center font-black uppercase tracking-tighter text-3xl md:text-4xl text-[#0b1c3c]">
-           <span class="text-primary block text-xs tracking-[0.3em] mb-2">KARYA TERBARU</span>
-           Artikel Oleh {title}
-        </h2>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {posts.map((post: any) => (
-            <div class="group bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-500">
-              {post.data.image && (
-                <a href={`/blog/${post.slug}`} class="block overflow-hidden aspect-video bg-gray-100">
-                  <Image
-                    class="group-hover:scale-110 transition duration-700 w-full h-full object-cover"
-                    src={post.data.image}
-                    alt={post.data.title} 
-                    width={600}
-                    height={337}
-                    format="webp"
-                  />
-                </a>
-              )}
-              
-              <div class="p-6">
-                <div class="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-dark/30 mb-4">
-                   <span class="flex items-center gap-1.5"><BiCalendarEdit className="h-3.5 w-3.5 text-primary" /> {dateFormat(post.data.date)}</span>
-                   {post.data.categories.length > 0 && (
-                     <span class="flex items-center gap-1.5"><BiCategoryAlt className="h-3.5 w-3.5 text-primary" /> {post.data.categories[0]}</span>
-                   )}
-                </div>
+  <TrendingTicker posts={tickerPosts} />
 
-                <h3 class="text-lg font-black text-[#0b1c3c] group-hover:text-primary transition leading-tight uppercase tracking-tight mb-4 line-clamp-2">
-                  <a href={`/blog/${post.slug}`} set:html={post.data.title} />
-                </h3>
+  <main class="bg-white dark:bg-dark transition-colors duration-300">
+    
+    <AuthorSingle author={author} />
+    
+    {posts && posts.length > 0 && (
+      <section class="pb-24 pt-10">
+        <div class="container">
+          
+          <div class="mb-16 border-b-2 border-gray-100 dark:border-white/10 pb-6">
+            <h2 class="font-black uppercase tracking-tighter text-3xl md:text-4xl text-[#0b1c3c] dark:text-white transition-colors">
+               <span class="text-primary block text-xs tracking-[0.4em] mb-2 font-black">KARYA TERBARU</span>
+               Artikel Oleh {title}
+            </h2>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            {posts.map((post: any) => (
+              <div class="group flex flex-col bg-white dark:bg-[#06142e] rounded-3xl overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-gray-50 dark:border-white/5 hover:shadow-xl transition-all duration-500">
                 
-                <a href={`/blog/${post.slug}`} class="text-[10px] font-black text-primary uppercase tracking-[0.2em] inline-flex items-center group/btn">
-                  Baca Artikel <span class="ml-2 transition-transform group-hover/btn:translate-x-1">→</span>
-                </a>
+                {post.data.image && (
+                  <a href={`/blog/${post.slug}`} class="block overflow-hidden aspect-video bg-gray-100 dark:bg-white/5 relative">
+                    <Image
+                      class="group-hover:scale-105 transition duration-700 w-full h-full object-cover"
+                      src={post.data.image}
+                      alt={post.data.title} 
+                      width={600}
+                      height={337}
+                      format="webp"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </a>
+                )}
+                
+                <div class="p-8 flex-1 flex flex-col">
+                  <div class="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-5 transition-colors">
+                      <span class="flex items-center gap-1.5"><BiCalendarEdit className="h-3.5 w-3.5 text-primary" /> {dateFormat(post.data.date)}</span>
+                      {post.data.categories.length > 0 && (
+                        <span class="flex items-center gap-1.5"><BiCategoryAlt className="h-3.5 w-3.5 text-primary" /> {post.data.categories[0]}</span>
+                      )}
+                  </div>
+
+                  <h3 class="text-xl font-black text-[#0b1c3c] dark:text-white group-hover:text-primary transition-all leading-tight tracking-tight mb-6 line-clamp-2">
+                    <a href={`/blog/${post.slug}`} set:html={post.data.title} />
+                  </h3>
+                  
+                  <div class="mt-auto">
+                    <a href={`/blog/${post.slug}`} class="text-[10px] font-black text-primary uppercase tracking-[0.3em] inline-flex items-center group/btn">
+                      Baca Artikel 
+                      <span class="ml-2 transition-transform group-hover/btn:translate-x-1">→</span>
+                    </a>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
-    </section>
-  )}
+      </section>
+    )}
+  </main>
 </Base>
 
-<style>
+<style is:global>
+  /* Override padding default dari class .section bawaan tema */
+  .section {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Aspect Ratio Pengaman */
   .aspect-video {
     aspect-ratio: 16 / 9;
   }

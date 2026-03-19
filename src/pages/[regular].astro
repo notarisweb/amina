@@ -3,9 +3,7 @@ import Base from "@/layouts/Base.astro";
 import { getSinglePage } from "@/lib/contentParser.astro";
 import { markdownify } from "@/lib/utils/textConverter";
 import { render } from "astro:content";
-
-// 1. Tambahkan pengecekan prerender jika perlu, 
-// tapi karena kita sudah set output: 'server' di config, ini akan diproses di server.
+import TrendingTicker from "@/components/TrendingTicker.astro";
 
 export async function getStaticPaths() {
   const pages = await getSinglePage("pages");
@@ -21,24 +19,25 @@ export async function getStaticPaths() {
 
 const { page } = Astro.props;
 
-// 2. PROTEKSI UTAMA: Cek apakah page ada.
-// Jika bot mengakses URL ngawur (seperti .php), page akan kosong.
-// Kita hentikan proses di sini dan kirim 404 agar server tidak crash.
+// 1. PROTEKSI: Cek apakah page ada untuk menghindari server crash
 if (!page || !page.data) {
   return Astro.redirect("/404");
 }
 
 const { title, meta_title, description, image } = page.data;
 
-// 3. Gunakan Try-Catch saat render konten untuk menghindari crash jika markdown rusak
+// 2. RENDER KONTEN: Try-catch agar build tidak gagal jika ada Markdown rusak
 let Content;
 try {
   const rendered = await render(page);
   Content = rendered.Content;
 } catch (e) {
-  console.error("Render error:", e.message);
+  console.error("Render error di halaman [regular]:", e.message);
   return Astro.redirect("/404");
 }
+
+// Data kosong untuk Ticker (bisa Bos isi dengan fetch Berita terbaru jika mau)
+const tickerPosts = []; 
 ---
 
 <Base
@@ -47,12 +46,46 @@ try {
   description={description}
   image={image}
 >
-  <section class="section">
+  <TrendingTicker posts={tickerPosts} />
+
+  <main class="py-16 bg-white dark:bg-dark transition-colors duration-300 min-h-[70vh]">
     <div class="container">
-      <h1 set:html={markdownify(title)} class="h2 page-heading" />
-      <div class="content">
-        {Content ? <Content /> : <p>Konten tidak tersedia.</p>}
+      
+      <div class="mb-12 border-b-2 border-gray-100 dark:border-white/10 pb-8">
+        <h1 
+          set:html={markdownify(title)} 
+          class="text-4xl md:text-5xl font-black text-[#004d40] dark:text-teal-400 tracking-tighter uppercase mb-4" 
+        />
+        <div class="w-20 h-1.5 bg-orange-600"></div>
       </div>
+
+      <div class="max-w-4xl">
+        <article class="content prose prose-lg md:prose-xl dark:prose-invert max-w-none text-dark/80 dark:text-gray-400 leading-[1.8]">
+          {Content ? <Content /> : <p class="italic text-gray-400">Konten sedang dalam proses pemuatan...</p>}
+        </article>
+      </div>
+
     </div>
-  </section>
+  </main>
 </Base>
+
+<style is:global>
+  /* FIX TYPOGRAPHY: 
+    Memastikan link, bold, dan heading di dalam konten Markdown 
+    otomatis ganti warna saat Dark Mode aktif.
+  */
+  .dark .prose h1, .dark .prose h2, .dark .prose h3, .dark .prose h4 {
+    @apply text-white !important;
+  }
+  .dark .prose strong {
+    @apply text-white !important;
+  }
+  .dark .prose a {
+    @apply text-primary hover:text-teal-400 !important;
+  }
+  
+  /* Hilangkan padding default section yang kaku */
+  .section {
+    padding: 0 !important;
+  }
+</style>

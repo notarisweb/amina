@@ -1,11 +1,12 @@
 ---
 import SearchBar from "@/helpers/SearchBar";
 import Base from "@/layouts/Base.astro";
+import TrendingTicker from "@/components/TrendingTicker.astro";
 
-// 1. Mengambil URL API dari Environment Variable untuk fleksibilitas
+// 1. Mengambil URL API dari Environment Variable
 const WP_URL = import.meta.env.PUBLIC_WP_URL;
 
-// 2. Query untuk mengambil data artikel agar bisa dicari
+// 2. Query GraphQL (Optimasi untuk Grade A: Ambil yang perlu saja)
 const query = {
   query: `
     query GetSearchData {
@@ -26,6 +27,7 @@ const query = {
 };
 
 let searchList = [];
+let tickerPosts = [];
 
 try {
   const response = await fetch(WP_URL, {
@@ -37,36 +39,68 @@ try {
   const result = await response.json();
   const wpPosts = result.data?.posts?.nodes || [];
 
-  // 3. Mapping data ke format yang dibutuhkan oleh SearchBar
+  // 3. Mapping data (Konsisten dengan komponen Homepage kita)
   searchList = wpPosts.map((post: any) => ({
     slug: post.slug,
-    // Menggabungkan konten agar hasil pencarian lebih akurat
     content: (post.content || post.excerpt || ""), 
     data: {
-      // Fallback judul agar tidak terjadi error ImageMissingAlt
       title: post.title || "Judul Tidak Tersedia", 
       description: post.excerpt || "", 
       date: post.date,
       image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
-      categories: post.categories?.nodes.map((c: any) => c.name) || [],
+      categoryNames: post.categories?.nodes.map((c: any) => c.name) || ["Berita"],
       authors: [post.author?.node?.name || "Admin"],
     }
   }));
+
+  // Stok untuk Ticker
+  tickerPosts = searchList.slice(0, 10);
 } catch (e) {
   console.error("Gagal mengambil data pencarian dari studio.amina.or.id:", e);
 }
 ---
 
-<Base title={`Pencarian Artikel`}>
-  <section class="section">
+<Base title={`Pencarian Artikel | Amina Media`}>
+  
+  <TrendingTicker posts={tickerPosts} />
+
+  <main class="py-16 bg-white dark:bg-dark transition-colors duration-300 min-h-[70vh]">
     <div class="container">
-      <div class="text-center mb-12">
-        <h1 class="h2 mb-4">Cari Artikel</h1>
-        <p class="text-text">Cari informasi dan artikel islami di amina.or.id</p>
+      
+      <div class="text-center mb-16 max-w-2xl mx-auto">
+        <div class="inline-block bg-orange-600 text-white text-[10px] font-black px-3 py-1 uppercase mb-4 tracking-widest">
+          Search Center
+        </div>
+        <h1 class="text-4xl md:text-5xl font-black text-[#004d40] dark:text-teal-400 tracking-tighter uppercase mb-4">
+          Cari Artikel
+        </h1>
+        <p class="text-gray-500 dark:text-gray-400 font-medium leading-relaxed">
+          Temukan khazanah keilmuan, doa, dan berita terkini di <span class="text-primary font-bold">amina.or.id</span> dengan kata kunci yang Anda inginkan.
+        </p>
       </div>
       
-      {/* Mengirim searchList ke komponen React SearchBar */}
-      <SearchBar client:load searchList={searchList} />
+      <div class="max-w-5xl mx-auto bg-gray-50 dark:bg-[#06142e] p-4 md:p-8 rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm transition-colors">
+        <SearchBar client:load searchList={searchList} />
+      </div>
+
+      <div class="mt-16 text-center">
+        <p class="text-[11px] font-black text-gray-300 dark:text-gray-700 uppercase tracking-[0.3em]">
+          Tips: Gunakan kata kunci spesifik seperti "Gaza", "Zakat", atau "Doa"
+        </p>
+      </div>
+
     </div>
-  </section>
+  </main>
 </Base>
+
+<style is:global>
+  /* Menyesuaikan tampilan SearchBar agar masuk ke gaya Amina Media */
+  .search-input {
+    @apply w-full py-4 px-6 rounded-xl border-2 border-gray-100 dark:border-white/10 bg-white dark:bg-dark text-[#0b1c3c] dark:text-white font-bold transition-all focus:border-primary focus:ring-0 outline-none !important;
+  }
+  
+  /* Hilangkan padding default section jika mengganggu */
+  .section {
+    padding: 0 !important;
+  }
+</style>

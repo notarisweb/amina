@@ -1,8 +1,10 @@
 ---
-// src/components/homepage/NationalFeed.astro
+// Import komponen Image untuk optimasi gambar otomatis (Grade A Booster)
+import { Image } from "astro:assets";
+
 const { posts = [] } = Astro.props;
 
-// FIX: Fungsi penghitung waktu otomatis (Dynamic Time Ago)
+// Fungsi penghitung waktu otomatis
 const formatTime = (dateStr) => {
   const postDate = new Date(dateStr);
   const now = new Date();
@@ -42,9 +44,14 @@ const formatTime = (dateStr) => {
       posts.map((p) => (
         <a href={`/blog/${p.slug}`} class="group flex flex-col md:flex-row gap-6 lg:gap-8 items-start pb-10 border-b border-gray-50 dark:border-white/5 last:border-0 last:pb-0">
           
-          <div class="w-full md:w-52 lg:w-72 aspect-[16/10] shrink-0 overflow-hidden bg-gray-100 dark:bg-white/5 shadow-sm border border-transparent dark:border-white/5">
-            <img 
+          <div class="w-full md:w-52 lg:w-72 aspect-[16/10] shrink-0 overflow-hidden bg-gray-100 dark:bg-white/5 shadow-sm border border-transparent dark:border-white/5 relative">
+            <Image 
               src={p.data.image} 
+              width={500} 
+              height={312}
+              format="webp"
+              loading="lazy"
+              decoding="async"
               alt={p.data.title}
               class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-95 group-hover:opacity-100" 
             />

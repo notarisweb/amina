@@ -3,11 +3,12 @@ import Authors from "@/components/Authors.astro";
 import config from "@/config/config.json";
 import Base from "@/layouts/Base.astro";
 import Pagination from "@/layouts/components/Pagination.astro";
+import TrendingTicker from "@/components/TrendingTicker.astro";
 
-// 1. Menggunakan Environment Variable dari dashboard Vercel
+// 1. Environment Variable
 const WP_URL = import.meta.env.PUBLIC_WP_URL;
 
-// 2. Query untuk mengambil daftar Penulis (Users) dari WordPress
+// 2. Query GraphQL Penulis
 const query = {
   query: `
     query GetAuthors {
@@ -26,6 +27,7 @@ const query = {
 };
 
 let authors = [];
+let tickerPosts = [];
 let totalPages = 1;
 
 try {
@@ -38,53 +40,80 @@ try {
   const result = await response.json();
   const wpAuthors = result.data?.users?.nodes || [];
 
-  // 3. Pemetaan data WordPress agar sesuai dengan komponen Authors.astro
+  // 3. Pemetaan data (Mapping)
   authors = wpAuthors.map((user: any) => ({
     id: user.slug,
     slug: user.slug,
-    // Fallback string kosong untuk mencegah error pada fungsi markdownify/marked
     body: user.description || "", 
     data: {
       title: user.name || "Penulis",
       image: user.avatar?.url || "/images/author-placeholder.png",
-      description: user.description || "Penulis di amina.or.id",
-      social: [], // Anda bisa menambahkan query social media jika tersedia di WP
+      description: user.description || "Kontributor resmi di amina.or.id",
+      social: [], 
     }
   }));
 
   totalPages = Math.ceil(authors.length / config.settings.pagination);
 } catch (e) {
-  console.error("Gagal mengambil data penulis dari studio.amina.or.id:", e);
+  console.error("Gagal mengambil data penulis:", e);
 }
 
-// Mengambil penulis untuk halaman pertama saja
 const currentAuthors = authors.slice(0, config.settings.pagination);
 ---
 
-<Base title={"Daftar Penulis"}>
-  <section class="section">
-    <div class="container text-center">
-      <h1 class="page-heading h2 mb-16">Para Penulis</h1>
+<Base title={"Daftar Penulis | Amina Media"}>
+  
+  <TrendingTicker posts={tickerPosts} />
+
+  <main class="py-16 bg-white dark:bg-dark transition-colors duration-300 min-h-[70vh]">
+    <div class="container">
       
-      {currentAuthors.length > 0 ? (
-        <>
-          <Authors authors={currentAuthors} />
-          
-          {/* Navigasi Pagination jika jumlah penulis melebihi batas per halaman */}
-          {totalPages > 1 && (
-            <div class="mt-16 flex justify-center">
-              <Pagination section={"authors"} currentPage={1} totalPages={totalPages} />
-            </div>
-          )}
-        </>
-      ) : (
-        <div class="py-20">
-          <p class="text-xl">Belum ada penulis yang ditemukan.</p>
-          <p class="text-sm text-gray-500 mt-2">
-            Pastikan akun penulis di studio.amina.or.id sudah memiliki postingan publik.
-          </p>
+      <div class="mb-16 border-b-2 border-gray-100 dark:border-white/10 pb-8 text-center md:text-left">
+        <div class="inline-block bg-orange-600 text-white text-[10px] font-black px-3 py-1 uppercase mb-4 tracking-widest">
+          The Team
         </div>
-      )}
+        <h1 class="text-4xl md:text-5xl font-black text-[#004d40] dark:text-teal-400 tracking-tighter uppercase mb-4">
+          Para Penulis
+        </h1>
+        <p class="text-gray-500 dark:text-gray-400 max-w-2xl font-medium leading-relaxed">
+          Mengenal sosok di balik layar yang mendedikasikan ilmunya untuk syiar Islam dan berita kemanusiaan di <span class="text-primary font-bold">amina.or.id</span>.
+        </p>
+      </div>
+
+      <div class="min-h-[40vh]">
+        {currentAuthors.length > 0 ? (
+          <>
+            <Authors authors={currentAuthors} />
+            
+            {/* PAGINATION SECTION */}
+            {totalPages > 1 && (
+              <div class="mt-20 py-10 border-t border-gray-50 dark:border-white/5 flex justify-center">
+                <Pagination section={"authors"} currentPage={1} totalPages={totalPages} />
+              </div>
+            )}
+          </>
+        ) : (
+          <div class="py-20 text-center bg-gray-50 dark:bg-white/5 rounded-3xl border-2 border-dashed border-gray-100 dark:border-white/10">
+            <p class="text-xl font-bold text-[#0b1c3c] dark:text-white mb-2">Belum ada penulis ditemukan.</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 italic">
+              Pastikan profil penulis di CMS WordPress sudah dilengkapi.
+            </p>
+          </div>
+        )}
+      </div>
+
     </div>
-  </section>
+  </main>
 </Base>
+
+<style is:global>
+  /* Override padding section bawaan tema jika ada */
+  .section {
+    padding: 0 !important;
+  }
+  
+  /* Styling tambahan untuk list authors agar lebih boxy & modern */
+  .authors-list {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8;
+  }
+</style>
