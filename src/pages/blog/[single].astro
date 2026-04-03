@@ -142,7 +142,7 @@ const shareLinks = [
             </div>
           )}
 
-          <article class="content prose prose-lg md:prose-xl max-w-none text-dark/90 dark:text-white/80 leading-[1.9] mb-16" set:html={contentWithIds} />
+          <article class="content prose prose-lg md:prose-xl max-w-none !w-full text-dark/90 dark:text-white/80 leading-[1.9] mb-16" set:html={contentWithIds} />
 
           <div class="bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 p-8 md:p-12 rounded-[2.5rem] shadow-[0_20px_50px_rgba(234,88,12,0.3)] relative overflow-hidden mb-24 text-white">
             <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
@@ -159,7 +159,7 @@ const shareLinks = [
                   </p>
                </div>
                <div class="shrink-0 w-full md:w-auto">
-                  <a href={donationUrl} target="_blank" class="w-full md:w-auto inline-flex items-center justify-center bg-white text-orange-600 font-black uppercase tracking-widest py-4 px-10 rounded-2xl text-[12px] transition-all shadow-2xl hover:scale-105 active:scale-95 group">
+                  <a href={donationUrl} target="_blank" class="w-full md:w-auto inline-flex items-center justify-center bg-white text-orange-600 font-black uppercase tracking-widest py-4 px-10 rounded-2xl text-[12px] transition-all shadow-2xl hover:scale-105 group">
                     Donasi Sekarang <BiRightArrowAlt className="ml-2 h-6 w-6 group-hover:translate-x-2 transition" />
                   </a>
                </div>
@@ -177,8 +177,8 @@ const shareLinks = [
               <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
                 {relatedPosts.map((rp) => (
                   <a href={`/blog/${rp.slug}`} class="group flex flex-col h-full">
-                    <div class="aspect-video overflow-hidden bg-gray-50 border border-gray-100 dark:border-white/5 mb-4 shadow-md">
-                      <Image src={rp.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} width={400} height={225} class="w-full h-full object-cover group-hover:scale-110 transition duration-700" alt={rp.title} />
+                    <div class="aspect-video overflow-hidden bg-gray-50 border border-gray-100 dark:border-white/5 mb-4">
+                      <Image src={rp.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} width={400} height={225} class="w-full h-full object-cover group-hover:scale-110 transition duration-700 rounded-none shadow-md" alt={rp.title} />
                     </div>
                     <h3 class="text-[14px] font-black leading-snug text-dark dark:text-white group-hover:text-primary transition line-clamp-3 tracking-tight">{rp.title}</h3>
                   </a>
@@ -193,8 +193,8 @@ const shareLinks = [
             <div class="prayer-widget p-6 text-white relative overflow-hidden shadow-2xl bg-[#008800] rounded-xl border-b-4 border-green-900">
                <div class="absolute inset-0 opacity-10" style="background-image: url('data:image/svg+xml,%3Csvg width=\"40\" height=\"40\" viewBox=\"0 0 40 40\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M20 0l2 8 8 2-8 2-2 8-2-8-8-2 8-2z\" fill=\"%23ffffff\" fill-opacity=\"1\" fill-rule=\"evenodd\"/%3E%3C/svg%3E');"></div>
                <div class="relative z-10 flex flex-col items-center">
-                  <span class="text-[10px] font-bold uppercase tracking-[0.3em] mb-2 opacity-80">Waktu Shalat</span>
-                  <div class="text-5xl font-black tracking-tighter mb-4 drop-shadow-md" id="real-time-clock">--:--:--</div>
+                  <span class="text-sm font-bold uppercase tracking-[0.3em] mb-2 opacity-80">Waktu Shalat</span>
+                  <div class="text-4xl font-black tracking-tighter mb-4 drop-shadow-md" id="real-time-clock">--:--:--</div>
                   <div class="inline-flex items-center gap-2 border border-white/30 px-4 py-1.5 rounded-lg text-[10px] font-bold mb-8 bg-black/10 uppercase tracking-widest">Banyumas ▼</div>
                   <div class="grid grid-cols-5 gap-1 w-full text-[9px] font-bold text-center">
                      <div class="flex flex-col gap-1"><span>Subuh</span><span class="text-white/60" id="sholat-subuh">--:--</span></div>
@@ -225,6 +225,7 @@ const shareLinks = [
             </div>
           </div>
         </aside>
+
       </div>
     </div>
   </main>
@@ -232,9 +233,8 @@ const shareLinks = [
 
 <script is:inline>
   async function fetchPrayTimes() {
-    const now = new Date();
     try {
-      const res = await fetch(`https://api.myquran.com/v2/sholat/jadwal/1402/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`);
+      const res = await fetch(`https://api.myquran.com/v2/sholat/jadwal/1402/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${String(new Date().getDate()).padStart(2, '0')}`);
       const json = await res.json();
       const j = json.data.jadwal;
       document.getElementById('sholat-subuh').innerText = j.subuh;
@@ -242,14 +242,12 @@ const shareLinks = [
       document.getElementById('sholat-ashar').innerText = j.ashar;
       document.getElementById('sholat-maghrib').innerText = j.maghrib;
       document.getElementById('sholat-isya').innerText = j.isya;
-    } catch (e) { console.error("Prayer API error"); }
+    } catch (e) {}
   }
-  function updateClock() {
-    const clock = document.getElementById('real-time-clock');
-    if (clock) clock.innerText = new Date().toLocaleTimeString('id-ID', { hour12: false });
-  }
-  setInterval(updateClock, 1000);
-  updateClock();
+  setInterval(() => { 
+    if(document.getElementById('real-time-clock'))
+    document.getElementById('real-time-clock').innerText = new Date().toLocaleTimeString('id-ID', { hour12: false }); 
+  }, 1000);
   fetchPrayTimes();
   document.getElementById('copy-link-btn')?.addEventListener('click', function() { navigator.clipboard.writeText(window.location.href); });
 </script>
@@ -257,15 +255,17 @@ const shareLinks = [
 <style is:global>
   .section { padding: 0 !important; }
   
-  /* FORCE FULL WIDTH: Menghancurkan batas lebar Tailwind Prose */
+  /* FIXED: Paksa lebar 100% dan Rata Kiri */
   .content { 
-    max-width: 100% !important; 
+    max-width: none !important; 
     width: 100% !important;
   }
+  
   .content p, .content ul, .content ol, .content blockquote, .content h2, .content h3 { 
     max-width: 100% !important; 
     width: 100% !important;
-    @apply mb-8 text-lg leading-[1.9] text-dark/80 dark:text-white/70 font-sans text-justify; 
+    text-align: left !important; /* RATA KIRI, BOS! */
+    @apply mb-8 text-lg leading-[1.9] text-dark/80 dark:text-white/70 font-sans; 
   }
   
   .content h2 { @apply text-2xl md:text-3xl font-black uppercase mt-16 mb-8 text-[#0b1c3c] dark:text-teal-400 tracking-tight leading-tight border-b-4 border-primary pb-2 block break-words; }
