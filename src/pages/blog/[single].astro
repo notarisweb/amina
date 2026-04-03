@@ -4,9 +4,8 @@ import Base from "@/layouts/Base.astro";
 import dateFormat from "@/lib/utils/dateFormat";
 import { slugify } from "@/lib/utils/textConverter";
 import { 
-  BiCalendarEdit, BiUserCircle, BiChevronRight, BiShareAlt, 
-  BiTimeFive, BiListUl, BiShow, BiCopy, BiCheck, 
-  BiHeart, BiRightArrowAlt
+  BiChevronRight, BiListUl, BiCopy, BiCheck, 
+  BiHeart, BiRightArrowAlt, BiTimeFive
 } from "react-icons/bi";
 import { FaFacebookF, FaWhatsapp, FaTelegramPlane } from "react-icons/fa";
 
@@ -23,19 +22,13 @@ export async function getStaticPaths() {
       query GetStaticBuildData {
         posts(first: 1000) { 
           nodes {
-            slug
-            title
-            content
-            date
-            excerpt
+            slug title content date excerpt
             author { node { name } }
             categories { nodes { name slug } }
             featuredImage { node { sourceUrl } }
           }
         }
-        categories(first: 30) { 
-          nodes { name slug count }
-        }
+        categories(first: 30) { nodes { name slug count } }
       }
     `,
   };
@@ -65,7 +58,6 @@ const { post, allPosts, sidebarCategories } = Astro.props;
 const currentUrl = Astro.url;
 const donationUrl = "https://bdp.amina.or.id/#donasi"; 
 
-// RELATED POSTS LOGIC
 const primaryCategory = post.categories?.nodes?.[0]?.name || "Berita";
 const relatedPosts = allPosts
   .filter(p => p.slug !== post.slug && p.categories?.nodes.some(cat => cat.name === primaryCategory))
@@ -136,14 +128,14 @@ const shareLinks = [
           {post.featuredImage?.node?.sourceUrl && (
             <figure class="mb-8">
               <div class="overflow-hidden bg-gray-50 border border-gray-100 dark:border-white/5 shadow-lg">
-                <Image src={post.featuredImage.node.sourceUrl} width={1200} height={675} format="webp" loading="eager" class="w-full h-auto object-cover rounded-none" alt={post.title || "Featured Image Amina Media"} />
+                <Image src={post.featuredImage.node.sourceUrl} width={1200} height={675} format="webp" loading="eager" class="w-full h-auto object-cover rounded-none" alt={post.title || "Featured Image"} />
               </div>
             </figure>
           )}
 
           {toc.length > 0 && (
-            <div class="mb-12 bg-gray-50/50 dark:bg-white/5 border-l-4 border-primary p-6 shadow-sm">
-              <h2 class="text-[10px] font-black mb-4 text-dark/50 dark:text-white/40 flex items-center tracking-[0.3em] uppercase border-none">
+            <div class="mb-12 bg-gray-50/50 dark:bg-white/5 border-l-4 border-primary p-6 md:p-8 shadow-sm">
+              <h2 class="text-[10px] font-black mb-6 text-dark/50 dark:text-white/40 flex items-center tracking-[0.3em] uppercase border-none">
                 <BiListUl className="mr-2 h-4 w-4 text-primary" /> Daftar Isi
               </h2>
               <nav class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
@@ -158,26 +150,23 @@ const shareLinks = [
 
           <article class="content prose prose-lg md:prose-xl max-w-none text-dark/90 dark:text-white/80 leading-[1.9] mb-16" set:html={contentWithIds} />
 
-          <div class="bg-gradient-to-r from-orange-50 to-white dark:from-white/5 dark:to-dark border border-orange-100 dark:border-white/10 p-6 md:p-10 rounded-xl shadow-xl relative overflow-hidden mb-24 transition-all">
+          <div class="bg-white dark:bg-white/5 border-2 border-primary/20 p-6 md:p-10 rounded-none shadow-xl relative overflow-hidden mb-24 transition-all group/donasi">
             <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
                <div class="flex-1 text-center md:text-left">
-                  <div class="inline-flex items-center gap-2 mb-3">
-                     <BiHeart className="text-orange-600 h-4 w-4 animate-pulse" />
-                     <span class="text-[10px] font-black uppercase tracking-[0.3em] text-orange-600">Infaq & Sedekah</span>
+                  <div class="inline-flex items-center gap-2 mb-3 bg-primary/10 px-3 py-1 rounded-none">
+                     <BiHeart className="text-primary h-4 w-4 animate-pulse" />
+                     <span class="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Solidaritas Ummat</span>
                   </div>
-                  <h2 class="text-2xl font-black mb-2 leading-tight uppercase tracking-tight text-[#0b1c3c] dark:text-orange-400 border-none">Jadilah Wasilah Kebaikan</h2>
-                  <p class="text-dark/60 dark:text-white/50 text-sm font-medium leading-relaxed italic">
-                    Dukungan Anda menggerakkan misi kemanusiaan dan dakwah Amina Media. Jadikan harta Anda saksi abadi di akhirat kelak.
+                  <h2 class="text-2xl md:text-3xl font-black mb-2 leading-tight uppercase tracking-tight text-[#0b1c3c] dark:text-white border-none">Jadilah Wasilah Kebaikan</h2>
+                  <p class="text-dark/60 dark:text-white/50 text-sm md:text-base font-medium leading-relaxed italic">
+                    Dukungan Anda menggerakkan misi kemanusiaan dan dakwah Amina Media. Jadikan harta Anda saksi abadi kebaikan di akhirat kelak.
                   </p>
                </div>
                <div class="shrink-0">
-                  <a href={donationUrl} target="_blank" class="inline-flex items-center bg-orange-600 hover:bg-[#0b1c3c] text-white font-black uppercase tracking-widest py-3 px-8 rounded-full text-[11px] transition-all shadow-lg hover:scale-105 group">
-                    Donasi Sekarang <BiRightArrowAlt className="ml-2 h-4 w-4 group-hover:translate-x-1 transition" />
+                  <a href={donationUrl} target="_blank" class="inline-flex items-center bg-[#0b1c3c] dark:bg-primary hover:bg-orange-600 text-white font-black uppercase tracking-widest py-3.5 px-8 rounded-none text-[11px] transition-all shadow-lg hover:scale-105">
+                    Donasi Sekarang <BiRightArrowAlt className="ml-2 h-5 w-5" />
                   </a>
                </div>
-            </div>
-            <div class="absolute -right-4 -bottom-4 opacity-5 pointer-events-none">
-                <BiHeart className="w-32 h-32 text-orange-600" />
             </div>
           </div>
 
@@ -189,13 +178,8 @@ const shareLinks = [
               <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
                 {relatedPosts.map((rp) => (
                   <a href={`/blog/${rp.slug}`} class="group flex flex-col h-full">
-                    <div class="aspect-[4/3] overflow-hidden bg-gray-50 border border-gray-100 dark:border-white/5 mb-4">
-                      <Image 
-                        src={rp.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} 
-                        width={400} height={300} 
-                        class="w-full h-full object-cover group-hover:scale-110 transition duration-700 rounded-none shadow-md" 
-                        alt={rp.title || "Related Image"} 
-                      />
+                    <div class="aspect-video overflow-hidden bg-gray-50 border border-gray-100 dark:border-white/5 mb-4 shadow-sm">
+                      <Image src={rp.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} width={400} height={225} class="w-full h-full object-cover group-hover:scale-110 transition duration-700" alt={rp.title} />
                     </div>
                     <h3 class="text-[14px] font-black leading-snug text-dark dark:text-white group-hover:text-primary transition line-clamp-3 tracking-tight">{rp.title}</h3>
                   </a>
@@ -207,18 +191,12 @@ const shareLinks = [
 
         <aside class="w-full lg:w-[32%]">
           <div class="sticky top-28 space-y-16">
-            
             <div class="prayer-widget p-6 text-white relative overflow-hidden shadow-2xl bg-[#008800] rounded-xl border-b-4 border-green-900">
                <div class="absolute inset-0 opacity-10" style="background-image: url('data:image/svg+xml,%3Csvg width=\"40\" height=\"40\" viewBox=\"0 0 40 40\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M20 0l2 8 8 2-8 2-2 8-2-8-8-2 8-2z\" fill=\"%23ffffff\" fill-opacity=\"1\" fill-rule=\"evenodd\"/%3E%3C/svg%3E');"></div>
-               
                <div class="relative z-10 flex flex-col items-center">
-                  <span class="text-lg font-medium mb-3">Waktu Shalat</span>
+                  <span class="text-sm font-bold uppercase tracking-[0.3em] mb-2 opacity-80">Waktu Shalat</span>
                   <div class="text-4xl font-black tracking-tighter mb-4 drop-shadow-md" id="real-time-clock">--:--:--</div>
-                  
-                  <div class="inline-flex items-center gap-2 border border-white/30 px-4 py-1.5 rounded-lg text-[10px] font-bold mb-8 bg-black/10 uppercase tracking-widest">
-                    Banyumas ▼
-                  </div>
-                  
+                  <div class="inline-flex items-center gap-2 border border-white/30 px-4 py-1.5 rounded-lg text-[10px] font-bold mb-8 bg-black/10 uppercase tracking-widest">Banyumas ▼</div>
                   <div class="grid grid-cols-5 gap-1 w-full text-[9px] font-bold text-center">
                      <div class="flex flex-col gap-1"><span>Subuh</span><span class="text-white/60" id="sholat-subuh">--:--</span></div>
                      <div class="flex flex-col gap-1"><span>Zhuhur</span><span class="text-white/60" id="sholat-dzuhur">--:--</span></div>
@@ -228,14 +206,13 @@ const shareLinks = [
                   </div>
                </div>
             </div>
-
             <div>
               <h2 class="text-xs font-black text-dark dark:text-white mb-8 flex items-center uppercase tracking-[0.4em] border-l-4 border-orange-600 pl-4">BERITA TERBARU</h2>
               <ul class="divide-y divide-gray-100 dark:divide-white/5">
                 {popularPosts.map((p: any) => (
                   <li class="py-5 first:pt-0 group border-none">
                     <a href={`/blog/${p.slug}`} class="flex gap-4 items-start">
-                      <div class="w-20 h-14 shrink-0 overflow-hidden bg-gray-50 border border-gray-100 dark:border-white/5 shadow-sm">
+                      <div class="w-20 h-14 shrink-0 overflow-hidden bg-gray-50 border border-gray-100 dark:border-white/5">
                         <img src={p.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} class="w-full h-full object-cover group-hover:scale-110 transition duration-500" alt={p.title} />
                       </div>
                       <div class="flex-1">
@@ -249,7 +226,6 @@ const shareLinks = [
             </div>
           </div>
         </aside>
-
       </div>
     </div>
   </main>
@@ -268,44 +244,23 @@ const shareLinks = [
       document.getElementById('sholat-isya').innerText = j.isya;
     } catch (e) {}
   }
-
-  function updateClock() {
-    if (document.getElementById('real-time-clock')) {
-        document.getElementById('real-time-clock').innerText = new Date().toLocaleTimeString('id-ID', { hour12: false });
-    }
-  }
-
-  setInterval(updateClock, 1000);
-  updateClock();
+  setInterval(() => { document.getElementById('real-time-clock').innerText = new Date().toLocaleTimeString('id-ID', { hour12: false }); }, 1000);
   fetchPrayTimes();
-
-  document.getElementById('copy-link-btn')?.addEventListener('click', function() {
-    navigator.clipboard.writeText(window.location.href);
-    const iconCopy = document.getElementById('icon-copy');
-    const iconCheck = document.getElementById('icon-check');
-    iconCopy.classList.add('hidden'); iconCheck.classList.remove('hidden');
-    setTimeout(() => { iconCopy.classList.remove('hidden'); iconCheck.classList.add('hidden'); }, 2000);
-  });
-
-  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-      e.preventDefault();
-      const target = document.querySelector(this.getAttribute('href'));
-      if (target) window.scrollTo({ top: target.offsetTop - 120, behavior: 'smooth' });
-    });
-  });
+  document.getElementById('copy-link-btn')?.addEventListener('click', function() { navigator.clipboard.writeText(window.location.href); });
 </script>
 
 <style is:global>
   .section { padding: 0 !important; }
-  .content p { @apply mb-8 text-lg leading-[1.8] text-dark/80 dark:text-white/70 font-sans; }
   
-  .content h2 { 
-    @apply text-2xl md:text-3xl font-black uppercase mt-16 mb-8 text-[#0b1c3c] dark:text-teal-400 tracking-tight leading-tight border-b-4 border-primary pb-2 max-w-full block break-words; 
+  /* WIDTH FIX: Paragraf sekarang sama panjangnya dengan gambar */
+  .content { @apply max-w-none; }
+  .content p, .content ul, .content ol, .content blockquote { 
+    @apply max-w-full mb-8 text-lg leading-[1.8] text-dark/80 dark:text-white/70 font-sans; 
   }
   
+  .content h2 { @apply text-2xl md:text-3xl font-black uppercase mt-16 mb-8 text-[#0b1c3c] dark:text-teal-400 tracking-tight leading-tight border-b-4 border-primary pb-2 max-w-full block break-words; }
   .content h3 { @apply text-xl md:text-2xl font-black uppercase mt-12 mb-6 text-dark dark:text-white tracking-tight break-words; }
   .content blockquote { @apply border-l-8 border-primary pl-8 py-4 italic text-2xl font-black text-[#0b1c3c] dark:text-white my-14 bg-gray-50 dark:bg-white/5 rounded-none pr-6; }
-  .content img { @apply rounded-none my-12 shadow-xl mx-auto h-auto border border-gray-100 dark:border-white/5; }
+  .content img { @apply rounded-none my-12 shadow-xl mx-auto h-auto border border-gray-100 dark:border-white/5 w-full; }
   .content a { @apply text-primary font-bold underline decoration-2 underline-offset-4 hover:text-orange-600 transition; }
 </style>
