@@ -81,10 +81,8 @@ const shareLinks = [
   { name: 'Telegram', icon: FaTelegramPlane, color: '#0088cc', url: `https://t.me/share/url?url=${currentUrl}&text=${post.title}` },
 ];
 
-// Time Formatting
 const postTime = new Date(post.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + " WIB";
 
-// SEO Schema
 const breadcrumbSchema = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
@@ -118,13 +116,13 @@ const breadcrumbSchema = {
         
         <div class="w-full lg:w-[65%]">
           <header class="mb-10">
-            <h1 set:html={post.title} class="text-4xl md:text-6xl font-black leading-[1.1] mb-10 text-[#0b1c3c] dark:text-white tracking-tighter" />
+            <h1 set:html={post.title} class="text-4xl md:text-5xl lg:text-6xl font-black leading-[1.1] mb-10 text-slate-800 dark:text-white tracking-tighter" />
             
             <div class="flex flex-wrap items-center justify-between gap-6 py-6 border-y border-gray-100 dark:border-white/5 mb-12">
                <div class="flex items-center gap-3">
                   <div class="text-primary text-5xl opacity-80"><BiUserCircle /></div>
                   <div class="flex flex-col">
-                     <span class="text-[12px] font-black text-[#0b1c3c] dark:text-gray-300 uppercase tracking-widest leading-none mb-1.5">{post.author?.node?.name}</span>
+                     <span class="text-[12px] font-black text-slate-800 dark:text-gray-300 uppercase tracking-widest leading-none mb-1.5">{post.author?.node?.name}</span>
                      <span class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em]">{dateFormat(post.date)} • {postTime}</span>
                   </div>
                </div>
@@ -142,17 +140,24 @@ const breadcrumbSchema = {
           {post.featuredImage?.node?.sourceUrl && (
             <figure class="mb-12">
               <div class="aspect-video overflow-hidden bg-gray-50 border border-gray-100 dark:border-white/5 shadow-2xl">
-                <Image 
-                  src={post.featuredImage.node.sourceUrl} 
-                  width={1280} 
-                  height={720} 
-                  format="webp" 
-                  loading="eager" 
-                  class="w-full h-full object-cover" 
-                  alt={post.title || "Headline Image"} 
-                />
+                <Image src={post.featuredImage.node.sourceUrl} width={1280} height={720} format="webp" loading="eager" class="w-full h-full object-cover" alt={post.title || "Headline Image"} />
               </div>
             </figure>
+          )}
+
+          {toc.length > 0 && (
+            <div class="mb-12 bg-gray-50 dark:bg-white/5 p-6 md:p-8 border-none">
+              <h2 class="text-[11px] font-black mb-6 text-slate-500 dark:text-white/30 flex items-center tracking-[0.4em] uppercase border-none">
+                <BiListUl className="mr-3 h-5 w-5 text-primary" /> DAFTAR ISI
+              </h2>
+              <nav class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
+                {toc.map((item) => (
+                  <a href={`#${item.id}`} class={`text-[14px] transition hover:text-primary leading-tight flex items-start gap-3 ${item.depth === 3 ? 'ml-6 opacity-70' : 'font-bold text-slate-700 dark:text-white/80'}`}>
+                    <span class="text-primary mt-1">▹</span> {item.text}
+                  </a>
+                ))}
+              </nav>
+            </div>
           )}
 
           <article class="content prose prose-lg md:prose-xl max-w-none !w-full text-dark/90 dark:text-white/80 text-left" set:html={contentWithIds} />
@@ -177,13 +182,12 @@ const breadcrumbSchema = {
                     <div class="aspect-video overflow-hidden bg-gray-50 mb-4 shadow-md border border-gray-100 dark:border-white/5">
                       <Image 
                         src={rp.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} 
-                        width={400} 
-                        height={225} 
+                        width={400} height={225} 
                         class="w-full h-full object-cover group-hover:scale-110 transition duration-700" 
                         alt={rp.title || "Related Post"} 
                       />
                     </div>
-                    <h3 class="text-[14px] font-black leading-snug text-[#0b1c3c] dark:text-white group-hover:text-primary transition line-clamp-3">{rp.title}</h3>
+                    <h3 class="text-[14px] font-black leading-snug text-slate-800 dark:text-white group-hover:text-primary transition line-clamp-3">{rp.title}</h3>
                   </a>
                 ))}
               </div>
@@ -206,9 +210,8 @@ const breadcrumbSchema = {
                   <div class="flex flex-col gap-2"><span>ISY</span><span id="sholat-isya">--:--</span></div>
                </div>
             </div>
-
             <div>
-              <h2 class="text-xs font-black text-dark dark:text-white mb-8 flex items-center uppercase tracking-[0.5em] border-l-4 border-orange-600 pl-4">BERITA TERBARU</h2>
+              <h2 class="text-xs font-black text-slate-800 dark:text-white mb-8 flex items-center uppercase tracking-[0.5em] border-l-4 border-orange-600 pl-4">BERITA TERBARU</h2>
               <ul class="divide-y divide-gray-100 dark:divide-white/5">
                 {popularPosts.map((p: any) => (
                   <li class="py-6 first:pt-0 group border-none">
@@ -217,7 +220,7 @@ const breadcrumbSchema = {
                         <img src={p.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} class="w-full h-full object-cover group-hover:scale-110 transition duration-500" alt={p.title || "Latest Post"} />
                       </div>
                       <div class="flex-1">
-                        <h3 class="text-[18px] font-black text-[#0b1c3c] dark:text-white group-hover:text-primary transition leading-tight line-clamp-2">{p.title}</h3>
+                        <h3 class="text-[18px] font-black text-slate-800 dark:text-white group-hover:text-primary transition leading-tight line-clamp-2">{p.title}</h3>
                         <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-2 block">{dateFormat(p.date)}</span>
                       </div>
                     </a>
@@ -269,9 +272,9 @@ const breadcrumbSchema = {
   .prose { max-width: none !important; width: 100% !important; }
   .content p { @apply mb-4 text-lg leading-[1.8] text-dark/80 dark:text-white/70 font-sans text-left !important; }
 
-  /* SMART QUOTE: RAMPING & TANPA GARIS (image_5412a3.png fix) */
+  /* SMART QUOTE: RAMPING & BERSIH (FIXED) */
   .content blockquote { 
-    @apply bg-gray-50/70 dark:bg-white/5 px-10 py-6 italic text-xl md:text-2xl font-medium text-[#0b1c3c] dark:text-white my-4 relative overflow-hidden;
+    @apply bg-gray-50/70 dark:bg-white/5 px-10 py-6 italic text-xl md:text-2xl font-medium text-slate-700 dark:text-white my-4 relative overflow-hidden;
     border: none !important; 
     padding-left: 3.5rem !important;
   }
@@ -280,6 +283,13 @@ const breadcrumbSchema = {
     @apply absolute top-0 left-4 text-7xl text-primary/10 font-serif leading-none select-none;
   }
   
-  .content h2 { @apply text-3xl md:text-4xl font-black uppercase mt-12 mb-4 text-[#0b1c3c] dark:text-white tracking-tight leading-tight block break-words; border: none !important; padding: 0 !important; }
+  /* JUDUL SUB-BAB SOFT SLATE-800 */
+  .content h2 { 
+    @apply text-3xl md:text-4xl font-black uppercase mt-12 mb-4 text-slate-800 dark:text-white tracking-tight leading-tight block break-words; 
+    border: none !important; padding: 0 !important; 
+  }
+  .content h3 { @apply text-2xl md:text-3xl font-black uppercase mt-10 mb-3 text-slate-800 dark:text-white tracking-tight; }
+
   .content img { @apply rounded-none my-6 shadow-xl mx-auto h-auto border border-gray-100 dark:border-white/5 w-full; }
+  .content a { @apply text-primary font-black underline decoration-2 underline-offset-4 hover:text-orange-600 transition-all; }
 </style>
