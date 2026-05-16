@@ -4,115 +4,105 @@ import Social from "@/components/Social.astro";
 import config from "@/config/config.json";
 import menu from "@/config/menu.json";
 import social from "@/config/social.json";
-import { BiMap, BiEnvelope } from "react-icons/bi";
-import { getVisitorStats } from "@/lib/analytics";
+import { BiMap, BiEnvelope, BiRightArrowAlt } from "react-icons/bi";
 
 const footerMenu = menu.footer || [];
-
-let stats = {
-  online: 0,
-  today: 0,
-  total: 0
-};
-
-try {
-  const data = await getVisitorStats();
-  if (data) stats = data;
-} catch (e) {
-  console.log("Analytics error:", e.message);
-}
 ---
 
-<footer class="bg-[#0b1c3c] pt-24 pb-12 text-white/70 relative overflow-hidden border-t border-white/5">
+<footer class="bg-[#fcfaf2] pt-20 pb-10 text-slate-600 relative overflow-hidden border-t border-slate-200">
   
-  <div class="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+  <div class="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent"></div>
 
   <div class="container relative z-10">
     
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-16 text-left">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-16 text-left">
       
       <div class="md:col-span-12 lg:col-span-4">
-        <div class="mb-8 flex justify-start">
+        <div class="mb-6 flex justify-start">
           <Logo />
         </div>
-        <p class="mb-8 text-sm leading-relaxed text-white/50 max-w-sm">
+        <p class="mb-6 text-sm leading-relaxed text-slate-500 max-w-sm">
           Amina (Amal Insan Abadi) berdedikasi menyebarkan syiar Islam dan aksi nyata sosial. 
-          Kami hadir untuk membangun kepedulian dan kemaslahatan ummat melalui informasi yang bermanfaat.
+          Membangun kepedulian ummat melalui informasi yang bermanfaat dan tepercaya.
         </p>
-        <div class="space-y-4 mb-8 text-[13px]">
+        <div class="space-y-3 mb-6 text-[13px]">
           <div class="flex items-start gap-3">
             <BiMap className="text-primary h-5 w-5 shrink-0 mt-0.5"/>
-            <span>Jl. Pahlawan, Purwokerto, Jawa Tengah</span>
+            <span class="text-slate-700 font-medium">Jl. Pahlawan, Purwokerto, Jawa Tengah</span>
           </div>
           <div class="flex items-center gap-3">
             <BiEnvelope className="text-primary h-5 w-5 shrink-0"/>
-            <a href="mailto:admin@amina.or.id" class="hover:text-primary transition">admin@amina.or.id</a>
+            <a href="mailto:admin@amina.or.id" class="text-slate-700 font-medium hover:text-primary transition">admin@amina.or.id</a>
           </div>
         </div>
-        <div class="flex items-center gap-4 mt-6">
+        <div class="flex items-center gap-4 text-slate-800">
           <Social source={social.main} className="flex flex-row gap-4 text-xl hover:text-primary transition" />
         </div>
       </div>
 
       <div class="md:col-span-6 lg:col-span-2">
-        <h4 class="mb-10 text-xs font-black text-white uppercase tracking-[0.3em]">
+        <h4 class="mb-8 text-xs font-black text-slate-900 uppercase tracking-[0.3em]">
           Kategori
         </h4>
-        <ul class="space-y-4 text-[13px] font-bold uppercase">
-          <li><a href="/categories/artikel-islami" class="hover:text-primary transition">Artikel Islami</a></li>
-          <li><a href="/categories/khazanah" class="hover:text-primary transition">Khazanah</a></li>
-          <li><a href="https://onislam.web.id" target="_blank" class="hover:text-primary transition">Media Islam</a></li>
-          <li><a href="/categories/kegiatan-sosial" class="hover:text-primary transition">Kegiatan Sosial</a></li>
+        <ul class="space-y-3 text-[13px] font-bold uppercase">
+          <li><a href="/categories/artikel-islami" class="text-slate-700 hover:text-primary transition">Artikel Islami</a></li>
+          <li><a href="/categories/khazanah" class="text-slate-700 hover:text-primary transition">Khazanah</a></li>
+          <li><a href="https://onislam.web.id" target="_blank" class="text-slate-700 hover:text-primary transition">Media Islam</a></li>
+          <li><a href="/categories/kegiatan-sosial" class="text-slate-700 hover:text-primary transition">Kegiatan Sosial</a></li>
         </ul>
       </div>
 
       <div class="md:col-span-6 lg:col-span-3">
-        <h4 class="mb-10 text-xs font-black text-white uppercase tracking-[0.3em]">
+        <h4 class="mb-8 text-xs font-black text-slate-900 uppercase tracking-[0.3em]">
           Organisasi
         </h4>
-        <ul class="space-y-4 text-[13px] font-bold uppercase">
+        <ul class="space-y-3 text-[13px] font-bold uppercase">
           {footerMenu.map((item) => (
-            <li><a href={item.url} class="hover:text-primary transition">{item.name}</a></li>
+            <li><a href={item.url} class="text-slate-700 hover:text-primary transition">{item.name}</a></li>
           ))}
-          <li><a href="/contact" class="text-primary hover:brightness-125 transition">Hubungi Kami</a></li>
+          <li><a href="/contact" class="text-primary font-black hover:brightness-90 transition">Hubungi Kami</a></li>
         </ul>
       </div>
 
       <div class="md:col-span-12 lg:col-span-3">
-        <h4 class="mb-10 text-xs font-black text-white uppercase tracking-[0.3em]">
-          Live Traffic
+        <h4 class="mb-8 text-xs font-black text-slate-900 uppercase tracking-[0.3em]">
+          Rekening Donasi
         </h4>
-        <div class="bg-white/5 rounded-2xl p-6 border border-white/10 backdrop-blur-sm">
-          <ul class="space-y-5 text-[12px] font-bold">
-            <li class="flex justify-between items-center">
-              <span class="opacity-50 uppercase tracking-wider">Status</span>
-              <span class="flex items-center gap-2 text-green-400">
-                <span class="relative flex h-2 w-2">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                </span>
-                {stats.online} Online
-              </span>
-            </li>
-            <li class="flex justify-between border-t border-white/5 pt-4">
-              <span class="opacity-50 uppercase tracking-wider">Hari Ini</span>
-              <span class="text-white">{stats.today.toLocaleString('id-ID')}</span>
-            </li>
-            <li class="flex justify-between border-t border-white/5 pt-4">
-              <span class="opacity-50 uppercase tracking-wider">Total Hits</span>
-              <span class="text-white font-black text-primary">{stats.total.toLocaleString('id-ID')}</span>
-            </li>
-          </ul>
+        <div class="bg-white p-5 border border-slate-200 relative group hover:border-primary/40 transition-all duration-500 shadow-sm">
+          <div class="space-y-4">
+            <div class="flex flex-col bg-slate-50 p-4 border-l-4 border-primary">
+              <span class="text-[9px] font-black text-primary uppercase tracking-widest mb-1">BANK SYARIAH INDONESIA</span>
+              <span class="text-[18px] font-mono text-slate-900 tracking-tighter font-bold">7 888 99 1012</span>
+              <span class="text-[10px] text-slate-400 uppercase mt-2 font-bold italic">a.n. YAYASAN AMAL INSAN ABADI</span>
+            </div>
+            <a 
+              href="https://bdp.amina.or.id/#donasi" 
+              target="_blank" 
+              class="w-full flex items-center justify-center bg-primary hover:bg-orange-600 text-white py-3 text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-md"
+            >
+              Donasi Sekarang <BiRightArrowAlt className="ml-1 text-xl" />
+            </a>
+          </div>
         </div>
+        <p class="mt-4 text-[10px] text-slate-400 italic leading-relaxed">
+          *Dukungan Anda menggerakkan dakwah dan aksi sosial kami.
+        </p>
       </div>
 
     </div>
 
-    <div class="mt-24 border-t border-white/10 pt-10 text-center">
-      <p class="text-[10px] font-black uppercase tracking-[0.4em] text-white/20">
+    <div class="mt-20 border-t border-slate-200 pt-8 text-center">
+      <p class="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">
         © {new Date().getFullYear()} {config.site.title}. Semua Hak Dilindungi.
       </p>
     </div>
 
   </div>
 </footer>
+
+<style>
+  /* Menghapus semua sisa lengkungan (Border Radius) di area Footer */
+  footer, footer *, footer input, footer button {
+    border-radius: 0 !important;
+  }
+</style>
