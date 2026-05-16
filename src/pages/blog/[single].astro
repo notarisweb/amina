@@ -5,7 +5,7 @@ import dateFormat from "@/lib/utils/dateFormat";
 import { slugify } from "@/lib/utils/textConverter";
 import { 
   BiChevronRight, BiListUl, BiCopy, BiCheck, 
-  BiHeart, BiRightArrowAlt, BiTimeFive
+  BiHeart, BiRightArrowAlt, BiTimeFive, BiUserCircle
 } from "react-icons/bi";
 import { FaFacebookF, FaWhatsapp, FaTelegramPlane } from "react-icons/fa";
 
@@ -42,7 +42,6 @@ export async function getStaticPaths() {
     const rawPosts = result.data?.posts?.nodes || [];
     const allPosts = rawPosts.filter((p: any) => p.slug && p.slug.trim() !== "");
     const sidebarCategories = result.data?.categories?.nodes?.filter((c: any) => c.count > 0) || [];
-
     return allPosts.map((post: any) => ({
       params: { single: post.slug },
       props: { post, allPosts, sidebarCategories },
@@ -78,109 +77,113 @@ toc.forEach((item) => {
 
 const shareLinks = [
   { name: 'Facebook', icon: FaFacebookF, color: '#1877F2', url: `https://www.facebook.com/sharer/sharer.php?u=${currentUrl}` },
-  { name: 'WhatsApp', icon: FaWhatsapp, color: '#25D366', url: `https://api.whatsapp.com/send?text=${post.title} ${currentUrl}` },
+  { name: 'WhatsApp', icon: FaWhatsapp, color: '#25D336', url: `https://api.whatsapp.com/send?text=${post.title} ${currentUrl}` },
   { name: 'Telegram', icon: FaTelegramPlane, color: '#0088cc', url: `https://t.me/share/url?url=${currentUrl}&text=${post.title}` },
 ];
+
+// Time Formatting
+const postTime = new Date(post.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + " WIB";
+
+// SEO Schema
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Home", "item": Astro.site },
+    { "@type": "ListItem", "position": 2, "name": primaryCategory, "item": `${Astro.site}categories/${post.categories?.nodes?.[0]?.slug}` },
+    { "@type": "ListItem", "position": 3, "name": post.title, "item": currentUrl }
+  ]
+};
 ---
 
 <Base title={post.title} description={post.excerpt} image={post.featuredImage?.node?.sourceUrl} articleDate={post.date} articleAuthor={post.author?.node?.name}>
   
-  <div class="bg-white dark:bg-dark border-b border-gray-100 dark:border-white/5 py-4">
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+
+  <div class="py-6 bg-white dark:bg-dark">
     <div class="container">
-      <nav class="flex items-center space-x-2 text-[10px] font-black uppercase tracking-widest text-gray-400">
-        <a href="/" class="hover:text-primary transition">Beranda</a>
-        <BiChevronRight className="opacity-40" />
-        <a href={`/categories/${post.categories?.nodes?.[0]?.slug}`} class="text-primary">{primaryCategory}</a>
+      <nav class="flex items-center text-[11px] font-bold uppercase tracking-wider">
+        <a href="/" class="text-primary hover:underline">Home</a>
+        <BiChevronRight className="mx-2 text-gray-300 h-4 w-4" />
+        <a href={`/categories/${post.categories?.nodes?.[0]?.slug}`} class="text-primary hover:underline">{primaryCategory}</a>
+        <BiChevronRight className="mx-2 text-gray-300 h-4 w-4 hidden md:inline" />
+        <span class="text-gray-400 truncate max-w-[200px] hidden md:inline font-medium tracking-normal normal-case italic">{post.title}</span>
       </nav>
     </div>
   </div>
 
-  <main class="py-12 bg-white dark:bg-dark transition-colors duration-300">
+  <main class="pb-20 bg-white dark:bg-dark">
     <div class="container">
       <div class="flex flex-wrap lg:flex-nowrap gap-16">
         
         <div class="w-full lg:w-[65%]">
           <header class="mb-10">
-            <h1 set:html={post.title} class="text-3xl md:text-5xl lg:text-6xl font-black leading-tight mb-8 text-[#0b1c3c] dark:text-white tracking-tight" />
+            <h1 set:html={post.title} class="text-4xl md:text-6xl font-black leading-[1.1] mb-10 text-[#0b1c3c] dark:text-white tracking-tighter" />
             
-            <div class="flex items-center gap-4 border-l-4 border-primary pl-6 py-1 mb-8">
-               <span class="text-[11px] font-black text-dark/80 dark:text-gray-300 italic">Oleh: {post.author?.node?.name}</span>
-               <span class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">{dateFormat(post.date)}</span>
-            </div>
-
-            <div class="flex items-center gap-3 py-4 border-y border-gray-100 dark:border-white/5 mb-10">
-               {shareLinks.map((item) => (
-                  <a href={item.url} target="_blank" class="w-9 h-9 flex items-center justify-center text-white transition rounded-full shadow-sm hover:scale-110" style={{ backgroundColor: item.color }}><item.icon className="h-4 w-4" /></a>
-               ))}
-               <button id="copy-link-btn" class="w-9 h-9 flex items-center justify-center bg-gray-50 dark:bg-white/10 text-dark/40 dark:text-white/40 transition shadow-sm rounded-full hover:bg-primary hover:text-white">
-                  <BiCopy id="icon-copy" className="h-4 w-4" />
-                  <BiCheck id="icon-check" className="h-4 w-4 hidden" />
-               </button>
+            <div class="flex flex-wrap items-center justify-between gap-6 py-6 border-y border-gray-100 dark:border-white/5 mb-12">
+               <div class="flex items-center gap-3">
+                  <div class="text-primary text-5xl opacity-80"><BiUserCircle /></div>
+                  <div class="flex flex-col">
+                     <span class="text-[12px] font-black text-[#0b1c3c] dark:text-gray-300 uppercase tracking-widest leading-none mb-1.5">{post.author?.node?.name}</span>
+                     <span class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em]">{dateFormat(post.date)} • {postTime}</span>
+                  </div>
+               </div>
+               <div class="flex items-center gap-2.5">
+                  {shareLinks.map((item) => (
+                     <a href={item.url} target="_blank" class="w-9 h-9 flex items-center justify-center text-white transition rounded-full hover:scale-110 shadow-sm" style={{ backgroundColor: item.color }}><item.icon className="h-4 w-4" /></a>
+                  ))}
+                  <button id="copy-link-btn" class="w-9 h-9 flex items-center justify-center bg-gray-50 dark:bg-white/10 text-dark/40 transition rounded-full hover:bg-primary hover:text-white">
+                     <BiCopy id="icon-copy" className="h-4 w-4" /><BiCheck id="icon-check" className="h-4 w-4 hidden" />
+                  </button>
+               </div>
             </div>
           </header>
 
           {post.featuredImage?.node?.sourceUrl && (
-            <figure class="mb-10">
-              <div class="overflow-hidden bg-gray-50 border border-gray-100 dark:border-white/5 shadow-xl rounded-none">
-                <Image src={post.featuredImage.node.sourceUrl} width={1200} height={675} format="webp" loading="eager" class="w-full h-auto object-cover" alt={post.title || "Image"} />
+            <figure class="mb-12">
+              <div class="aspect-video overflow-hidden bg-gray-50 border border-gray-100 dark:border-white/5 shadow-2xl">
+                <Image 
+                  src={post.featuredImage.node.sourceUrl} 
+                  width={1280} 
+                  height={720} 
+                  format="webp" 
+                  loading="eager" 
+                  class="w-full h-full object-cover" 
+                  alt={post.title || "Headline Image"} 
+                />
               </div>
             </figure>
           )}
 
-          {toc.length > 0 && (
-            <div class="mb-14 bg-gray-50 dark:bg-white/5 border-l-4 border-primary p-6 md:p-10 shadow-sm">
-              <h2 class="text-[11px] font-black mb-6 text-dark/50 dark:text-white/40 flex items-center tracking-[0.3em] uppercase border-none">
-                <BiListUl className="mr-3 h-5 w-5 text-primary" /> DAFTAR ISI
-              </h2>
-              <nav class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
-                {toc.map((item) => (
-                  <a href={`#${item.id}`} class={`text-[13px] transition hover:text-primary leading-tight flex items-start gap-2 ${item.depth === 3 ? 'ml-6 opacity-70' : 'font-bold text-dark/80 dark:text-white/80'}`}>
-                    <span class="text-primary mt-1">▹</span> {item.text}
-                  </a>
-                ))}
-              </nav>
-            </div>
-          )}
+          <article class="content prose prose-lg md:prose-xl max-w-none !w-full text-dark/90 dark:text-white/80 text-left" set:html={contentWithIds} />
 
-          <article class="content prose prose-lg md:prose-xl max-w-none !w-full text-dark/90 dark:text-white/80 leading-[1.9] mb-16" set:html={contentWithIds} />
-
-          <div class="bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 p-8 md:p-12 rounded-[2.5rem] shadow-[0_20px_50px_rgba(234,88,12,0.3)] relative overflow-hidden mb-24 text-white">
+          <div class="bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 p-8 md:p-12 rounded-[2.5rem] shadow-2xl relative overflow-hidden my-16 text-white">
             <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
                <div class="flex-1 text-center md:text-left">
-                  <div class="inline-flex items-center gap-2 mb-4 bg-white/20 px-4 py-1.5 rounded-full backdrop-blur-sm">
-                     <BiHeart className="text-white h-4 w-4 animate-ping" />
-                     <span class="text-[10px] font-black uppercase tracking-[0.3em]">Solidaritas Ummat</span>
-                  </div>
-                  <h2 class="text-3xl md:text-4xl font-black mb-4 leading-tight uppercase tracking-tighter border-none text-white">
-                    Jadilah Wasilah <br/> Kebaikan Hari Ini
-                  </h2>
-                  <p class="text-white/90 text-sm md:text-base font-bold leading-relaxed italic opacity-90">
-                    Dukungan Anda adalah energi bagi syiar Islam dan kemanusiaan. Jadikan harta Anda saksi abadi di akhirat kelak.
-                  </p>
+                  <div class="inline-flex items-center gap-2 mb-4 bg-white/20 px-4 py-1.5 rounded-full"><BiHeart className="text-white h-4 w-4 animate-pulse" /><span class="text-[10px] font-black uppercase tracking-[0.3em]">Solidaritas Ummat</span></div>
+                  <h2 class="text-3xl md:text-4xl font-black mb-4 leading-tight uppercase tracking-tighter border-none text-white italic">Wasilah Jariyah</h2>
+                  <p class="text-white text-sm md:text-base font-bold opacity-90 leading-relaxed">Dukungan Anda menggerakkan misi dakwah Amina Media.</p>
                </div>
-               <div class="shrink-0 w-full md:w-auto">
-                  <a href={donationUrl} target="_blank" class="w-full md:w-auto inline-flex items-center justify-center bg-white text-orange-600 font-black uppercase tracking-widest py-4 px-10 rounded-2xl text-[12px] transition-all shadow-2xl hover:scale-105 group">
-                    Donasi Sekarang <BiRightArrowAlt className="ml-2 h-6 w-6 group-hover:translate-x-2 transition" />
-                  </a>
-               </div>
-            </div>
-            <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
-                <BiHeart className="w-64 h-64 text-white" />
+               <div class="shrink-0"><a href={donationUrl} target="_blank" class="inline-flex items-center bg-white text-orange-600 font-black uppercase tracking-widest py-4 px-10 rounded-xl text-[12px] transition-all hover:scale-105 group">Donasi Sekarang <BiRightArrowAlt className="ml-2 h-6 w-6 group-hover:translate-x-2 transition" /></a></div>
             </div>
           </div>
 
           {relatedPosts.length > 0 && (
             <div class="mb-20 pt-10 border-t border-gray-100 dark:border-white/5">
-              <h2 class="text-[11px] font-black text-primary mb-12 flex items-center uppercase tracking-[0.4em]">
-                <span class="w-8 h-[2px] bg-primary mr-4"></span> ARTIKEL TERKAIT
-              </h2>
+              <h2 class="text-[11px] font-black text-primary mb-10 flex items-center uppercase tracking-[0.4em]">ARTIKEL TERKAIT</h2>
               <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
                 {relatedPosts.map((rp) => (
                   <a href={`/blog/${rp.slug}`} class="group flex flex-col h-full">
-                    <div class="aspect-video overflow-hidden bg-gray-50 border border-gray-100 dark:border-white/5 mb-4">
-                      <Image src={rp.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} width={400} height={225} class="w-full h-full object-cover group-hover:scale-110 transition duration-700 rounded-none shadow-md" alt={rp.title} />
+                    <div class="aspect-video overflow-hidden bg-gray-50 mb-4 shadow-md border border-gray-100 dark:border-white/5">
+                      <Image 
+                        src={rp.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} 
+                        width={400} 
+                        height={225} 
+                        class="w-full h-full object-cover group-hover:scale-110 transition duration-700" 
+                        alt={rp.title || "Related Post"} 
+                      />
                     </div>
-                    <h3 class="text-[14px] font-black leading-snug text-dark dark:text-white group-hover:text-primary transition line-clamp-3 tracking-tight">{rp.title}</h3>
+                    <h3 class="text-[14px] font-black leading-snug text-[#0b1c3c] dark:text-white group-hover:text-primary transition line-clamp-3">{rp.title}</h3>
                   </a>
                 ))}
               </div>
@@ -190,33 +193,32 @@ const shareLinks = [
 
         <aside class="w-full lg:w-[32%]">
           <div class="sticky top-28 space-y-16">
-            <div class="prayer-widget p-6 text-white relative overflow-hidden shadow-2xl bg-[#008800] rounded-xl border-b-4 border-green-900">
+            <div class="prayer-widget p-8 text-white relative overflow-hidden shadow-2xl bg-[#008800] rounded-2xl border-b-8 border-green-900 text-center">
                <div class="absolute inset-0 opacity-10" style="background-image: url('data:image/svg+xml,%3Csvg width=\"40\" height=\"40\" viewBox=\"0 0 40 40\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M20 0l2 8 8 2-8 2-2 8-2-8-8-2 8-2z\" fill=\"%23ffffff\" fill-opacity=\"1\" fill-rule=\"evenodd\"/%3E%3C/svg%3E');"></div>
-               <div class="relative z-10 flex flex-col items-center">
-                  <span class="text-sm font-bold uppercase tracking-[0.3em] mb-2 opacity-80">Waktu Shalat</span>
-                  <div class="text-4xl font-black tracking-tighter mb-4 drop-shadow-md" id="real-time-clock">--:--:--</div>
-                  <div class="inline-flex items-center gap-2 border border-white/30 px-4 py-1.5 rounded-lg text-[10px] font-bold mb-8 bg-black/10 uppercase tracking-widest">Banyumas ▼</div>
-                  <div class="grid grid-cols-5 gap-1 w-full text-[9px] font-bold text-center">
-                     <div class="flex flex-col gap-1"><span>Subuh</span><span class="text-white/60" id="sholat-subuh">--:--</span></div>
-                     <div class="flex flex-col gap-1"><span>Zhuhur</span><span class="text-white/60" id="sholat-dzuhur">--:--</span></div>
-                     <div class="flex flex-col gap-1"><span>Ashar</span><span class="text-white/60" id="sholat-ashar">--:--</span></div>
-                     <div class="flex flex-col gap-1"><span>Maghrib</span><span class="text-white/60" id="sholat-maghrib">--:--</span></div>
-                     <div class="flex flex-col gap-1"><span>Isya'</span><span class="text-white/60" id="sholat-isya">--:--</span></div>
-                  </div>
+               <span class="text-[11px] font-black uppercase tracking-[0.4em] mb-2 opacity-60">WAKTU SHALAT</span>
+               <div class="text-6xl font-black tracking-tighter mb-4" id="real-time-clock">--:--</div>
+               <div class="inline-flex items-center gap-2 border-2 border-white/20 px-6 py-1.5 rounded-full text-[10px] font-black mb-8 bg-black/10 tracking-widest uppercase">Banyumas ▼</div>
+               <div class="grid grid-cols-5 gap-2 w-full text-[10px] font-black">
+                  <div class="flex flex-col gap-2"><span>SUB</span><span id="sholat-subuh">--:--</span></div>
+                  <div class="flex flex-col gap-2"><span>ZHU</span><span id="sholat-dzuhur">--:--</span></div>
+                  <div class="flex flex-col gap-2"><span>ASH</span><span id="sholat-ashar">--:--</span></div>
+                  <div class="flex flex-col gap-2"><span>MAG</span><span id="sholat-maghrib">--:--</span></div>
+                  <div class="flex flex-col gap-2"><span>ISY</span><span id="sholat-isya">--:--</span></div>
                </div>
             </div>
+
             <div>
-              <h2 class="text-xs font-black text-dark dark:text-white mb-8 flex items-center uppercase tracking-[0.4em] border-l-4 border-orange-600 pl-4">BERITA TERBARU</h2>
+              <h2 class="text-xs font-black text-dark dark:text-white mb-8 flex items-center uppercase tracking-[0.5em] border-l-4 border-orange-600 pl-4">BERITA TERBARU</h2>
               <ul class="divide-y divide-gray-100 dark:divide-white/5">
                 {popularPosts.map((p: any) => (
-                  <li class="py-5 first:pt-0 group border-none">
+                  <li class="py-6 first:pt-0 group border-none">
                     <a href={`/blog/${p.slug}`} class="flex gap-4 items-start">
-                      <div class="w-20 h-14 shrink-0 overflow-hidden bg-gray-50 border border-gray-100 dark:border-white/5 shadow-sm">
-                        <img src={p.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} class="w-full h-full object-cover group-hover:scale-110 transition duration-500" alt={p.title} />
+                      <div class="w-24 h-16 shrink-0 overflow-hidden bg-gray-50 border border-gray-100 shadow-md">
+                        <img src={p.featuredImage?.node?.sourceUrl || "/images/placeholder.png"} class="w-full h-full object-cover group-hover:scale-110 transition duration-500" alt={p.title || "Latest Post"} />
                       </div>
                       <div class="flex-1">
-                        <h3 class="text-[12px] font-bold text-dark dark:text-white group-hover:text-primary transition leading-snug line-clamp-2 tracking-tight">{p.title}</h3>
-                        <span class="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-2 block">{dateFormat(p.date)}</span>
+                        <h3 class="text-[18px] font-black text-[#0b1c3c] dark:text-white group-hover:text-primary transition leading-tight line-clamp-2">{p.title}</h3>
+                        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-2 block">{dateFormat(p.date)}</span>
                       </div>
                     </a>
                   </li>
@@ -225,7 +227,6 @@ const shareLinks = [
             </div>
           </div>
         </aside>
-
       </div>
     </div>
   </main>
@@ -233,42 +234,52 @@ const shareLinks = [
 
 <script is:inline>
   async function fetchPrayTimes() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
     try {
-      const res = await fetch(`https://api.myquran.com/v2/sholat/jadwal/1402/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${String(new Date().getDate()).padStart(2, '0')}`);
+      const res = await fetch(`https://api.myquran.com/v2/sholat/jadwal/1402/${year}/${month}/${day}`);
       const json = await res.json();
-      const j = json.data.jadwal;
-      document.getElementById('sholat-subuh').innerText = j.subuh;
-      document.getElementById('sholat-dzuhur').innerText = j.dzuhur;
-      document.getElementById('sholat-ashar').innerText = j.ashar;
-      document.getElementById('sholat-maghrib').innerText = j.maghrib;
-      document.getElementById('sholat-isya').innerText = j.isya;
+      if (json.status && json.data) {
+        const j = json.data.jadwal;
+        const ids = ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'];
+        ids.forEach(id => { document.getElementById(`sholat-${id}`).textContent = j[id]; });
+      }
     } catch (e) {}
   }
-  setInterval(() => { 
-    if(document.getElementById('real-time-clock'))
-    document.getElementById('real-time-clock').innerText = new Date().toLocaleTimeString('id-ID', { hour12: false }); 
-  }, 1000);
+  function updateClock() {
+    const clock = document.getElementById('real-time-clock');
+    if (clock) clock.textContent = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
   fetchPrayTimes();
-  document.getElementById('copy-link-btn')?.addEventListener('click', function() { navigator.clipboard.writeText(window.location.href); });
+  document.getElementById('copy-link-btn')?.addEventListener('click', function() { 
+    navigator.clipboard.writeText(window.location.href); 
+    const iconCopy = document.getElementById('icon-copy');
+    const iconCheck = document.getElementById('icon-check');
+    iconCopy.classList.add('hidden'); iconCheck.classList.remove('hidden');
+    setTimeout(() => { iconCopy.classList.remove('hidden'); iconCheck.classList.add('hidden'); }, 2000);
+  });
 </script>
 
 <style is:global>
   .section { padding: 0 !important; }
-  
-  /* FIXED: Paksa lebar 100% dan Rata Kiri */
-  .content { 
-    max-width: none !important; 
-    width: 100% !important;
+  .prose { max-width: none !important; width: 100% !important; }
+  .content p { @apply mb-4 text-lg leading-[1.8] text-dark/80 dark:text-white/70 font-sans text-left !important; }
+
+  /* SMART QUOTE: RAMPING & TANPA GARIS (image_5412a3.png fix) */
+  .content blockquote { 
+    @apply bg-gray-50/70 dark:bg-white/5 px-10 py-6 italic text-xl md:text-2xl font-medium text-[#0b1c3c] dark:text-white my-4 relative overflow-hidden;
+    border: none !important; 
+    padding-left: 3.5rem !important;
+  }
+  .content blockquote::before {
+    content: "“";
+    @apply absolute top-0 left-4 text-7xl text-primary/10 font-serif leading-none select-none;
   }
   
-  .content p, .content ul, .content ol, .content blockquote, .content h2, .content h3 { 
-    max-width: 100% !important; 
-    width: 100% !important;
-    text-align: left !important; /* RATA KIRI, BOS! */
-    @apply mb-8 text-lg leading-[1.9] text-dark/80 dark:text-white/70 font-sans; 
-  }
-  
-  .content h2 { @apply text-2xl md:text-3xl font-black uppercase mt-16 mb-8 text-[#0b1c3c] dark:text-teal-400 tracking-tight leading-tight border-b-4 border-primary pb-2 block break-words; }
-  .content blockquote { @apply border-l-8 border-primary pl-8 py-4 italic text-2xl font-black text-[#0b1c3c] dark:text-white my-14 bg-gray-50 dark:bg-white/5 pr-6; }
-  .content img { @apply rounded-none my-12 shadow-xl mx-auto h-auto border border-gray-100 dark:border-white/5 w-full; }
+  .content h2 { @apply text-3xl md:text-4xl font-black uppercase mt-12 mb-4 text-[#0b1c3c] dark:text-white tracking-tight leading-tight block break-words; border: none !important; padding: 0 !important; }
+  .content img { @apply rounded-none my-6 shadow-xl mx-auto h-auto border border-gray-100 dark:border-white/5 w-full; }
 </style>
