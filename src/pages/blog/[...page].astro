@@ -1,0 +1,153 @@
+---
+import Base from "../../layouts/Base.astro";
+import { BiChevronLeft, BiChevronRight } from "react-icons/bi";
+
+export async function getStaticPaths({ paginate }) {
+  const WP_URL = import.meta.env.PUBLIC_WP_URL;
+  const query = {
+    query: `
+      query GetAllLatestPosts {
+        posts(first: 100, where: { orderby: { field: DATE, order: DESC } }) {
+          nodes {
+            slug
+            title
+            excerpt
+            date
+            categories { nodes { name } }
+            featuredImage { node { sourceUrl } }
+          }
+        }
+      }
+    `,
+  };
+
+  try {
+    const response = await fetch(WP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(query),
+    });
+    const result = await response.json();
+    const allPosts = result.data?.posts?.nodes.map(post => ({
+      slug: post.slug,
+      title: post.title,
+      excerpt: post.excerpt,
+      date: post.date,
+      image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
+      category: post.categories?.nodes?.[0]?.name || "UPDATE"
+    }));
+    
+    return paginate(allPosts, { pageSize: 9 });
+  } catch (e) {
+    return [];
+  }
+}
+
+const { page } = Astro.props;
+const posts = page.data;
+
+const formatTime = (dateStr) => {
+  const postDate = new Date(dateStr);
+  return postDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase();
+};
+
+const pageNumbers = Array.from({ length: page.lastPage }, (_, i) => i + 1);
+const getPageUrl = (num) => num === 1 ? "/blog" : `/blog/${num}`;
+---
+
+<Base title=`Latest Feed - Hal ${page.currentPage} | Amina Media`>
+  <section class="bg-white dark:bg-dark py-16 transition-colors duration-300">
+    
+    <div class="container mx-auto px-6 lg:max-w-[1200px]">
+      
+      <div class="mb-24 border-l-[12px] border-orange-600 pl-8 py-2 text-left">
+        <h1 class="text-5xl md:text-7xl font-black text-slate-800 dark:text-white uppercase tracking-tighter leading-none">
+          Latest Feed
+        </h1>
+        <p class="text-slate-400 font-bold uppercase tracking-[0.4em] text-[10px] mt-4">
+           HALAMAN {page.currentPage} DARI {page.lastPage}
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-48">
+        {posts.map((p) => (
+          <a href={`/blog/${p.slug}`} class="group flex flex-col transition-all text-left">
+            
+            <div class="w-full aspect-video overflow-hidden bg-gray-50 mb-10 relative shadow-sm border border-gray-100 dark:border-white/5">
+              <img 
+                src={p.image} 
+                class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" 
+                alt={p.title} 
+                loading="lazy"
+              />
+            </div>
+
+            <div class="flex items-center gap-2 mb-4 text-[10px] font-black tracking-widest uppercase">
+              <span class="text-orange-600">{p.category}</span>
+              <span class="text-gray-300 dark:text-gray-700">|</span>
+              <span class="text-gray-400 dark:text-gray-500">{formatTime(p.date)}</span>
+            </div>
+
+            <h3 class="text-lg md:text-xl font-black leading-tight text-slate-800 dark:text-gray-100 group-hover:text-orange-600 transition-colors mb-4 tracking-tighter line-clamp-2 uppercase">
+              {p.title}
+            </h3>
+
+            <div class="text-[13px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed opacity-90 font-medium" set:html={p.excerpt} />
+          </a>
+        ))}
+      </div>
+
+      {page.lastPage > 1 && (
+        <nav class="flex flex-wrap items-center justify-center mt-40 py-12 border-t-2 border-gray-100 dark:border-white/5 gap-3">
+          {page.url.prev ? (
+            <a href={page.url.prev} class="w-12 h-12 flex items-center justify-center bg-slate-100 text-slate-800 hover:bg-slate-800 hover:text-white transition-all shadow-sm">
+              <BiChevronLeft className="text-2xl" />
+            </a>
+          ) : (
+            <div class="w-12 h-12 flex items-center justify-center bg-gray-50 text-gray-200 cursor-not-allowed">
+              <BiChevronLeft className="text-2xl" />
+            </div>
+          )}
+
+          {pageNumbers.map((num) => (
+            <a 
+              href={getPageUrl(num)} 
+              class={`w-12 h-12 flex items-center justify-center text-[13px] font-black transition-all border ${
+                page.currentPage === num 
+                ? "bg-orange-600 border-orange-600 text-white shadow-orange-100" 
+                : "bg-white border-slate-100 text-slate-800 hover:bg-slate-800 hover:text-white"
+              }`}
+            >
+              {num}
+            </a>
+          ))}
+
+          {page.url.next ? (
+            <a href={page.url.next} class="w-12 h-12 flex items-center justify-center bg-slate-100 text-slate-800 hover:bg-slate-800 hover:text-white transition-all shadow-sm">
+              <BiChevronRight className="text-2xl" />
+            </a>
+          ) : (
+            <div class="w-12 h-12 flex items-center justify-center bg-gray-50 text-gray-200 cursor-not-allowed">
+              <BiChevronRight className="text-2xl" />
+            </div>
+          )}
+        </nav>
+      )}
+
+    </div>
+  </section>
+</Base>
+
+<style is:global>
+  /* JANGAN KASIH AMPUN - RADIUS HARUS NOL SESUAI STANDAR BOS */
+  h1, div, section, a, img, nav, span {
+    border-radius: 0 !important;
+  }
+  
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>
