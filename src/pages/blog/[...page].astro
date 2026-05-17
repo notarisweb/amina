@@ -56,11 +56,11 @@ const getPageUrl = (num) => num === 1 ? "/blog" : `/blog/${num}`;
 ---
 
 <Base title=`Latest Feed - Hal ${page.currentPage} | Amina Media`>
-  <section class="bg-white dark:bg-dark py-16 transition-colors duration-300">
+  <section class="bg-white dark:bg-dark py-12 transition-colors duration-300">
     
     <div class="container mx-auto px-6 lg:max-w-[1200px]">
       
-      <div class="mb-24 border-l-[12px] border-orange-600 pl-8 py-2 text-left">
+      <div class="mb-16 border-l-[12px] border-orange-600 pl-8 py-2 text-left">
         <h1 class="text-5xl md:text-7xl font-black text-slate-800 dark:text-white uppercase tracking-tighter leading-none">
           Latest Feed
         </h1>
@@ -69,11 +69,11 @@ const getPageUrl = (num) => num === 1 ? "/blog" : `/blog/${num}`;
         </p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-48">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-16">
         {posts.map((p) => (
           <a href={`/blog/${p.slug}`} class="group flex flex-col transition-all text-left">
             
-            <div class="w-full aspect-video overflow-hidden bg-gray-50 mb-10 relative shadow-sm border border-gray-100 dark:border-white/5">
+            <div class="w-full aspect-video overflow-hidden bg-gray-50 mb-6 relative shadow-sm border border-gray-100 dark:border-white/5">
               <img 
                 src={p.image} 
                 class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" 
@@ -82,13 +82,13 @@ const getPageUrl = (num) => num === 1 ? "/blog" : `/blog/${num}`;
               />
             </div>
 
-            <div class="flex items-center gap-2 mb-4 text-[10px] font-black tracking-widest uppercase">
+            <div class="flex items-center gap-2 mb-3 text-[10px] font-black tracking-widest uppercase">
               <span class="text-orange-600">{p.category}</span>
               <span class="text-gray-300 dark:text-gray-700">|</span>
               <span class="text-gray-400 dark:text-gray-500">{formatTime(p.date)}</span>
             </div>
 
-            <h3 class="text-lg md:text-xl font-black leading-tight text-slate-800 dark:text-gray-100 group-hover:text-orange-600 transition-colors mb-4 tracking-tighter line-clamp-2 uppercase">
+            <h3 class="text-lg md:text-xl font-black leading-tight text-slate-800 dark:text-gray-100 group-hover:text-orange-600 transition-colors mb-3 tracking-tighter line-clamp-2 uppercase">
               {p.title}
             </h3>
 
@@ -98,7 +98,7 @@ const getPageUrl = (num) => num === 1 ? "/blog" : `/blog/${num}`;
       </div>
 
       {page.lastPage > 1 && (
-        <nav class="flex flex-wrap items-center justify-center mt-40 py-12 border-t-2 border-gray-100 dark:border-white/5 gap-3">
+        <nav class="flex flex-wrap items-center justify-center mt-20 py-12 border-t-2 border-gray-100 dark:border-white/5 gap-3">
           {page.url.prev ? (
             <a href={page.url.prev} class="w-12 h-12 flex items-center justify-center bg-slate-100 text-slate-800 hover:bg-slate-800 hover:text-white transition-all shadow-sm">
               <BiChevronLeft className="text-2xl" />
@@ -139,7 +139,7 @@ const getPageUrl = (num) => num === 1 ? "/blog" : `/blog/${num}`;
 </Base>
 
 <style is:global>
-  /* JANGAN KASIH AMPUN - RADIUS HARUS NOL SESUAI STANDAR BOS */
+  /* JANGAN KASIH AMPUN - RADIUS HARUS NOL */
   h1, div, section, a, img, nav, span {
     border-radius: 0 !important;
   }
