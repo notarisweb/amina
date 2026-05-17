@@ -5,20 +5,20 @@ import { markdownify } from "@/lib/utils/textConverter";
 import { render } from "astro:content";
 import TrendingTicker from "@/components/homepage/TrendingTicker.astro";
 
-// 1. WAJIB UNTUK SSG: Pastikan halaman di-generate saat build
+// 1. SSG ENABLED
 export const prerender = true;
 
 export async function getStaticPaths() {
   const WP_URL = import.meta.env.PUBLIC_WP_URL;
   
-  // 1. Ambil Halaman Lokal (About, Contact, dll)
+  // Ambil Halaman Lokal (About, etc)
   const localPages = await getSinglePage("pages");
   const localPaths = localPages.map((page) => ({
     params: { regular: page.slug },
     props: { page, isWordPress: false },
   }));
 
-  // 2. Query GraphQL: Ambil Posts & Pages dari WordPress
+  // Ambil Pages & Posts dari WordPress
   const query = {
     query: `
       query GetAllStaticPaths {
@@ -29,11 +29,7 @@ export async function getStaticPaths() {
             content
             date
             excerpt
-            featuredImage {
-              node {
-                sourceUrl
-              }
-            }
+            featuredImage { node { sourceUrl } }
           }
         }
         pages(first: 50) {
@@ -58,9 +54,8 @@ export async function getStaticPaths() {
     const result = await res.json();
     const wpPosts = result.data?.posts?.nodes || [];
     const wpPages = result.data?.pages?.nodes || [];
-    const allWP = [...wpPosts, ...wpPages];
-
-    wpPaths = allWP.map((node: any) => ({
+    
+    wpPaths = [...wpPosts, ...wpPages].map((node: any) => ({
       params: { regular: node.slug },
       props: { 
         isWordPress: true, 
@@ -74,10 +69,9 @@ export async function getStaticPaths() {
       },
     }));
   } catch (e) {
-    console.error("❌ Gagal fetch GraphQL di [regular]:", e.message);
+    console.error("❌ Gagal fetch GraphQL:", e);
   }
 
-  // Gabungkan semua jalan
   return [...localPaths, ...wpPaths];
 }
 
@@ -90,7 +84,7 @@ if (!isWordPress && page) {
   Content = rendered.Content;
 }
 
-// Fetch Ticker (Static)
+// Fetch Ticker Data
 const WP_URL = import.meta.env.PUBLIC_WP_URL;
 let tickerPosts = [];
 try {
@@ -116,29 +110,33 @@ const title = isWordPress ? wpData.title : page.data.title;
 >
   <TrendingTicker posts={tickerPosts} />
 
-  <main class="py-16 bg-white dark:bg-dark transition-colors duration-300 min-h-[70vh]">
-    <div class="container">
+  <main class="py-20 bg-[#f8fafc] dark:bg-dark transition-colors duration-300 min-h-screen">
+    <div class="container max-w-5xl mx-auto px-6">
       
-      <div class="mb-12 border-b-2 border-gray-100 dark:border-white/10 pb-10">
+      <div class="mb-20">
+        <div class="inline-flex items-center bg-orange-100 dark:bg-orange-600/10 text-orange-600 text-[10px] font-black px-4 py-1.5 rounded-full uppercase mb-8 tracking-[0.2em] border border-orange-200 dark:border-orange-600/20">
+          Amina Official Page
+        </div>
+
         <h1 
           set:html={isWordPress ? title : markdownify(title)} 
-          class="text-4xl md:text-6xl font-black text-[#0b1c3c] dark:text-teal-400 tracking-tighter uppercase mb-6 leading-tight" 
+          class="text-5xl md:text-7xl font-black text-slate-900 dark:text-white tracking-tighter uppercase mb-8 leading-[0.9] lg:max-w-4xl" 
         />
         
         {isWordPress && wpData.date && (
-          <div class="flex items-center gap-2 text-[11px] font-black text-gray-400 uppercase tracking-widest italic">
-            <span class="w-8 h-[1px] bg-primary"></span>
-            Amina News Update • {new Date(wpData.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+          <div class="flex items-center gap-4 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
+            <span class="w-12 h-[2px] bg-orange-600 rounded-full"></span>
+            Terbit: {new Date(wpData.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
           </div>
         )}
-        
-        <div class="w-20 h-2 bg-orange-600 rounded-full mt-8"></div>
       </div>
 
-      <div class="max-w-4xl">
-        <article class="content prose prose-lg md:prose-xl dark:prose-invert max-w-none text-dark/80 dark:text-gray-300 leading-[1.8] font-medium transition-colors">
+      <div class="bg-white dark:bg-white/5 p-8 md:p-16 rounded-[3rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-white dark:border-white/5 relative overflow-hidden">
+        <div class="absolute -top-24 -right-24 w-96 h-96 bg-orange-600/5 rounded-full blur-3xl -z-10"></div>
+        
+        <article class="modern-content prose prose-lg md:prose-xl dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-[1.8] font-medium transition-colors">
           {isWordPress ? (
-            <div set:html={wpData.content} />
+            <div class="wp-content-render" set:html={wpData.content} />
           ) : (
             Content && <Content />
           )}
@@ -150,29 +148,46 @@ const title = isWordPress ? wpData.title : page.data.title;
 </Base>
 
 <style is:global>
-  /* Alignment Shield: Hapus padding bawaan yang bikin offside */
-  .section { 
-    padding: 0 !important; 
+  /* RESET & ALIGNMENT */
+  .section { padding: 0 !important; }
+
+  /* MODERN PROSE STYLING */
+  .modern-content img { 
+    @apply rounded-[2.5rem] my-16 shadow-2xl mx-auto h-auto border-8 border-slate-50 dark:border-white/5 transition-transform duration-700 hover:scale-[1.02]; 
   }
   
-  /* WordPress Content Styling: Bikin tampilan artikel Gahar */
-  .content img { 
-    @apply rounded-[2rem] my-12 shadow-2xl mx-auto h-auto border-4 border-white dark:border-white/5; 
-  }
-  
-  .content h2, .content h3 { 
-    @apply text-[#0b1c3c] dark:text-white font-black uppercase mt-16 mb-6 tracking-tighter leading-tight; 
-  }
-  
-  .content p { 
-    @apply mb-8; 
+  .modern-content h2 { 
+    @apply text-slate-900 dark:text-white font-black uppercase mt-20 mb-8 tracking-tighter leading-tight text-3xl md:text-4xl border-l-8 border-orange-600 pl-6; 
   }
 
-  .content a {
-    @apply text-primary font-bold underline decoration-2 underline-offset-4 hover:text-orange-600 transition-all;
+  .modern-content h3 { 
+    @apply text-slate-900 dark:text-white font-black uppercase mt-14 mb-6 tracking-tighter leading-tight text-2xl md:text-3xl; 
+  }
+  
+  .modern-content p { @apply mb-10 text-lg md:text-xl; }
+
+  .modern-content a {
+    @apply text-orange-600 font-bold underline decoration-2 underline-offset-8 hover:bg-orange-600 hover:text-white px-1 py-0.5 transition-all rounded-md;
   }
 
-  .content blockquote {
-    @apply border-l-8 border-primary pl-8 py-6 italic text-2xl font-black text-[#0b1c3c] dark:text-white my-12 bg-gray-50 dark:bg-white/5 rounded-r-3xl pr-6 shadow-sm;
+  .modern-content blockquote {
+    @apply border-none p-10 italic text-2xl font-black text-slate-900 dark:text-white my-16 bg-slate-50 dark:bg-white/5 rounded-[2.5rem] relative overflow-hidden shadow-inner;
   }
+
+  .modern-content blockquote::before {
+    content: '"';
+    @apply absolute -top-4 -left-2 text-9xl text-orange-600 opacity-20 font-serif;
+  }
+
+  /* List Styling */
+  .modern-content ul, .modern-content ol {
+    @apply mb-10 pl-6;
+  }
+  .modern-content li {
+    @apply mb-4 relative pl-2;
+  }
+
+  /* CSS untuk WordPress default classes */
+  .wp-block-image { @apply my-12; }
+  .wp-block-image figcaption { @apply text-center text-sm font-bold uppercase tracking-widest text-slate-400 mt-4; }
 </style>
