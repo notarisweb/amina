@@ -1,0 +1,144 @@
+---
+import config from "@/config/config.json";
+import Base from "@/layouts/Base.astro";
+import Pagination from "@/layouts/components/Pagination.astro";
+import TrendingTicker from "@/components/homepage/TrendingTicker.astro";
+import AuthorSingle from "@/layouts/partials/AuthorSingle.astro";
+import dateFormat from "@/lib/utils/dateFormat";
+import { Image } from "astro:assets";
+
+export const prerender = true;
+
+export async function getStaticPaths({ paginate }) {
+  const WP_URL = import.meta.env.PUBLIC_WP_URL;
+  
+  // 1. Ambil semua data penulis
+  const authorQuery = {
+    query: `query { users(first: 100) { nodes { name slug description avatar { url } } } }`,
+  };
+
+  const authorRes = await fetch(WP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(authorQuery),
+  });
+  const authorData = await authorRes.json();
+  const allAuthors = (authorData.data?.users?.nodes || []).filter((a: any) => a.slug);
+
+  // 2. Loop setiap penulis untuk ambil artikel mereka
+  const allPaths = await Promise.all(
+    allAuthors.map(async (author: any) => {
+      const postQuery = {
+        query: `
+          query GetPostsByAuthor($authorName: String!) {
+            posts(where: {authorName: $authorName}, first: 100) {
+              nodes {
+                title
+                slug
+                date
+                categories { nodes { name } }
+                featuredImage { node { sourceUrl } }
+              }
+            }
+          }
+        `,
+        variables: { authorName: author.name },
+      };
+
+      const postRes = await fetch(WP_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(postQuery),
+      });
+      
+      const postData = await postRes.json();
+      const wpPosts = postData.data?.posts?.nodes || [];
+
+      // Mapping artikel penulis
+      const formattedPosts = wpPosts.map((post: any) => ({
+        slug: post.slug,
+        data: {
+          title: post.title,
+          date: post.date,
+          image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
+          categories: post.categories?.nodes.map((c: any) => c.name) || [],
+        },
+      }));
+
+      // Data profil penulis untuk dikirim ke props
+      const authorInfo = {
+        id: author.slug,
+        slug: author.slug,
+        data: {
+          title: author.name,
+          description: author.description || "Penulis di Amina Media",
+          image: author.avatar?.url || "/images/author-placeholder.png",
+          meta_title: author.name,
+        }
+      };
+
+      // KUNCI VICTORY: Tambahkan params { single: author.slug }
+      // Ini supaya Astro tahu URL-nya adalah /authors/[single]/[page]
+      return paginate(formattedPosts.length > 0 ? formattedPosts : [{ dummy: true }], {
+        params: { single: author.slug }, // HARUS ADA INI!
+        props: { author: authorInfo },
+        pageSize: 9,
+      });
+    })
+  );
+
+  return allPaths.flat();
+}
+
+const { page, author } = Astro.props;
+const posts = page.data.filter(p => !p.dummy); // Buang data pancingan kalau ada
+---
+
+<Base title={`${author.data.title} - Halaman ${page.currentPage}`}>
+  <TrendingTicker posts={[]} />
+
+  <main class="py-16 bg-[#f8fafc] dark:bg-dark min-h-screen">
+    <div class="container max-w-6xl mx-auto px-6">
+      
+      <AuthorSingle author={author} />
+
+      <div class="mt-20">
+        <div class="mb-12 border-l-[12px] border-orange-600 pl-8">
+          <h2 class="text-3xl font-black uppercase tracking-tighter text-slate-800 dark:text-white">
+            Karya {author.data.title}
+          </h2>
+        </div>
+
+        {posts.length > 0 ? (
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+            {posts.map((post: any) => (
+              <div class="bg-white dark:bg-white/5 rounded-[2rem] overflow-hidden shadow-xl border border-slate-100 dark:border-white/5 group">
+                <a href={`/blog/${post.slug}`} class="block aspect-video overflow-hidden">
+                  <img src={post.data.image} class="w-full h-full object-cover group-hover:scale-110 transition duration-700" alt={post.data.title} />
+                </a>
+                <div class="p-8">
+                  <h3 class="font-black text-lg text-slate-800 dark:text-white uppercase line-clamp-2 mb-4">
+                    <a href={`/blog/${post.slug}`}>{post.data.title}</a>
+                  </h3>
+                  <p class="text-[10px] font-black text-orange-600 uppercase tracking-widest">{dateFormat(post.data.date)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p class="text-center py-20 text-slate-400 font-bold uppercase">Belum ada artikel.</p>
+        )}
+
+        {page.lastPage > 1 && (
+          <div class="mt-20 flex justify-center border-t border-slate-100 dark:border-white/5 pt-10">
+            <Pagination 
+              section={`authors/${author.slug}`} 
+              currentPage={page.currentPage} 
+              totalPages={page.lastPage} 
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  </main>
+</Base>

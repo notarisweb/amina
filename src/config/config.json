@@ -27,13 +27,13 @@
   },
 
   "params": {
-    "contact_form_action": "#",
+    "contact_form_action": "https://formspree.io/f/mlgvroyb",
     "copyright": "© 2026 Yayasan Amal Insan Abadi | Developed by [Aris](https://amina.or.id)"
   },
 
   "contactinfo": {
-    "address": "Indonesia",
-    "email": "info@amina.or.id",
-    "phone": "-"
+    "address": "Jl. Pahlawan, Purwokerto Barat, Banyumas, Jawa Tengah, Indonesia.",
+    "email": "admin@amina.or.id",
+    "phone": "0896-9595-6464"
   }
 }

@@ -1,9 +1,7 @@
 ---
-import Authors from "@/components/Authors.astro";
 import config from "@/config/config.json";
 import Base from "@/layouts/Base.astro";
 import Pagination from "@/layouts/components/Pagination.astro";
-// FIX: Import ini yang tadi hilang/lupa dimasukin
 import TrendingTicker from "@/components/homepage/TrendingTicker.astro";
 
 export const prerender = false;
@@ -15,7 +13,6 @@ let tickerPosts = [];
 let totalPages = 1;
 
 try {
-  // Ambil data Penulis & Postingan (untuk Ticker) secara pararel
   const [resUsers, resPosts] = await Promise.all([
     fetch(`${API_BASE}/users?per_page=100`),
     fetch(`${API_BASE}/posts?per_page=10`)
@@ -24,20 +21,12 @@ try {
   const wpAuthors = await resUsers.json();
   const wpPosts = await resPosts.json();
 
-  // Mapping Penulis
   authors = Array.isArray(wpAuthors) ? wpAuthors.map((user: any) => ({
-    id: user.slug,
     slug: user.slug,
-    body: user.description || "",
-    data: {
-      title: user.name || "Penulis",
-      image: user.avatar_urls?.["96"] || "/images/author-placeholder.png",
-      description: user.description || "Kontributor resmi Amina Media",
-      social: [],
-    }
+    name: user.name || "Penulis",
+    image: user.avatar_urls?.["96"] || "/images/author-placeholder.png",
   })) : [];
 
-  // Mapping Ticker
   tickerPosts = Array.isArray(wpPosts) ? wpPosts.map((p: any) => ({
     slug: p.slug,
     data: { title: p.title.rendered }
@@ -55,35 +44,45 @@ const currentAuthors = authors.slice(0, config.settings.pagination);
   
   <TrendingTicker posts={tickerPosts} />
 
-  <main class="py-16 bg-white dark:bg-dark transition-colors duration-300 min-h-[70vh]">
-    <div class="container">
+  <main class="py-20 bg-[#f8fafc] dark:bg-dark transition-colors duration-300 min-h-[80vh]">
+    <div class="container max-w-6xl mx-auto px-6">
       
-      <div class="mb-16 border-b-2 border-gray-100 dark:border-white/10 pb-8">
-        <div class="inline-block bg-orange-600 text-white text-[10px] font-black px-3 py-1 uppercase mb-4 tracking-widest">
+      <div class="text-center mb-24 relative">
+        <div class="inline-flex items-center bg-orange-100 dark:bg-orange-600/10 text-orange-600 text-[11px] font-black px-4 py-1.5 rounded-full uppercase mb-6 tracking-[0.2em] border border-orange-200 dark:border-orange-600/20">
           The Team
         </div>
-        <h1 class="text-4xl md:text-5xl font-black text-[#004d40] dark:text-teal-400 tracking-tighter uppercase mb-4">
-          Para Penulis
+        
+        <h1 class="text-5xl md:text-7xl font-black text-slate-900 dark:text-white tracking-tighter uppercase mb-6 leading-none">
+          Para <span class="text-orange-600">Penulis</span>
         </h1>
-        <p class="text-gray-500 dark:text-gray-400 max-w-2xl font-medium leading-relaxed">
-          Mengenal sosok di balik layar yang mendedikasikan ilmunya untuk syiar Islam di <span class="text-primary font-bold">amina.or.id</span>.
+        
+        <p class="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto font-medium text-lg leading-relaxed">
+          Mengenal sosok inspiratif di balik layar <span class="text-slate-900 dark:text-white font-bold">amina.or.id</span>.
         </p>
       </div>
 
-      <div class="min-h-[40vh]">
+      <div class="relative z-10">
         {currentAuthors.length > 0 ? (
-          <>
-            <Authors authors={currentAuthors} />
-            
-            {totalPages > 1 && (
-              <div class="mt-20 py-10 border-t border-gray-50 dark:border-white/5 flex justify-center">
-                <Pagination section={"authors"} currentPage={1} totalPages={totalPages} />
-              </div>
-            )}
-          </>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {currentAuthors.map((author) => (
+              <a href={`/authors/${author.slug}`} class="author-card group">
+                <div class="avatar-wrapper">
+                  <img src={author.image} alt={author.name} />
+                </div>
+                <h3 class="author-name">{author.name}</h3>
+                <span class="view-profile">Lihat Profil</span>
+              </a>
+            ))}
+          </div>
         ) : (
-          <div class="py-20 text-center bg-gray-50 dark:bg-white/5 rounded-3xl border-2 border-dashed border-gray-100 dark:border-white/10">
-            <p class="text-xl font-bold text-[#0b1c3c] dark:text-white mb-2">Belum ada penulis ditemukan.</p>
+          <div class="py-24 text-center bg-white dark:bg-white/5 rounded-3xl border-2 border-dashed border-slate-200 dark:border-white/10 shadow-sm">
+            <p class="text-slate-500 font-bold uppercase tracking-widest">Belum ada penulis, Bos.</p>
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div class="mt-32 py-12 border-t border-slate-200 dark:border-white/5 flex justify-center">
+            <Pagination section={"authors"} currentPage={1} totalPages={totalPages} />
           </div>
         )}
       </div>
@@ -92,9 +91,87 @@ const currentAuthors = authors.slice(0, config.settings.pagination);
   </main>
 </Base>
 
-<style is:global>
-  /* Menghancurkan padding kaku yang bikin offside */
-  .section {
-    padding: 0 !important;
+<style>
+  /* KARTU PENULIS (VICTORY STYLE) */
+  .author-card {
+    background: white;
+    padding: 3rem 2rem;
+    border-radius: 1.5rem; /* Modern rounded, not radical */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05);
+    border: 1px solid #f1f5f9;
+    text-decoration: none;
+  }
+
+  :global(.dark) .author-card {
+    background: #1e293b;
+    border-color: #334155;
+    box-shadow: none;
+  }
+
+  .author-card:hover {
+    transform: translateY(-8px);
+    border-color: #ea580c;
+    box-shadow: 0 20px 25px -5px rgb(234 88 12 / 0.1);
+  }
+
+  /* AVATAR */
+  .avatar-wrapper {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    border: 4px solid #f8fafc;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    background: #eee;
+  }
+
+  :global(.dark) .avatar-wrapper {
+    border-color: #0f172a;
+  }
+
+  .avatar-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s ease;
+  }
+
+  .author-card:hover img {
+    transform: scale(1.1);
+  }
+
+  /* NAMA PENULIS */
+  .author-name {
+    font-size: 1.125rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: -0.025em;
+  }
+
+  :global(.dark) .author-name {
+    color: white;
+  }
+
+  /* TEXT KECIL DI BAWAH */
+  .view-profile {
+    margin-top: 0.75rem;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+    transition: color 0.3s ease;
+  }
+
+  .author-card:hover .view-profile {
+    color: #ea580c;
   }
 </style>
