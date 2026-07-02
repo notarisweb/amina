@@ -1,13 +1,11 @@
 ---
-import Posts from "@/components/Posts.astro";
+// 1. HAPUS FUNGSI getStaticPaths SEPENUHNYA!
+// 2. Gunakan output hybrid di astro.config.mjs agar ini bisa berjalan sebagai SSR
+export const prerender = false; 
+
 import Base from "@/layouts/Base.astro";
 import { humanize } from "@/lib/utils/textConverter";
-import { BiHash, BiChevronRight } from "react-icons/bi";
 
-// PENTING: Matikan prerender agar build tidak memanggil API WordPress
-export const prerender = false;
-
-// Kita tidak butuh getStaticPaths jika prerender = false
 const { tag } = Astro.params;
 const title = humanize(tag || "");
 ---
@@ -18,10 +16,8 @@ const title = humanize(tag || "");
   </header>
 
   <main class="py-20 min-h-[50vh]">
-    <div class="container">
-      <div id="post-container" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <p class="text-center col-span-full">Memuat artikel dari server...</p>
-      </div>
+    <div class="container" id="post-container">
+      <p class="text-center">Memuat artikel dari server...</p>
     </div>
   </main>
 </Base>
@@ -45,17 +41,18 @@ const title = humanize(tag || "");
       const posts = json.data?.posts?.nodes || [];
       
       if (posts.length > 0) {
-        container.innerHTML = posts.map(p => `
-          <div class="p-4 border rounded-lg">
-            <h2 class="font-bold">${p.title}</h2>
-            <p class="text-sm">${p.excerpt.replace(/<[^>]*>/g, '').substring(0, 100)}...</p>
-          </div>
-        `).join('');
+        container.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-3 gap-6">` + 
+          posts.map(p => `
+            <div class="p-4 border rounded-lg">
+              <h2 class="font-bold">${p.title}</h2>
+              <p class="text-sm">${p.excerpt.replace(/<[^>]*>/g, '').substring(0, 100)}...</p>
+            </div>
+          `).join('') + `</div>`;
       } else {
-        container.innerHTML = '<p class="text-center col-span-full">Belum ada artikel.</p>';
+        container.innerHTML = '<p class="text-center">Belum ada artikel.</p>';
       }
     } catch (e) {
-      container.innerHTML = '<p class="text-center col-span-full">Gagal memuat artikel. Coba lagi nanti.</p>';
+      container.innerHTML = '<p class="text-center">Gagal memuat artikel.</p>';
     }
   }
   loadPosts();
