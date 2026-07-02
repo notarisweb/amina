@@ -1,0 +1,126 @@
+---
+import Posts from "@/components/Posts.astro";
+import Base from "@/layouts/Base.astro";
+import { humanize } from "@/lib/utils/textConverter";
+import TrendingTicker from "@/components/homepage/TrendingTicker.astro";
+import { BiHash, BiChevronRight } from "react-icons/bi";
+
+export async function getStaticPaths() {
+  const WP_URL = import.meta.env.PUBLIC_WP_URL;
+  if (!WP_URL) return [];
+
+  try {
+    // 1. Ambil data tag dan recent posts dalam SATU request saja
+    const initialRes = await fetch(WP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: `query { 
+          tags(first: 50) { nodes { name slug } } 
+          recentPosts: posts(first: 5) { nodes { title slug } } 
+        }`
+      }),
+    });
+
+    const initialData = await initialRes.json();
+    const allTags = initialData.data?.tags?.nodes || [];
+    const wpRecent = initialData.data?.recentPosts?.nodes || [];
+    const tickerPosts = wpRecent.map((p: any) => ({ slug: p.slug, data: { title: p.title } }));
+
+    // 2. Gunakan filter agar build TIDAK CRASH jika satu tag gagal
+    const paths = await Promise.all(
+      allTags.map(async (tag: any) => {
+        try {
+          const postRes = await fetch(WP_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              query: `query GetPostsByTag($tagName: String!) { posts(where: {tag: $tagName}, first: 50) { nodes { title slug excerpt date author { node { name } } categories { nodes { name } } featuredImage { node { sourceUrl } } } } }`,
+              variables: { tagName: tag.name },
+            }),
+          });
+
+          // Validasi ketat: pastikan response adalah JSON, bukan HTML error
+          const contentType = postRes.headers.get("content-type");
+          if (!postRes.ok || !contentType?.includes("application/json")) return null;
+
+          const postData = await postRes.json();
+          const wpPosts = postData.data?.posts?.nodes || [];
+
+          return {
+            params: { tag: tag.slug },
+            props: {
+              tagName: tag.name,
+              posts: wpPosts.map((post: any) => ({
+                id: post.slug,
+                slug: post.slug,
+                body: post.excerpt || "",
+                data: {
+                  title: post.title || "Judul Tidak Tersedia",
+                  description: post.excerpt || "",
+                  date: post.date,
+                  image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
+                  categories: post.categories?.nodes.map((c: any) => c.name) || [],
+                  authors: [post.author?.node?.name || "Admin"],
+                  tags: [tag.name],
+                },
+              })),
+              tickerPosts,
+            },
+          };
+        } catch (e) {
+          return null; // Return null jika satu tag gagal agar Promise.all tidak stop
+        }
+      })
+    );
+
+    // Filter null agar build lanjut
+    return paths.filter(p => p !== null);
+  } catch (e) {
+    console.error("Gagal total mengambil data tag:", e);
+    return [];
+  }
+}
+
+const { tag } = Astro.params;
+const { tagName, posts, tickerPosts } = Astro.props || {};
+const title = humanize(tagName || tag || "");
+---
+
+<Base title={`Topik: #${title} | Amina Media`} description={`Kumpulan artikel terbaru dengan topik #${title} di Amina Media.`}>
+  
+  {tickerPosts && <TrendingTicker posts={tickerPosts} />}
+
+  <header class="bg-[#0b1c3c] py-16 md:py-24 text-white w-full border-t border-white/5 relative overflow-hidden">
+    <div class="container relative z-10">
+      <nav class="flex items-center space-x-2 text-[10px] md:text-[11px] mb-8 text-white/40 font-bold uppercase tracking-[0.2em]">
+        <a href="/" class="hover:text-primary transition">BERANDA</a>
+        <BiChevronRight className="opacity-20" />
+        <a href="/tags" class="hover:text-primary transition">TAGS</a>
+        <BiChevronRight className="opacity-20" />
+        <span class="text-primary italic normal-case font-medium opacity-80">#{title}</span>
+      </nav>
+
+      <div class="max-w-4xl">
+        <div class="inline-flex items-center gap-2 bg-primary/20 text-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-6 border border-primary/20">
+          <BiHash className="text-sm" /> Arsip Topik
+        </div>
+        <h1 class="text-4xl md:text-7xl font-black text-white leading-[1.1] mb-6 tracking-tighter uppercase">
+          Topik: <span class="text-primary">#{title}</span>
+        </h1>
+      </div>
+    </div>
+  </header>
+
+  <main class="py-20 bg-white dark:bg-dark transition-colors duration-300 min-h-[60vh]">
+    <div class="container">
+      {posts && posts.length > 0 ? (
+        <Posts posts={posts} className="mb-16" />
+      ) : (
+        <div class="text-center py-24 bg-gray-50 dark:bg-white/5 rounded-3xl border-2 border-dashed border-gray-100 dark:border-white/10">
+          <p class="text-gray-400 dark:text-gray-600 italic font-medium mb-6">Afwan, belum ada artikel untuk topik ini.</p>
+        </div>
+      )}
+    </div>
+  </main>
+</Base>
