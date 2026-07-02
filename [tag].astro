@@ -2,105 +2,61 @@
 import Posts from "@/components/Posts.astro";
 import Base from "@/layouts/Base.astro";
 import { humanize } from "@/lib/utils/textConverter";
-import TrendingTicker from "@/components/homepage/TrendingTicker.astro";
 import { BiHash, BiChevronRight } from "react-icons/bi";
 
-// Tambahkan ini agar halaman ini tidak "ngotot" harus ada saat build jika gagal fetch
-export const prerender = true; 
+// PENTING: Matikan prerender agar build tidak memanggil API WordPress
+export const prerender = false;
 
-export async function getStaticPaths() {
-  const WP_URL = import.meta.env.PUBLIC_WP_URL;
-  if (!WP_URL) return [];
-
-  try {
-    const initialRes = await fetch(WP_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: `query { tags(first: 30) { nodes { name slug } } recentPosts: posts(first: 5) { nodes { title slug } } }`
-      }),
-    });
-
-    if (!initialRes.ok) return [];
-    const initialData = await initialRes.json();
-    const allTags = initialData.data?.tags?.nodes || [];
-    const wpRecent = initialData.data?.recentPosts?.nodes || [];
-    const tickerPosts = wpRecent.map((p: any) => ({ slug: p.slug, data: { title: p.title } }));
-
-    // Gunakan map biasa, bukan Promise.all yang meledakkan request
-    const paths = [];
-    for (const tag of allTags) {
-      try {
-        const postRes = await fetch(WP_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: `query GetPostsByTag($tagName: String!) { posts(where: {tag: $tagName}, first: 20) { nodes { title slug excerpt date author { node { name } } categories { nodes { name } } featuredImage { node { sourceUrl } } } } }`,
-            variables: { tagName: tag.name },
-          }),
-        });
-
-        // Jika respons bukan JSON, abaikan tag ini agar tidak crash build
-        const text = await postRes.text();
-        if (!text.trim().startsWith('{')) continue; 
-        
-        const postData = JSON.parse(text);
-        const wpPosts = postData.data?.posts?.nodes || [];
-
-        paths.push({
-          params: { tag: tag.slug },
-          props: {
-            tagName: tag.name,
-            posts: wpPosts.map((post: any) => ({
-              id: post.slug,
-              slug: post.slug,
-              body: post.excerpt || "",
-              data: {
-                title: post.title || "Judul Tidak Tersedia",
-                description: post.excerpt || "",
-                date: post.date,
-                image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
-                categories: post.categories?.nodes.map((c: any) => c.name) || [],
-                authors: [post.author?.node?.name || "Admin"],
-                tags: [tag.name],
-              },
-            })),
-            tickerPosts,
-          },
-        });
-      } catch (e) {
-        continue; // Skip tag yang gagal
-      }
-    }
-    return paths;
-  } catch (e) {
-    return [];
-  }
-}
-
+// Kita tidak butuh getStaticPaths jika prerender = false
 const { tag } = Astro.params;
-const { tagName, posts, tickerPosts } = Astro.props || {};
-const title = humanize(tagName || tag || "");
+const title = humanize(tag || "");
 ---
 
-<Base title={`Topik: #${title} | Amina Media`} description={`Kumpulan artikel terbaru dengan topik #${title} di Amina Media.`}>
-  {tickerPosts && <TrendingTicker posts={tickerPosts} />}
-
-  <header class="bg-[#0b1c3c] py-16 md:py-24 text-white w-full">
-    <div class="container">
-      <h1 class="text-4xl md:text-7xl font-black uppercase">Topik: #{title}</h1>
-    </div>
+<Base title={`Topik: #${title} | Amina Media`} description={`Kumpulan artikel #${title}.`}>
+  <header class="bg-[#0b1c3c] py-16 text-white text-center">
+    <h1 class="text-4xl font-black uppercase">Topik: #{title}</h1>
   </header>
 
-  <main class="py-20 bg-white dark:bg-dark min-h-[60vh]">
+  <main class="py-20 min-h-[50vh]">
     <div class="container">
-      {posts && posts.length > 0 ? (
-        <Posts posts={posts} className="mb-16" />
-      ) : (
-        <div class="text-center py-24">
-          <p>Afwan, belum ada artikel untuk topik ini.</p>
-        </div>
-      )}
+      <div id="post-container" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <p class="text-center col-span-full">Memuat artikel dari server...</p>
+      </div>
     </div>
   </main>
 </Base>
+
+<script is:inline define:vars={{ tag }}>
+  async function loadPosts() {
+    const container = document.getElementById('post-container');
+    const WP_URL = "https://studio.amina.or.id/graphql/";
+    
+    try {
+      const res = await fetch(WP_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `query GetPostsByTag($tagName: String!) { posts(where: {tag: $tagName}, first: 20) { nodes { title slug excerpt } } }`,
+          variables: { tagName: tag }
+        })
+      });
+      
+      const json = await res.json();
+      const posts = json.data?.posts?.nodes || [];
+      
+      if (posts.length > 0) {
+        container.innerHTML = posts.map(p => `
+          <div class="p-4 border rounded-lg">
+            <h2 class="font-bold">${p.title}</h2>
+            <p class="text-sm">${p.excerpt.replace(/<[^>]*>/g, '').substring(0, 100)}...</p>
+          </div>
+        `).join('');
+      } else {
+        container.innerHTML = '<p class="text-center col-span-full">Belum ada artikel.</p>';
+      }
+    } catch (e) {
+      container.innerHTML = '<p class="text-center col-span-full">Gagal memuat artikel. Coba lagi nanti.</p>';
+    }
+  }
+  loadPosts();
+</script>
