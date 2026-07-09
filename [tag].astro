@@ -1,0 +1,59 @@
+---
+// 1. HAPUS FUNGSI getStaticPaths SEPENUHNYA!
+// 2. Gunakan output hybrid di astro.config.mjs agar ini bisa berjalan sebagai SSR
+export const prerender = false; 
+
+import Base from "@/layouts/Base.astro";
+import { humanize } from "@/lib/utils/textConverter";
+
+const { tag } = Astro.params;
+const title = humanize(tag || "");
+---
+
+<Base title={`Topik: #${title} | Amina Media`} description={`Kumpulan artikel #${title}.`}>
+  <header class="bg-[#0b1c3c] py-16 text-white text-center">
+    <h1 class="text-4xl font-black uppercase">Topik: #{title}</h1>
+  </header>
+
+  <main class="py-20 min-h-[50vh]">
+    <div class="container" id="post-container">
+      <p class="text-center">Memuat artikel dari server...</p>
+    </div>
+  </main>
+</Base>
+
+<script is:inline define:vars={{ tag }}>
+  async function loadPosts() {
+    const container = document.getElementById('post-container');
+    const WP_URL = "https://studio.amina.or.id/graphql/";
+    
+    try {
+      const res = await fetch(WP_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `query GetPostsByTag($tagName: String!) { posts(where: {tag: $tagName}, first: 20) { nodes { title slug excerpt } } }`,
+          variables: { tagName: tag }
+        })
+      });
+      
+      const json = await res.json();
+      const posts = json.data?.posts?.nodes || [];
+      
+      if (posts.length > 0) {
+        container.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-3 gap-6">` + 
+          posts.map(p => `
+            <div class="p-4 border rounded-lg">
+              <h2 class="font-bold">${p.title}</h2>
+              <p class="text-sm">${p.excerpt.replace(/<[^>]*>/g, '').substring(0, 100)}...</p>
+            </div>
+          `).join('') + `</div>`;
+      } else {
+        container.innerHTML = '<p class="text-center">Belum ada artikel.</p>';
+      }
+    } catch (e) {
+      container.innerHTML = '<p class="text-center">Gagal memuat artikel.</p>';
+    }
+  }
+  loadPosts();
+</script>
