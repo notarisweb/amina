@@ -10,14 +10,21 @@ import config from "./src/config/config.json";
 import cloudflare from "@astrojs/cloudflare";
 
 export default defineConfig({
-  // KUNCI FINAL: Ubah kembali menjadi "static" sesuai aturan Astro 5 terbaru
+  // SSG Mode untuk kecepatan maksimal dan kecocokan dengan Astro 5
   output: "static", 
   
-  // Tetap pertahankan adapter cloudflare ini sebagai penjinak halaman dinamis
+  // SOLUSI LIMIT 100 KARAKTER: Menjinakkan routes.json otomatis dari Astro
   adapter: cloudflare({
     platformProxy: {
       enabled: true,
     },
+    routes: {
+      strategy: "exclude-html", // Mengabaikan file HTML statis agar rute tidak kepanjangan
+      extend: {
+        // Keluarkan rute dinamis yang panjang agar tidak menabrak batas karakter Cloudflare
+        exclude: ["/blog/*", "/authors/*", "/categories/*", "/tags/*"]
+      }
+    }
   }),
 
   site: "https://amina.or.id",
