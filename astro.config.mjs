@@ -9,16 +9,13 @@ import remarkToc from "remark-toc";
 import config from "./src/config/config.json";
 
 export default defineConfig({
-  // SSG Mode untuk kecepatan maksimal
+  // 1. SSG Mode untuk kecepatan maksimal dan kecocokan dengan Cloudflare Pages
   output: "static", 
-  
-  // SOLUSI UTAMA: Hapus adapter Vercel agar hasil build menjadi HTML statis murni untuk Cloudflare
-  // adapter: vercel() dihapus di sini
 
   site: "https://amina.or.id",
   base: config.site.base_path ? config.site.base_path : "/",
 
-  // Diturunkan menjadi 'always' atau 'ignore' sesuai kebutuhan standard Cloudflare Pages
+  // Diabaikan sesuai kebutuhan standard struktur folder Cloudflare Pages
   trailingSlash: "ignore",
 
   image: {
@@ -58,8 +55,10 @@ export default defineConfig({
     shikiConfig: { theme: "one-dark-pro", wrap: true },
   },
 
+  // 2. JALUR FORCE STATIC: Mengunci Astro agar tidak mencoba me-render halaman sebagai server-side
   build: {
-    format: 'directory' // Bikin URL bersih tanpa .html, Cloudflare Pages sangat suka format ini
+    format: 'directory', // Bikin URL bersih tanpa .html (sangat disukai Cloudflare)
+    assets: '_astro'
   },
 
   vite: {
@@ -68,6 +67,10 @@ export default defineConfig({
     },
     build: {
       cssCodeSplit: true,
+      // Bersihkan cache pemicu module-resolution lama dari vercel
+      commonjsOptions: {
+        transformMixedEsModules: true
+      }
     }
   },
 });
