@@ -10,7 +10,10 @@ export async function getStaticPaths() {
   const WP_URL = import.meta.env.PUBLIC_WP_URL;
   if (!WP_URL) {
     console.error("Waduh Bos, PUBLIC_WP_URL belum disetel di environment variable Cloudflare!");
-    return [];
+    return [{
+      params: { tag: "pancingan-adsense" },
+      props: { tagName: "Pancingan", posts: [], tickerPosts: [] }
+    }];
   }
   
   try {
@@ -32,10 +35,15 @@ export async function getStaticPaths() {
     const contentType = tagRes.headers.get("content-type");
     if (!tagRes.ok || !contentType || !contentType.includes("application/json")) {
       const errorText = await tagRes.text();
-      console.error("🚨 BIANG KEROK KETEMU: WordPress tidak membalas dengan JSON!");
+      console.error("🚨 TAMENG AKTIF: WordPress melempar HTML, gunakan rute pancingan agar build sukses!");
       console.error(`Status HTTP: ${tagRes.status}`);
-      console.error("Potongan isi teks/HTML dari WordPress:", errorText.slice(0, 500));
-      return []; // Amankan build agar tidak crash, return array kosong
+      console.error("Potongan isi teks/HTML:", errorText.slice(0, 300));
+      
+      // KUNCI VICTORY: Paksa balikkan satu objek rute biar Astro tidak memicu error rute kosong
+      return [{
+        params: { tag: "pancingan-adsense" },
+        props: { tagName: "Pancingan", posts: [], tickerPosts: [] }
+      }];
     }
     
     const tagData = await tagRes.json();
@@ -43,7 +51,10 @@ export async function getStaticPaths() {
     // Cek jika API merespons dengan error internal GraphQL
     if (tagData.errors) {
       console.error("GraphQL Error saat fetch Tags:", tagData.errors);
-      return [];
+      return [{
+        params: { tag: "pancingan-adsense" },
+        props: { tagName: "Pancingan", posts: [], tickerPosts: [] }
+      }];
     }
 
     const allTags = tagData.data?.tags?.nodes || [];
@@ -59,6 +70,14 @@ export async function getStaticPaths() {
 
     // Saring tag: Hanya proses tag yang valid
     const validTags = allTags.filter((tag: any) => tag && tag.slug && tag.name);
+
+    // Jika setelah disaring ternyata array bersihnya kosong, lempar rute pancingan
+    if (validTags.length === 0) {
+      return [{
+        params: { tag: "pancingan-adsense" },
+        props: { tagName: "Pancingan", posts: [], tickerPosts: tickerPosts }
+      }];
+    }
 
     // 3. Untuk setiap Tag, ambil daftar artikel terkait secara paralel
     const allPaths = await Promise.all(
@@ -89,7 +108,6 @@ export async function getStaticPaths() {
             body: JSON.stringify(postQuery),
           });
           
-          // VALIDASI KONTEN PER TAG: Amankan jika request di dalam perulangan juga menghasilkan HTML
           const innerContentType = postRes.headers.get("content-type");
           if (!postRes.ok || !innerContentType || !innerContentType.includes("application/json")) {
             console.error(`🚨 Tag [${tag.name}] gagal ditarik karena WP melempar data non-JSON.`);
@@ -102,7 +120,6 @@ export async function getStaticPaths() {
           const postData = await postRes.json();
           const wpPosts = postData.data?.posts?.nodes || [];
 
-          // 4. Mapping data artikel dengan pengaman bertingkat
           const formattedPosts = wpPosts
             .filter((post: any) => post && post.slug) 
             .map((post: any) => ({
@@ -138,11 +155,18 @@ export async function getStaticPaths() {
       })
     );
 
-    return allPaths.filter(Boolean);
+    const filteredPaths = allPaths.filter(Boolean);
+    return filteredPaths.length > 0 ? filteredPaths : [{
+      params: { tag: "pancingan-adsense" },
+      props: { tagName: "Pancingan", posts: [], tickerPosts: tickerPosts }
+    }];
 
   } catch (globalError) {
     console.error("Fatal Error pada fungsi getStaticPaths() [tag].astro:", globalError);
-    return [];
+    return [{
+      params: { tag: "pancingan-adsense" },
+      props: { tagName: "Pancingan", posts: [], tickerPosts: [] }
+    }];
   }
 }
 
