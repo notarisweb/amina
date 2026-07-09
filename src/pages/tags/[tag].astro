@@ -6,95 +6,132 @@ import TrendingTicker from "@/components/homepage/TrendingTicker.astro";
 import { BiHash, BiChevronRight } from "react-icons/bi";
 
 export async function getStaticPaths() {
-  // 1. Mengambil URL API
+  // 1. Mengambil URL API dengan pengaman awal
   const WP_URL = import.meta.env.PUBLIC_WP_URL;
+  if (!WP_URL) {
+    console.error("Waduh Bos, PUBLIC_WP_URL belum disetel di environment variable Cloudflare!");
+    return [];
+  }
   
-  // 2. Query untuk mengambil semua daftar Tag
-  const tagQuery = {
-    query: `query { 
-      tags(first: 100) { nodes { name slug } } 
-      recentPosts: posts(first: 10) { nodes { title slug } }
-    }`,
-  };
+  try {
+    // 2. Query untuk mengambil semua daftar Tag & Recent Posts
+    const tagQuery = {
+      query: `query { 
+        tags(first: 100) { nodes { name slug } } 
+        recentPosts: posts(first: 10) { nodes { title slug } }
+      }`,
+    };
 
-  const tagRes = await fetch(WP_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(tagQuery),
-  });
-  const tagData = await tagRes.json();
-  const allTags = tagData.data?.tags?.nodes || [];
-  const wpRecent = tagData.data?.recentPosts?.nodes || [];
+    const tagRes = await fetch(WP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(tagQuery),
+    });
+    
+    const tagData = await tagRes.json();
+    
+    // Cek jika API merespons dengan error internal GraphQL
+    if (tagData.errors) {
+      console.error("GraphQL Error saat fetch Tags:", tagData.errors);
+      return [];
+    }
 
-  // Mapping untuk Ticker
-  const tickerPosts = wpRecent.map((p: any) => ({
-    slug: p.slug,
-    data: { title: p.title }
-  }));
+    const allTags = tagData.data?.tags?.nodes || [];
+    const wpRecent = tagData.data?.recentPosts?.nodes || [];
 
-  // 3. Untuk setiap Tag, ambil daftar artikel terkait
-  const allPaths = await Promise.all(
-    allTags.map(async (tag: any) => {
-      const postQuery = {
-        query: `
-          query GetPostsByTag($tagName: String!) {
-            posts(where: {tag: $tagName}, first: 100) {
-              nodes {
-                title
-                slug
-                excerpt
-                date
-                author { node { name } }
-                categories { nodes { name } }
-                featuredImage { node { sourceUrl } }
-              }
-            }
-          }
-        `,
-        variables: { tagName: tag.name },
-      };
-
-      const postRes = await fetch(WP_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(postQuery),
-      });
-      const postData = await postRes.json();
-      const wpPosts = postData.data?.posts?.nodes || [];
-
-      // 4. Mapping data dengan pengaman
-      const formattedPosts = wpPosts.map((post: any) => ({
-        id: post.slug,
-        slug: post.slug,
-        body: post.excerpt || "", 
-        data: {
-          title: post.title || "Judul Tidak Tersedia", 
-          description: post.excerpt || "",
-          date: post.date,
-          image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
-          categories: post.categories?.nodes.map((c: any) => c.name) || [],
-          authors: [post.author?.node?.name || "Admin"],
-          tags: [tag.name],
-        },
+    // Mapping untuk Ticker
+    const tickerPosts = wpRecent
+      .filter((p: any) => p && p.slug) // Pengaman data post ticker kosong
+      .map((p: any) => ({
+        slug: p.slug,
+        data: { title: p.title || "Judul Berita" }
       }));
 
-      return {
-        params: { tag: tag.slug },
-        props: { 
-          tagName: tag.name,
-          posts: formattedPosts,
-          tickerPosts: tickerPosts
-        },
-      };
-    })
-  );
+    // Saring tag: Hanya proses tag yang tidak null dan punya properti slug & name
+    const validTags = allTags.filter((tag: any) => tag && tag.slug && tag.name);
 
-  return allPaths;
+    // 3. Untuk setiap Tag, ambil daftar artikel terkait secara paralel
+    const allPaths = await Promise.all(
+      validTags.map(async (tag: any) => {
+        try {
+          const postQuery = {
+            query: `
+              query GetPostsByTag($tagName: String!) {
+                posts(where: {tag: $tagName}, first: 100) {
+                  nodes {
+                    title
+                    slug
+                    excerpt
+                    date
+                    author { node { name } }
+                    categories { nodes { name } }
+                    featuredImage { node { sourceUrl } }
+                  }
+                }
+              }
+            `,
+            variables: { tagName: tag.name },
+          };
+
+          const postRes = await fetch(WP_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(postQuery),
+          });
+          
+          const postData = await postRes.json();
+          const wpPosts = postData.data?.posts?.nodes || [];
+
+          // 4. Mapping data artikel dengan pengaman properti bertingkat (Optional Chaining)
+          const formattedPosts = wpPosts
+            .filter((post: any) => post && post.slug) // Saring post tanpa slug
+            .map((post: any) => ({
+              id: post.slug,
+              slug: post.slug,
+              body: post.excerpt || "", 
+              data: {
+                title: post.title || "Judul Tidak Tersedia", 
+                description: post.excerpt || "",
+                date: post.date || new Date().toISOString(),
+                image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
+                categories: post.categories?.nodes?.map((c: any) => c?.name).filter(Boolean) || [],
+                authors: [post.author?.node?.name || "Admin"],
+                tags: [tag.name],
+              },
+            }));
+
+          return {
+            params: { tag: tag.slug },
+            props: { 
+              tagName: tag.name,
+              posts: formattedPosts,
+              tickerPosts: tickerPosts
+            },
+          };
+        } catch (postError) {
+          console.error(`Gagal fetch post untuk tag [${tag.name}]:`, postError);
+          // Return fallback path aman agar tidak menggagalkan seluruh antrean Promise.all
+          return {
+            params: { tag: tag.slug },
+            props: { tagName: tag.name, posts: [], tickerPosts: tickerPosts },
+          };
+        }
+      })
+    );
+
+    // Saring hasil map dari kemungkinan path null/undefined
+    return allPaths.filter(Boolean);
+
+  } catch (globalError) {
+    console.error("Fatal Error pada fungsi getStaticPaths() [tag].astro:", globalError);
+    // Jalur penyelamat terakhir: kembalikan array kosong agar Cloudflare Pages tidak crash
+    return [];
+  }
 }
 
 const { tag } = Astro.params;
-const { tagName, posts, tickerPosts } = Astro.props;
-const title = humanize(tagName || "");
+const { tagName, posts = [], tickerPosts = [] } = Astro.props;
+const title = humanize(tagName || tag || "");
 ---
 
 <Base title={`Topik: #${title} | Amina Media`} description={`Kumpulan artikel terbaru dengan topik #${title} di Amina Media.`}>
@@ -129,7 +166,7 @@ const title = humanize(tagName || "");
   <main class="py-20 bg-white dark:bg-dark transition-colors duration-300 min-h-[60vh]">
     <div class="container">
       
-      {posts.length > 0 ? (
+      {posts && posts.length > 0 ? (
         <div class="min-h-[50vh]">
           <Posts posts={posts} className="mb-16" />
         </div>
