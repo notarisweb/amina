@@ -1,0 +1,54 @@
+import { c as createComponent, r as renderComponent, a as renderTemplate, m as maybeRenderHead, d as addAttribute } from '../chunks/astro/server_qrAGd2zo.mjs';
+import 'piccolore';
+import { $ as $$Base } from '../chunks/Base_zAWG4pPb.mjs';
+import { h as humanize } from '../chunks/textConverter_DLzBZGw2.mjs';
+import { BiChevronRight, BiLayer } from 'react-icons/bi';
+import { $ as $$TrendingTicker } from '../chunks/TrendingTicker_DKK8sSBN.mjs';
+/* empty css                                 */
+export { renderers } from '../renderers.mjs';
+
+const prerender = false;
+const $$Index = createComponent(async ($$result, $$props, $$slots) => {
+  const API_BASE = "https://studio.amina.or.id/wp-json/wp/v2";
+  let categories = [];
+  let tickerPosts = [];
+  try {
+    const [resCat, resPosts] = await Promise.all([
+      fetch(`${API_BASE}/categories?per_page=100&hide_empty=true`),
+      fetch(`${API_BASE}/posts?per_page=10`)
+    ]);
+    const dataCat = await resCat.json();
+    const dataPosts = await resPosts.json();
+    categories = Array.isArray(dataCat) ? dataCat : [];
+    tickerPosts = Array.isArray(dataPosts) ? dataPosts.map((p) => ({
+      slug: p.slug,
+      data: { title: p.title.rendered }
+    })) : [];
+  } catch (e) {
+    console.error("Gagal konek ke WordPress:", e);
+  }
+  const title = "Indeks Kategori";
+  return renderTemplate`${renderComponent($$result, "Base", $$Base, { "title": `${title} | Amina Media` }, { "default": async ($$result2) => renderTemplate` ${renderComponent($$result2, "TrendingTicker", $$TrendingTicker, { "posts": tickerPosts })} ${maybeRenderHead()}<header class="bg-[#0b1c3c] py-14 md:py-20 text-white w-full border-t border-white/5 relative overflow-hidden"> <div class="container relative z-10"> <div class="max-w-4xl"> <nav class="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.3em] mb-8 text-white/40"> <a href="/" class="hover:text-primary transition">Home</a> ${renderComponent($$result2, "BiChevronRight", BiChevronRight, { "className": "opacity-40" })} <span class="text-primary">Direktori Konten</span> </nav> <h1 class="text-4xl md:text-7xl font-black mb-6 tracking-tighter uppercase leading-[1.1]"> ${title} </h1> <div class="w-24 h-2 bg-orange-600 mb-8"></div> <p class="text-white/60 text-base md:text-xl max-w-2xl font-medium leading-relaxed italic">
+Navigasi cepat melalui berbagai topik khazanah keislaman dan informasi terkini di Amina Media.
+</p> </div> </div> <div class="absolute -bottom-10 -right-10 opacity-5"> ${renderComponent($$result2, "BiLayer", BiLayer, { "className": "w-96 h-96" })} </div> </header> <main class="py-16 bg-[#fcfcfc] dark:bg-dark transition-colors duration-300 min-h-[60vh]"> <div class="container"> <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0 border-t border-l border-gray-100 dark:border-white/5"> ${categories.length > 0 ? categories.map((category) => renderTemplate`<a${addAttribute(`/categories/${category.slug}`, "href")} class="group relative bg-white dark:bg-transparent p-10 border-r border-b border-gray-100 dark:border-white/5 transition-all duration-300 hover:bg-primary"> <div class="relative z-10 flex flex-col h-full"> <div class="flex justify-between items-start mb-12"> <div class="text-[10px] font-black text-primary group-hover:text-white/60 uppercase tracking-[0.3em] border-b-2 border-primary group-hover:border-white/20 pb-1">
+Topic #${category.id} </div> <div class="text-2xl font-black text-dark/10 dark:text-white/5 group-hover:text-white/20 transition-colors italic"> ${category.count.toString().padStart(2, "0")} </div> </div> <h2 class="text-2xl font-black text-[#0b1c3c] dark:text-white group-hover:text-white transition-colors tracking-tight uppercase leading-tight mb-4"> ${humanize(category.name)} </h2> <p class="text-[11px] font-bold text-gray-400 dark:text-gray-500 group-hover:text-white/70 uppercase tracking-widest mt-auto flex items-center gap-2">
+Jelajahi Arsip ${renderComponent($$result2, "BiChevronRight", BiChevronRight, { "className": "group-hover:translate-x-1 transition-transform" })} </p> </div> <div class="absolute top-0 left-0 w-1 h-0 bg-orange-600 group-hover:h-full transition-all duration-500"></div> </a>`) : renderTemplate`<div class="col-span-full py-32 text-center"> <div class="inline-flex items-center gap-3 text-gray-400 font-black uppercase tracking-widest italic animate-pulse"> <span class="w-10 h-[1px] bg-gray-300"></span>
+Menghubungkan ke Khazanah Data
+<span class="w-10 h-[1px] bg-gray-300"></span> </div> </div>`} </div> <div class="mt-20 py-12 border-t border-gray-100 dark:border-white/5 flex flex-col md:flex-row justify-between items-center gap-6"> <div class="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]">
+Total Direktori: <span class="text-primary">${categories.length} Bidang Keilmuan</span> </div> <div class="flex gap-4"> <div class="w-3 h-3 bg-primary"></div> <div class="w-3 h-3 bg-[#0b1c3c]"></div> <div class="w-3 h-3 bg-orange-600"></div> </div> </div> </div> </main> ` })} `;
+}, "D:/website/amina/src/pages/categories/index.astro", void 0);
+
+const $$file = "D:/website/amina/src/pages/categories/index.astro";
+const $$url = "/categories";
+
+const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  default: $$Index,
+  file: $$file,
+  prerender,
+  url: $$url
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const page = () => _page;
+
+export { page };

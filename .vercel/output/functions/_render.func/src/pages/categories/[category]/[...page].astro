@@ -1,0 +1,240 @@
+---
+import { Image } from "astro:assets";
+import Base from "@/layouts/Base.astro";
+import Pagination from "@/layouts/components/Pagination.astro";
+import dateFormat from "@/lib/utils/dateFormat"; // Pastikan import ini ada
+import { humanize } from "@/lib/utils/textConverter";
+import TrendingTicker from "@/components/homepage/TrendingTicker.astro";
+import { BiChevronRight, BiLayer, BiTimeFive } from "react-icons/bi";
+
+export const prerender = false;
+
+// 1. Ambil Parameter
+const { category } = Astro.params;
+const url = new URL(Astro.request.url);
+const currentPage = parseInt(url.searchParams.get("page") || "1");
+const pageSize = 9; // Grid 3 kolom lebih pas dengan angka 9
+
+const WP_URL = import.meta.env.PUBLIC_WP_URL;
+
+// 2. Query WordPress
+const query = {
+  query: `
+    query GetCategoryPosts($catSlug: ID!) {
+      category(id: $catSlug, idType: SLUG) {
+        name
+        description
+        posts(first: 100) {
+          nodes {
+            title
+            slug
+            excerpt
+            date
+            author { node { name } }
+            categories { nodes { name } }
+            featuredImage { node { sourceUrl } }
+          }
+        }
+      }
+      recentPosts: posts(first: 10) {
+        nodes {
+          title
+          slug
+        }
+      }
+    }
+  `,
+  variables: { catSlug: category },
+};
+
+let categoryData = null;
+let allFormattedPosts = [];
+let tickerPosts = [];
+
+try {
+  const response = await fetch(WP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(query),
+  });
+  const result = await response.json();
+  categoryData = result.data?.category;
+  
+  const wpRecent = result.data?.recentPosts?.nodes || [];
+  tickerPosts = wpRecent.map((p: any) => ({
+    slug: p.slug,
+    data: { title: p.title }
+  }));
+
+  if (categoryData) {
+    const wpPosts = categoryData.posts?.nodes || [];
+    allFormattedPosts = wpPosts.map((post: any) => ({
+      slug: post.slug,
+      data: {
+        title: post.title || "Judul Tidak Tersedia",
+        description: post.excerpt || "",
+        date: post.date,
+        image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
+        categories: post.categories?.nodes.map((c: any) => c.name) || [categoryData.name],
+        author: post.author?.node?.name || "Admin",
+      },
+    }));
+  }
+} catch (e) {
+  console.error("Gagal mengambil data kategori:", e);
+}
+
+if (!categoryData) return Astro.redirect("/404");
+
+const totalPosts = allFormattedPosts.length;
+const totalPages = Math.ceil(totalPosts / pageSize);
+const startIdx = (currentPage - 1) * pageSize;
+const endIdx = startIdx + pageSize;
+const paginatedPosts = allFormattedPosts.slice(startIdx, endIdx);
+
+const title = humanize(categoryData.name || "");
+---
+
+<Base 
+  title={`${title} - Halaman ${currentPage} | Amina Media`} 
+  description={categoryData.description || `Kumpulan artikel islami dan berita terbaru kategori ${title}.`}
+>
+  
+  <TrendingTicker posts={tickerPosts} />
+
+  <header class="bg-[#0b1c3c] py-16 md:py-24 text-white w-full border-t border-white/5 relative overflow-hidden">
+    <div class="container relative z-10">
+      <nav class="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.4em] mb-10 text-white/40">
+        <a href="/" class="hover:text-primary transition">Beranda</a>
+        <BiChevronRight className="opacity-20" />
+        <a href="/categories" class="hover:text-primary transition">Kategori</a>
+        <BiChevronRight className="opacity-20" />
+        <span class="text-primary normal-case font-bold">{title}</span>
+      </nav>
+
+      <div class="max-w-5xl">
+        <div class="flex items-center gap-4 mb-6">
+            <span class="w-12 h-[2px] bg-primary"></span>
+            <span class="text-[11px] font-black uppercase tracking-[0.5em] text-primary">Arsip Konten</span>
+        </div>
+        
+        <h1 class="text-5xl md:text-7xl font-black text-white leading-none mb-10 tracking-tighter uppercase">
+          Kategori<br/>
+          <span class="text-primary">{title}</span>
+        </h1>
+
+        {categoryData.description && (
+          <div class="border-l-4 border-orange-600 pl-8 mt-12">
+            <p class="text-white/60 text-lg md:text-xl leading-relaxed font-medium max-w-3xl">
+              {categoryData.description}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+    <div class="absolute -bottom-20 -right-20 opacity-5 pointer-events-none">
+        <BiLayer className="w-[500px] h-[500px]" />
+    </div>
+  </header>
+
+  <main class="py-20 bg-[#fcfcfc] dark:bg-dark transition-colors duration-300 min-h-[60vh]">
+    <div class="container">
+      
+      {paginatedPosts.length > 0 ? (
+        <>
+          <div class="mb-12 flex items-center justify-between border-b border-gray-200 dark:border-white/5 pb-6">
+              <div class="text-[10px] font-black uppercase tracking-[0.3em] text-dark/40 dark:text-white/20">
+                  DATABASE: {paginatedPosts.length} ARTIKEL TERMUAT
+              </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            {paginatedPosts.map((post) => (
+              <article class="group flex flex-col bg-white dark:bg-dark/50 border border-gray-100 dark:border-white/5 transition-all duration-500 hover:shadow-2xl hover:-translate-y-1">
+                <a href={`/blog/${post.slug}`} class="overflow-hidden block aspect-video bg-gray-100 dark:bg-white/5">
+                  <Image 
+                    src={post.data.image} 
+                    alt={post.data.title} 
+                    width={600} 
+                    height={338} 
+                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  />
+                </a>
+                
+                <div class="p-8 flex flex-col flex-1">
+                  <div class="flex items-center gap-3 mb-4">
+                    <span class="text-[9px] font-black uppercase tracking-widest text-primary border-b-2 border-primary pb-0.5">
+                      {post.data.categories[0]}
+                    </span>
+                  </div>
+                  
+                  <a href={`/blog/${post.slug}`}>
+                    <h2 class="text-xl font-black text-[#0b1c3c] dark:text-white leading-snug group-hover:text-primary transition-colors not-italic normal-case mb-4 line-clamp-2">
+                      {post.data.title}
+                    </h2>
+                  </a>
+
+                  <p class="text-dark/50 dark:text-white/40 text-sm line-clamp-3 mb-6 font-medium leading-relaxed" set:html={post.data.description.slice(0, 120) + '...'} />
+                  
+                  <div class="mt-auto pt-6 border-t border-gray-50 dark:border-white/5 flex items-center justify-between">
+                    <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                       <BiTimeFive className="text-primary" />
+                       {dateFormat(post.data.date)}
+                    </div>
+                    <span class="text-primary group-hover:translate-x-1 transition-transform">
+                      <BiChevronRight className="text-2xl" />
+                    </span>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+          
+          <div class="mt-24 py-12 border-t-2 border-dark dark:border-white/10 flex justify-center">
+            <Pagination 
+              section={`categories/${category}`} 
+              currentPage={currentPage} 
+              totalPages={totalPages} 
+            />
+          </div>
+        </>
+      ) : (
+        <div class="text-center py-32 border border-gray-100 dark:border-white/5 bg-white dark:bg-transparent">
+          <p class="text-gray-400 italic font-bold text-2xl mb-8 uppercase tracking-tighter">
+            Belum ada jejak artikel di sini, Bos.
+          </p>
+          <a href="/categories" class="inline-flex items-center gap-3 bg-[#0b1c3c] text-white px-10 py-4 font-black text-xs uppercase tracking-[0.2em] hover:bg-primary transition-all">
+            <BiChevronRight className="rotate-180" /> Kembali ke Indeks
+          </a>
+        </div>
+      )}
+
+      <div class="mt-24 pt-10 text-center opacity-20 border-t border-gray-100 dark:border-white/5">
+        <p class="text-[9px] font-black text-dark dark:text-white uppercase tracking-[0.5em]">
+          Amina Media Editorial Archive • Page {currentPage} of {totalPages}
+        </p>
+      </div>
+
+    </div>
+  </main>
+</Base>
+
+<style is:global>
+  .section { padding: 0 !important; }
+
+  /* FORCE SHARP EDGES */
+  * {
+    border-radius: 0 !important;
+  }
+
+  /* Reset Judul agar tidak ada miring dan tidak uppercase paksa */
+  h1, h2, h3 {
+    text-transform: none !important;
+    font-style: normal !important;
+  }
+  
+  /* Khusus label kecil tetap uppercase biar gahar */
+  .tracking-widest, nav, .text-[10px], .text-[9px] {
+    text-transform: uppercase !important;
+  }
+</style>
