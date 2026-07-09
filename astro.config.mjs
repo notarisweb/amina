@@ -8,14 +8,23 @@ import remarkCollapse from "remark-collapse";
 import remarkToc from "remark-toc";
 import config from "./src/config/config.json";
 
+// Import adapter cloudflare resmi yang baru diinstal
+import cloudflare from "@astrojs/cloudflare";
+
 export default defineConfig({
-  // 1. SSG Mode untuk kecepatan maksimal dan kecocokan dengan Cloudflare Pages
-  output: "static", 
+  // Ubah output menjadi 'hybrid'. 
+  // Artinya halaman yang statis tetap statis (SSG), tapi kalau ada yang rewel meminta SSR akan dihandle oleh Cloudflare Workers!
+  output: "hybrid", 
+  
+  // Pasang adapternya di sini
+  adapter: cloudflare({
+    platformProxy: {
+      enabled: true,
+    },
+  }),
 
   site: "https://amina.or.id",
   base: config.site.base_path ? config.site.base_path : "/",
-
-  // Diabaikan sesuai kebutuhan standard struktur folder Cloudflare Pages
   trailingSlash: "ignore",
 
   image: {
@@ -26,9 +35,7 @@ export default defineConfig({
   prefetch: true,
 
   integrations: [
-    tailwind({
-      applyBaseStyles: false, 
-    }),
+    tailwind({ applyBaseStyles: false }),
     react(),
     sitemap({
       changefreq: 'daily',
@@ -55,22 +62,12 @@ export default defineConfig({
     shikiConfig: { theme: "one-dark-pro", wrap: true },
   },
 
-  // 2. JALUR FORCE STATIC: Mengunci Astro agar tidak mencoba me-render halaman sebagai server-side
   build: {
-    format: 'directory', // Bikin URL bersih tanpa .html (sangat disukai Cloudflare)
-    assets: '_astro'
+    format: 'directory',
   },
 
   vite: {
-    optimizeDeps: {
-      exclude: ['sharp']
-    },
-    build: {
-      cssCodeSplit: true,
-      // Bersihkan cache pemicu module-resolution lama dari vercel
-      commonjsOptions: {
-        transformMixedEsModules: true
-      }
-    }
+    optimizeDeps: { exclude: ['sharp'] },
+    build: { cssCodeSplit: true }
   },
 });
