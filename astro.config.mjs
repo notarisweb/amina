@@ -7,16 +7,13 @@ import { defineConfig } from "astro/config";
 import remarkCollapse from "remark-collapse";
 import remarkToc from "remark-toc";
 import config from "./src/config/config.json";
-
-// Import adapter cloudflare resmi yang baru diinstal
 import cloudflare from "@astrojs/cloudflare";
 
 export default defineConfig({
-  // Ubah output menjadi 'hybrid'. 
-  // Artinya halaman yang statis tetap statis (SSG), tapi kalau ada yang rewel meminta SSR akan dihandle oleh Cloudflare Workers!
-  output: "hybrid", 
+  // KUNCI FINAL: Ubah kembali menjadi "static" sesuai aturan Astro 5 terbaru
+  output: "static", 
   
-  // Pasang adapternya di sini
+  // Tetap pertahankan adapter cloudflare ini sebagai penjinak halaman dinamis
   adapter: cloudflare({
     platformProxy: {
       enabled: true,
