@@ -3,6 +3,9 @@ import SearchBar from "@/helpers/SearchBar";
 import Base from "@/layouts/Base.astro";
 import TrendingTicker from "@/components/homepage/TrendingTicker.astro";
 
+// JALUR FORCE STATIC: Paksa Astro memperlakukan file ini sebagai halaman statis (SSG) agar tidak memicu error NoAdapterInstalled!
+export const prerender = true;
+
 // 1. Mengambil URL API dari Environment Variable
 const WP_URL = import.meta.env.PUBLIC_WP_URL;
 
@@ -29,34 +32,44 @@ const query = {
 let searchList = [];
 let tickerPosts = [];
 
-try {
-  const response = await fetch(WP_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(query),
-  });
-  
-  const result = await response.json();
-  const wpPosts = result.data?.posts?.nodes || [];
+if (WP_URL) {
+  try {
+    const response = await fetch(WP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(query),
+    });
+    
+    // VALIDASI TAMENG SEARCH: Amankan jika WordPress melempar HTML (Blokir/Error) saat build
+    const contentType = response.headers.get("content-type");
+    if (response.ok && contentType && contentType.includes("application/json")) {
+      const result = await response.json();
+      const wpPosts = result.data?.posts?.nodes || [];
 
-  // 3. Mapping data (Konsisten dengan komponen Homepage kita)
-  searchList = wpPosts.map((post: any) => ({
-    slug: post.slug,
-    content: (post.content || post.excerpt || ""), 
-    data: {
-      title: post.title || "Judul Tidak Tersedia", 
-      description: post.excerpt || "", 
-      date: post.date,
-      image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
-      categoryNames: post.categories?.nodes.map((c: any) => c.name) || ["Berita"],
-      authors: [post.author?.node?.name || "Admin"],
+      // 3. Mapping data (Konsisten dengan komponen Homepage kita)
+      searchList = wpPosts
+        .filter((post: any) => post && post.slug)
+        .map((post: any) => ({
+          slug: post.slug,
+          content: (post.content || post.excerpt || ""), 
+          data: {
+            title: post.title || "Judul Tidak Tersedia", 
+            description: post.excerpt || "", 
+            date: post.date || new Date().toISOString(),
+            image: post.featuredImage?.node?.sourceUrl || "/images/placeholder.png",
+            categoryNames: post.categories?.nodes?.map((c: any) => c?.name).filter(Boolean) || ["Berita"],
+            authors: [post.author?.node?.name || "Admin"],
+          }
+        }));
+    } else {
+      console.error("🚨 TAMENG SEARCH AKTIF: WordPress tidak membalas dengan JSON di halaman pencarian!");
     }
-  }));
 
-  // Stok untuk Ticker
-  tickerPosts = searchList.slice(0, 10);
-} catch (e) {
-  console.error("Gagal mengambil data pencarian dari studio.amina.or.id:", e);
+    // Stok untuk Ticker
+    tickerPosts = searchList.slice(0, 10);
+  } catch (e) {
+    console.error("Gagal mengambil data pencarian dari studio.amina.or.id:", e);
+  }
 }
 ---
 
