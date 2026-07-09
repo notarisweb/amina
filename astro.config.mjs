@@ -8,21 +8,17 @@ import remarkCollapse from "remark-collapse";
 import remarkToc from "remark-toc";
 import config from "./src/config/config.json";
 
-// Gunakan adapter vercel standar untuk static
-import vercel from "@astrojs/vercel/static";
-
 export default defineConfig({
   // SSG Mode untuk kecepatan maksimal
   output: "static", 
   
-  adapter: vercel({
-    webAnalytics: { enabled: true },
-  }),
+  // SOLUSI UTAMA: Hapus adapter Vercel agar hasil build menjadi HTML statis murni untuk Cloudflare
+  // adapter: vercel() dihapus di sini
 
   site: "https://amina.or.id",
   base: config.site.base_path ? config.site.base_path : "/",
 
-  // OBAT 404: Sangat penting untuk Vercel
+  // Diturunkan menjadi 'always' atau 'ignore' sesuai kebutuhan standard Cloudflare Pages
   trailingSlash: "ignore",
 
   image: {
@@ -63,7 +59,7 @@ export default defineConfig({
   },
 
   build: {
-    format: 'directory' // Bikin URL bersih tanpa .html
+    format: 'directory' // Bikin URL bersih tanpa .html, Cloudflare Pages sangat suka format ini
   },
 
   vite: {
