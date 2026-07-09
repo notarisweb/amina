@@ -28,6 +28,16 @@ export async function getStaticPaths() {
       body: JSON.stringify(tagQuery),
     });
     
+    // VALIDASI KONTEN: Pastikan WordPress membalas dengan format JSON, bukan HTML!
+    const contentType = tagRes.headers.get("content-type");
+    if (!tagRes.ok || !contentType || !contentType.includes("application/json")) {
+      const errorText = await tagRes.text();
+      console.error("🚨 BIANG KEROK KETEMU: WordPress tidak membalas dengan JSON!");
+      console.error(`Status HTTP: ${tagRes.status}`);
+      console.error("Potongan isi teks/HTML dari WordPress:", errorText.slice(0, 500));
+      return []; // Amankan build agar tidak crash, return array kosong
+    }
+    
     const tagData = await tagRes.json();
     
     // Cek jika API merespons dengan error internal GraphQL
@@ -41,13 +51,13 @@ export async function getStaticPaths() {
 
     // Mapping untuk Ticker
     const tickerPosts = wpRecent
-      .filter((p: any) => p && p.slug) // Pengaman data post ticker kosong
+      .filter((p: any) => p && p.slug) 
       .map((p: any) => ({
         slug: p.slug,
         data: { title: p.title || "Judul Berita" }
       }));
 
-    // Saring tag: Hanya proses tag yang tidak null dan punya properti slug & name
+    // Saring tag: Hanya proses tag yang valid
     const validTags = allTags.filter((tag: any) => tag && tag.slug && tag.name);
 
     // 3. Untuk setiap Tag, ambil daftar artikel terkait secara paralel
@@ -79,12 +89,22 @@ export async function getStaticPaths() {
             body: JSON.stringify(postQuery),
           });
           
+          // VALIDASI KONTEN PER TAG: Amankan jika request di dalam perulangan juga menghasilkan HTML
+          const innerContentType = postRes.headers.get("content-type");
+          if (!postRes.ok || !innerContentType || !innerContentType.includes("application/json")) {
+            console.error(`🚨 Tag [${tag.name}] gagal ditarik karena WP melempar data non-JSON.`);
+            return {
+              params: { tag: tag.slug },
+              props: { tagName: tag.name, posts: [], tickerPosts: tickerPosts },
+            };
+          }
+
           const postData = await postRes.json();
           const wpPosts = postData.data?.posts?.nodes || [];
 
-          // 4. Mapping data artikel dengan pengaman properti bertingkat (Optional Chaining)
+          // 4. Mapping data artikel dengan pengaman bertingkat
           const formattedPosts = wpPosts
-            .filter((post: any) => post && post.slug) // Saring post tanpa slug
+            .filter((post: any) => post && post.slug) 
             .map((post: any) => ({
               id: post.slug,
               slug: post.slug,
@@ -110,7 +130,6 @@ export async function getStaticPaths() {
           };
         } catch (postError) {
           console.error(`Gagal fetch post untuk tag [${tag.name}]:`, postError);
-          // Return fallback path aman agar tidak menggagalkan seluruh antrean Promise.all
           return {
             params: { tag: tag.slug },
             props: { tagName: tag.name, posts: [], tickerPosts: tickerPosts },
@@ -119,12 +138,10 @@ export async function getStaticPaths() {
       })
     );
 
-    // Saring hasil map dari kemungkinan path null/undefined
     return allPaths.filter(Boolean);
 
   } catch (globalError) {
     console.error("Fatal Error pada fungsi getStaticPaths() [tag].astro:", globalError);
-    // Jalur penyelamat terakhir: kembalikan array kosong agar Cloudflare Pages tidak crash
     return [];
   }
 }
@@ -193,7 +210,6 @@ const title = humanize(tagName || tag || "");
 </Base>
 
 <style is:global>
-  /* Menghancurkan padding kaku dari class .section bawaan tema */
   .section {
     padding: 0 !important;
   }
