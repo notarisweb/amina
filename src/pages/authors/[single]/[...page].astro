@@ -7,7 +7,8 @@ import AuthorSingle from "@/layouts/partials/AuthorSingle.astro";
 import dateFormat from "@/lib/utils/dateFormat";
 import { Image } from "astro:assets";
 
-export const prerender = true;
+// SOLUSI KRUSIAL: Baris 'export const prerender = true;' TELAH DIHAPUS 
+// agar tidak bertabrakan dengan mode 'output: "static"' di astro.config.mjs
 
 export async function getStaticPaths({ paginate }) {
   const WP_URL = import.meta.env.PUBLIC_WP_URL;
@@ -35,7 +36,15 @@ export async function getStaticPaths({ paginate }) {
       console.error("🚨 AMANKAN BUILD: WordPress melempar non-JSON saat mengambil data Users/Authors!");
       console.error(`Status HTTP: ${authorRes.status}`);
       console.error("Potongan teks balasannya:", errorText.slice(0, 300));
-      return []; // Return kosong agar build tidak mogok
+      
+      // Mengembalikan fallback pancingan statis agar proses build global tetap aman
+      return paginate([{ dummy: true }], {
+        params: { single: "pancingan-author" },
+        props: { 
+          author: { id: "pancingan-author", slug: "pancingan-author", data: { title: "Penulis", description: "Penulis di Amina Media", image: "/images/author-placeholder.png", meta_title: "Penulis" } } 
+        },
+        pageSize: 9,
+      });
     }
 
     const authorData = await authorRes.json();
@@ -46,6 +55,16 @@ export async function getStaticPaths({ paginate }) {
     }
 
     const allAuthors = (authorData.data?.users?.nodes || []).filter((a: any) => a && a.slug);
+
+    if (allAuthors.length === 0) {
+      return paginate([{ dummy: true }], {
+        params: { single: "pancingan-author" },
+        props: { 
+          author: { id: "pancingan-author", slug: "pancingan-author", data: { title: "Penulis", description: "Penulis di Amina Media", image: "/images/author-placeholder.png", meta_title: "Penulis" } } 
+        },
+        pageSize: 9,
+      });
+    }
 
     // 2. Loop setiap penulis untuk ambil artikel mereka
     const allPaths = await Promise.all(
@@ -79,7 +98,6 @@ export async function getStaticPaths({ paginate }) {
           if (!postRes.ok || !innerContentType || !innerContentType.includes("application/json")) {
             console.error(`🚨 Request artikel untuk penulis [${author.name}] diblokir/gagal.`);
             
-            // Buat fallback dummy agar struktur paginate tidak hancur di tengah jalan
             return paginate([{ dummy: true }], {
               params: { single: author.slug },
               props: { 
@@ -134,7 +152,6 @@ export async function getStaticPaths({ paginate }) {
 
         } catch (innerError) {
           console.error(`Gagal memproses data penulis [${author.name}]:`, innerError);
-          // Return data pancingan kosong agar rilis global tidak crash berkeping-keping
           return paginate([{ dummy: true }], {
             params: { single: author.slug },
             props: { 
@@ -154,12 +171,17 @@ export async function getStaticPaths({ paginate }) {
 
   } catch (globalError) {
     console.error("Fatal Error pada fungsi getStaticPaths() authors:", globalError);
-    return [];
+    return paginate([{ dummy: true }], {
+      params: { single: "pancingan-author" },
+      props: { 
+        author: { id: "pancingan-author", slug: "pancingan-author", data: { title: "Penulis", description: "Penulis di Amina Media", image: "/images/author-placeholder.png", meta_title: "Penulis" } } 
+      },
+      pageSize: 9,
+    });
   }
 }
 
 const { page, author } = Astro.props;
-// Amankan jika page atau page.data bernilai undefined sewaktu-waktu
 const posts = page?.data ? page.data.filter(p => p && !p.dummy) : [];
 ---
 
@@ -201,7 +223,7 @@ const posts = page?.data ? page.data.filter(p => p && !p.dummy) : [];
         {page && page.lastPage > 1 && (
           <div class="mt-20 flex justify-center border-t border-slate-100 dark:border-white/5 pt-10">
             <Pagination 
-              section={`authors/${author.slug}`} 
+              section={`authors/${author?.slug || 'author'}`} 
               currentPage={page.currentPage} 
               totalPages={page.lastPage} 
             />
